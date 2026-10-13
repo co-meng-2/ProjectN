@@ -6,6 +6,8 @@ extends Control
 signal promote_requested(index: int)
 signal reroll_requested(index: int)
 
+## Label suffix per Wallet.Kind (GOLD, STONE, TICKET).
+const KIND_SUFFIXES: PackedStringArray = ["g", "s", "T"]
 const EMPTY_FRAME_COLOR: Color = Color(0.3, 0.3, 0.33)
 const BACKGROUND_COLOR: Color = Color(0.08, 0.08, 0.1, 0.85)
 const FRAME_WIDTH: float = 3.0
@@ -42,7 +44,7 @@ func show_slot(slot: AbilitySlot, price: Price, affordable: bool, reroll_price: 
 static func cost_text(price: Price) -> String:
 	if price == null:
 		return "MAX"
-	return "%d%s" % [price.amount, "g" if price.kind == Wallet.Kind.GOLD else "s"]
+	return "%d%s" % [price.amount, KIND_SUFFIXES[price.kind]]
 
 
 func is_dimmed() -> bool:

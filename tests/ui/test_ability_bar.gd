@@ -149,3 +149,21 @@ func test_rebinding_replaces_the_views_without_duplicate_listeners() -> void:
 		assert_null(_icon(bar.slot_view(i)).texture)
 		assert_false(bar.slot_view(i).is_flashing(), "new views ignore the old service")
 	assert_eq(bar.get_child_count(), 2)
+
+
+func test_a_held_ticket_prices_every_applicable_slot_at_one_ticket() -> void:
+	var rig := _rig(0, 0)
+	var bar: AbilityBar = rig["bar"]
+	var wallet: Wallet = rig["wallet"]
+	var loadout: Loadout = rig["loadout"]
+	loadout.set_slot(1, rig["def"], Grade.Value.REVEALED)
+	assert_eq(_cost_text(bar.slot_view(0)), "100g")
+	assert_true(bar.slot_view(0).is_dimmed(), "no gold")
+	wallet.add(Wallet.Kind.TICKET, 1)
+	assert_eq(_cost_text(bar.slot_view(0)), "1T")
+	assert_eq(_cost_text(bar.slot_view(2)), "1T")
+	assert_false(bar.slot_view(0).is_dimmed(), "the ticket covers it")
+	assert_eq(_cost_text(bar.slot_view(1)), "MAX", "nothing to buy on a revealed slot")
+	assert_true(bar.slot_view(0).tooltip_text.contains("1T"))
+	wallet.try_spend(Wallet.Kind.TICKET, 1)
+	assert_eq(_cost_text(bar.slot_view(0)), "100g", "back to gold once the ticket is gone")

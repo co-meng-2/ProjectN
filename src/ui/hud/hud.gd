@@ -17,7 +17,7 @@ func bind(player_health: Health, building_health: Health, wallet: Wallet, clock:
 	_set_bar(_player_bar, player_health.current(), player_health.maximum())
 	_set_bar(_building_bar, building_health.current(), building_health.maximum())
 	wallet.changed.connect(_on_wallet_changed)
-	_on_wallet_changed(wallet.gold, wallet.stone)
+	_on_wallet_changed(wallet.gold, wallet.stone, wallet.tickets)
 	_timeline.configure(timeline.duration, timeline.marks)
 	clock.ticked.connect(_timeline.set_elapsed)
 
@@ -33,5 +33,5 @@ func _set_bar(bar: ProgressBar, current: float, maximum: float) -> void:
 	bar.value = current
 
 
-func _on_wallet_changed(gold: int, stone: int) -> void:
-	_wallet_label.text = "Gold %d   Stone %d" % [gold, stone]
+func _on_wallet_changed(gold: int, stone: int, tickets: int) -> void:
+	_wallet_label.text = "Gold %d   Stone %d   Ticket %d" % [gold, stone, tickets]

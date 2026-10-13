@@ -170,3 +170,48 @@ func test_resolved_is_emitted_for_every_attempt() -> void:
 	service.promote(0)
 	service.reroll(1)
 	assert_eq(outcomes, [[0, GradeResult.Outcome.OK], [0, GradeResult.Outcome.NOT_ENOUGH], [1, GradeResult.Outcome.NOT_APPLICABLE]])
+
+
+func test_a_ticket_pays_for_a_purchase_before_any_gold() -> void:
+	var service := _build(_single(), 500, 0)
+	_wallet.add(Wallet.Kind.TICKET, 1)
+	var cost := service.promote_cost(0)
+	assert_eq(cost.kind, Wallet.Kind.TICKET)
+	assert_eq(cost.amount, 1)
+	assert_eq(service.promote(0).outcome, GradeResult.Outcome.OK)
+	assert_eq(_loadout.slot(0).grade, Grade.Value.COMMON)
+	assert_eq(_wallet.tickets, 0)
+	assert_eq(_wallet.gold, 500, "gold untouched while a ticket was held")
+	assert_eq(service.promote_cost(0).kind, Wallet.Kind.GOLD, "back to the table price")
+	assert_eq(service.promote_cost(0).amount, 150)
+
+
+func test_one_ticket_pays_any_shop_action_even_without_currency() -> void:
+	var defs := _pair()
+	var service := _build(defs, 0, 0)
+	_wallet.add(Wallet.Kind.TICKET, 3)
+	_loadout.set_slot(0, defs[0], Grade.Value.LEGENDARY)
+	assert_eq(service.promote(0).outcome, GradeResult.Outcome.OK, "reveal for a ticket")
+	assert_eq(_loadout.slot(0).grade, Grade.Value.REVEALED)
+	assert_eq(_wallet.tickets, 2)
+	_loadout.set_slot(1, defs[0], Grade.Value.EPIC)
+	assert_eq(service.reroll(1).outcome, GradeResult.Outcome.OK, "reroll for a ticket")
+	assert_eq(_loadout.slot(1).def, defs[1])
+	assert_eq(_wallet.tickets, 1)
+	assert_eq(service.promote(1).outcome, GradeResult.Outcome.OK, "gold promotion for a ticket")
+	assert_eq(_loadout.slot(1).grade, Grade.Value.UNIQUE)
+	assert_eq(_wallet.tickets, 0)
+	assert_eq(service.promote(1).outcome, GradeResult.Outcome.NOT_ENOUGH, "no ticket and no gold left")
+
+
+func test_tickets_are_not_spent_on_refused_actions() -> void:
+	var defs: Array[AbilityDef] = [DefFactory.ability(&"rare_only", null, null, Grade.Value.RARE)]
+	var service := _build(defs, 0, 0)
+	_wallet.add(Wallet.Kind.TICKET, 1)
+	assert_eq(service.promote(0).outcome, GradeResult.Outcome.EMPTY_POOL, "nothing can be COMMON")
+	assert_null(service.reroll_cost(0), "an empty slot cannot be rerolled, ticket or not")
+	assert_eq(service.reroll(0).outcome, GradeResult.Outcome.NOT_APPLICABLE)
+	_loadout.set_slot(1, defs[0], Grade.Value.REVEALED)
+	assert_null(service.promote_cost(1))
+	assert_eq(service.promote(1).outcome, GradeResult.Outcome.NOT_APPLICABLE)
+	assert_eq(_wallet.tickets, 1, "never spent on a refused action")

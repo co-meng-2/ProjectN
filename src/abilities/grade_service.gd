@@ -4,6 +4,7 @@ extends RefCounted
 ## LEGENDARY->REVEALED keeps the ability) and reroll (same grade, a different ability preferred).
 ## Pure logic over Wallet, RunRng, Loadout, AbilityPool and GradeTable. Every action is atomic:
 ## check applicability, check the price, roll, spend, then write the slot. A refused action changes nothing.
+## While the wallet holds a promotion ticket, every applicable action costs exactly one ticket.
 
 ## Emitted after every attempt, successful or not, so a view can react (flash a refused slot).
 signal resolved(index: int, result: GradeResult)
@@ -26,7 +27,9 @@ func _init(loadout: Loadout, pool: AbilityPool, table: GradeTable, wallet: Walle
 ## Price of the next promotion of slot `index`; null when none is possible.
 func promote_cost(index: int) -> Price:
 	var slot := _loadout.slot(index)
-	return _table.promote_price(slot.grade) if slot != null else null
+	if slot == null:
+		return null
+	return _ticket_first(_table.promote_price(slot.grade))
 
 
 ## Price of rerolling slot `index`; null when the slot is empty or revealed.
@@ -34,7 +37,7 @@ func reroll_cost(index: int) -> Price:
 	var slot := _loadout.slot(index)
 	if slot == null or slot.is_empty():
 		return null
-	return _table.reroll_price(slot.grade)
+	return _ticket_first(_table.reroll_price(slot.grade))
 
 
 func promote(index: int) -> GradeResult:
@@ -86,3 +89,10 @@ func _commit(index: int, price: Price, def: AbilityDef, grade: Grade.Value) -> G
 func _resolve(index: int, result: GradeResult) -> GradeResult:
 	resolved.emit(index, result)
 	return result
+
+
+## Applicability comes first (a null price stays null); then a held ticket replaces the table price.
+func _ticket_first(price: Price) -> Price:
+	if price == null or _wallet.tickets < 1:
+		return price
+	return Price.new(Wallet.Kind.TICKET, 1)

@@ -54,7 +54,7 @@ func _on_slot_changed(index: int, _slot: AbilitySlot) -> void:
 		_refresh(index)
 
 
-func _on_wallet_changed(_gold: int, _stone: int) -> void:
+func _on_wallet_changed(_gold: int, _stone: int, _tickets: int) -> void:
 	refresh_all()
 
 

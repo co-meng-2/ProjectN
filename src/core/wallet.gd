@@ -1,17 +1,24 @@
 class_name Wallet
 extends RefCounted
-## Per-run currency balances. Gem is persistent meta currency and lives elsewhere (Phase 4).
+## Per-run balances: gold, stone and promotion tickets (paid by stage events; one ticket pays any shop action).
+## Gem is persistent meta currency and lives elsewhere (Phase 4).
 
-signal changed(gold: int, stone: int)
+signal changed(gold: int, stone: int, tickets: int)
 
-enum Kind { GOLD, STONE }
+enum Kind { GOLD, STONE, TICKET }
 
 var gold: int = 0
 var stone: int = 0
+var tickets: int = 0
 
 
 func balance(kind: Kind) -> int:
-	return gold if kind == Kind.GOLD else stone
+	match kind:
+		Kind.GOLD:
+			return gold
+		Kind.STONE:
+			return stone
+	return tickets
 
 
 func add(kind: Kind, amount: int) -> void:
@@ -28,8 +35,11 @@ func try_spend(kind: Kind, amount: int) -> bool:
 
 
 func _apply(kind: Kind, value: int) -> void:
-	if kind == Kind.GOLD:
-		gold = value
-	else:
-		stone = value
-	changed.emit(gold, stone)
+	match kind:
+		Kind.GOLD:
+			gold = value
+		Kind.STONE:
+			stone = value
+		Kind.TICKET:
+			tickets = value
+	changed.emit(gold, stone, tickets)

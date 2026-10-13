@@ -39,9 +39,12 @@ func test_wallet_label_follows_the_wallet() -> void:
 	var rig := _rig()
 	var hud: Hud = rig["hud"]
 	var wallet: Wallet = rig["wallet"]
+	var label := hud.get_node("%WalletLabel") as Label
+	assert_eq(label.text, "Gold 0   Stone 0   Ticket 0")
 	wallet.add(Wallet.Kind.GOLD, 7)
 	wallet.add(Wallet.Kind.STONE, 2)
-	assert_eq((hud.get_node("%WalletLabel") as Label).text, "Gold 7   Stone 2")
+	wallet.add(Wallet.Kind.TICKET, 1)
+	assert_eq(label.text, "Gold 7   Stone 2   Ticket 1")
 
 
 func test_show_result_displays_outcome_and_totals() -> void:
