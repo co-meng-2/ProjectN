@@ -33,6 +33,7 @@ func show_slot(slot: AbilitySlot, price: Price, affordable: bool, reroll_price: 
 	_icon.modulate = REVEALED_TINT if tint_revealed else Color.WHITE
 	_dimmed = price != null and not affordable
 	_icon.self_modulate = Color(1.0, 1.0, 1.0, DIM_ALPHA if _dimmed else 1.0)
+	_cost.modulate = Color(1.0, 1.0, 1.0, DIM_ALPHA if _dimmed else 1.0)  # visible even on an empty slot
 	_cost.text = cost_text(price)
 	tooltip_text = _tooltip(slot, price, reroll_price)
 	queue_redraw()
@@ -72,13 +73,20 @@ func _gui_input(event: InputEvent) -> void:
 func _draw() -> void:
 	var rect := Rect2(Vector2.ZERO, size)
 	draw_rect(rect, BACKGROUND_COLOR)
-	draw_rect(rect, _frame_color, false, FRAME_WIDTH)
+	var frame := _frame_color
+	if _dimmed:
+		frame.a = DIM_ALPHA
+	draw_rect(rect, frame, false, FRAME_WIDTH)
 
 
 func _tooltip(slot: AbilitySlot, price: Price, reroll_price: Price) -> String:
 	if slot == null or slot.is_empty():
 		return "Empty slot\nClick: buy a Common ability (%s)" % cost_text(price)
-	var text := "%s (%s)\nClick: promote (%s)" % [slot.def.display_name, Grade.display_name(slot.grade), cost_text(price)]
+	var text := "%s (%s)" % [slot.def.display_name, Grade.display_name(slot.grade)]
+	if price == null:
+		text += "\nFully revealed"
+	else:
+		text += "\nClick: promote (%s)" % cost_text(price)
 	if reroll_price != null:
 		text += "\nCtrl+click: reroll (%s)" % cost_text(reroll_price)
 	return text

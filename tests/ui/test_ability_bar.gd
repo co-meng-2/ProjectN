@@ -83,12 +83,18 @@ func test_unaffordable_slots_are_dimmed_and_follow_the_wallet() -> void:
 	wallet.try_spend(Wallet.Kind.GOLD, 100)
 	assert_true(bar.slot_view(0).is_dimmed(), "20 gold left")
 	assert_true(bar.slot_view(2).is_dimmed(), "every empty slot")
+	assert_true((bar.slot_view(2).get_node("%Cost") as Label).modulate.a < 1.0, "empty slot visibly dimmed")
+	wallet.add(Wallet.Kind.GOLD, 100)
+	assert_eq((bar.slot_view(2).get_node("%Cost") as Label).modulate.a, 1.0, "affordable slot not dimmed")
+	wallet.try_spend(Wallet.Kind.GOLD, 100)
 	wallet.add(Wallet.Kind.GOLD, 100)
 	assert_false(bar.slot_view(0).is_dimmed())
 	loadout.set_slot(0, rig["def"], Grade.Value.LEGENDARY)
 	assert_true(bar.slot_view(0).is_dimmed(), "10 stone needed, 0 owned")
 	loadout.set_slot(0, rig["def"], Grade.Value.REVEALED)
 	assert_false(bar.slot_view(0).is_dimmed(), "nothing to buy is not unaffordable")
+	assert_eq(bar.slot_view(0).tooltip_text.find("promote"), -1, "no promote line when fully revealed")
+	assert_true(bar.slot_view(0).tooltip_text.contains("Fully revealed"))
 
 
 func test_failed_actions_flash_the_slot_and_successful_ones_do_not() -> void:

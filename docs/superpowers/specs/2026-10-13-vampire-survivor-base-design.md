@@ -202,7 +202,8 @@ Layers (a module may import only layers below it; upward communication = signals
 **Acceptance (in-editor, godot-ai, partial):** Verified with simulated input: the main scene ran with no game-log errors; six `100g` slots and `Gold 200   Stone 0` at start; buying and promoting slots (slot 0 reached an Epic frame, next cost 400g); `drop_multiplier` applied to pickups; GAME OVER ignored slot clicks; R restarted to 200 gold with empty slots. A Ctrl+click was sent but its outcome was not confirmed. **Not verified (pending manual play by the owner):** refused-click flash/dimming, the Legendary/Revealed walk and the `10s`/`MAX` labels, reroll outcome, passive effects (Vitality/Swift Boots/Might), Volley arrows, Bounty gold, stacked duplicates, clicks not moving the soldier, frame rate.
 
 **Known follow-ups:**
-- `max_health` passives do not heal on raise; health is re-clamped when `max_health` drops. The re-clamp lowers health without a spec, so `Health` emits `damaged(amount, null)` and the player may flash as if hit.
+- `max_health` passives do not heal on raise; health is re-clamped when `max_health` drops. In Phase 2 health never exceeds the new max (there is no heal source), so the re-clamp is unreachable in play.
+- Phase 3 follow-up, before the first heal source lands: (a) `Health` should not emit `damaged` for a spec-less decrease (the re-clamp passes no spec); (b) promoting/rerolling a Vitality slot uninstalls the old effect before installing the new one, which would cost healed HP, so it needs install-before-remove or equivalent.
 - Attack cooldowns reset when a slot is promoted/rerolled (fresh instance).
 - Rerolling a one-ability pool returns the same ability and still charges.
 - Icons in `assets/art/icons` are generated placeholders (the 128x128 ones opaque); swap for the real art library.

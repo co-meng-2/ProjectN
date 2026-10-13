@@ -48,6 +48,15 @@ func test_passive_must_be_infinite_with_curved_nonzero_modifiers() -> void:
 	assert_eq(def.validate().size(), 1, "null modifier")
 
 
+func test_passive_needs_modifiers_and_free_stacking() -> void:
+	var def := DefFactory.vitality()
+	def.passive_effect.modifiers.clear()
+	assert_eq(def.validate().size(), 1, "a passive without modifiers is a no-op")
+	def = DefFactory.vitality()
+	def.passive_effect.stacking_policy = GameplayEffect.StackingPolicy.REFRESH_DURATION
+	assert_eq(def.validate().size(), 1, "shared handle across slots")
+
+
 func test_scene_root_must_be_a_gameplay_ability_and_may_reject_itself() -> void:
 	var def := DefFactory.ability(&"bad", null, _packed(Node2D.new()))
 	assert_eq(def.validate().size(), 1, "root is not an ability")
