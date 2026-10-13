@@ -58,3 +58,11 @@ func test_volley_def_validates_and_carries_the_scene() -> void:
 	var root := def.ability_scene.instantiate()
 	assert_true(root is VolleyAbility)
 	root.free()
+
+
+func test_blade_sweep_def_validates_and_carries_the_scene() -> void:
+	var def := _def("res://data/abilities/blade_sweep.tres")
+	assert_no_errors(def.validate(), "blade_sweep")
+	var root := def.ability_scene.instantiate()
+	assert_true(root is BladeSweepAbility)
+	root.free()

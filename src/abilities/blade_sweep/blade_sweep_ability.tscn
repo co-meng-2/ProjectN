@@ -1,0 +1,31 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://src/abilities/blade_sweep/blade_sweep_ability.gd" id="1_sweep"]
+[ext_resource type="PackedScene" path="res://src/abilities/blade_sweep/melee_strike.tscn" id="2_strike"]
+[ext_resource type="Resource" path="res://data/effects/damage_basic.tres" id="3_damage"]
+
+[sub_resource type="Curve" id="Curve_cooldown"]
+_limits = [0.0, 2.0, 1.0, 6.0]
+_data = [Vector2(1, 1.6), 0.0, 0.0, 0, 0, Vector2(2, 1.4), 0.0, 0.0, 0, 0, Vector2(3, 1.2), 0.0, 0.0, 0, 0, Vector2(4, 1.0), 0.0, 0.0, 0, 0, Vector2(5, 0.85), 0.0, 0.0, 0, 0, Vector2(6, 0.7), 0.0, 0.0, 0, 0]
+point_count = 6
+
+[sub_resource type="Curve" id="Curve_radius"]
+_limits = [0.0, 100.0, 1.0, 6.0]
+_data = [Vector2(1, 40), 0.0, 0.0, 0, 0, Vector2(2, 48), 0.0, 0.0, 0, 0, Vector2(3, 56), 0.0, 0.0, 0, 0, Vector2(4, 66), 0.0, 0.0, 0, 0, Vector2(5, 78), 0.0, 0.0, 0, 0, Vector2(6, 95), 0.0, 0.0, 0, 0]
+point_count = 6
+
+[sub_resource type="Curve" id="Curve_damage"]
+_limits = [0.0, 50.0, 1.0, 6.0]
+_data = [Vector2(1, 10), 0.0, 0.0, 0, 0, Vector2(2, 14), 0.0, 0.0, 0, 0, Vector2(3, 19), 0.0, 0.0, 0, 0, Vector2(4, 25), 0.0, 0.0, 0, 0, Vector2(5, 33), 0.0, 0.0, 0, 0, Vector2(6, 45), 0.0, 0.0, 0, 0]
+point_count = 6
+
+[node name="BladeSweepAbility" type="Node"]
+script = ExtResource("1_sweep")
+ability_name = "Blade Sweep"
+ability_tag = &"Ability.Sweep"
+cooldown = SubResource("Curve_cooldown")
+strike_scene = ExtResource("2_strike")
+hit_effect = ExtResource("3_damage")
+radius = SubResource("Curve_radius")
+damage = SubResource("Curve_damage")
+strike_seconds = 0.2
