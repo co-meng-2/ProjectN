@@ -1,7 +1,6 @@
 extends TestCase
 
 const STAGE_SCENE: PackedScene = preload("res://src/stage/stage.tscn")
-const DAMAGE: GameplayEffect = preload("res://data/effects/damage_basic.tres")
 const VITALITY: AbilityDef = preload("res://data/abilities/vitality.tres")
 const VOLLEY: AbilityDef = preload("res://data/abilities/volley.tres")
 const BOUNTY: AbilityDef = preload("res://data/abilities/bounty.tres")
@@ -32,12 +31,6 @@ func _running_stage(duration: float, results: Array) -> Stage:
 	return stage
 
 
-func _kill(stage: Stage, target_asc: AbilitySystemComponent) -> void:
-	var attacker := ActorFixture.bare_actor(self, StatBlock.new())
-	var spec := EffectBuilder.damage(attacker, attacker, DAMAGE, 99999.0)
-	ActorFixture.asc_of(attacker).apply_effect_spec_to_target(spec, target_asc)
-
-
 func test_run_reaches_cleared_when_time_is_up() -> void:
 	var results: Array = []
 	var stage := _running_stage(1.5, results)
@@ -52,7 +45,7 @@ func test_run_reaches_cleared_when_time_is_up() -> void:
 func test_destroying_the_building_fails_the_run() -> void:
 	var results: Array = []
 	var stage := _running_stage(30.0, results)
-	_kill(stage, stage.building.asc)
+	ActorFixture.kill(self, stage.building.asc)
 	assert_eq(results.size(), 1)
 	assert_eq((results[0] as RunResult).outcome, RunResult.Outcome.FAILED)
 
@@ -60,7 +53,7 @@ func test_destroying_the_building_fails_the_run() -> void:
 func test_player_death_fails_the_run() -> void:
 	var results: Array = []
 	var stage := _running_stage(30.0, results)
-	_kill(stage, stage.player.get_node("AbilitySystemComponent"))
+	ActorFixture.kill(self, stage.player.get_node("AbilitySystemComponent"))
 	assert_eq(results.size(), 1)
 	assert_eq((results[0] as RunResult).outcome, RunResult.Outcome.FAILED)
 
@@ -68,7 +61,7 @@ func test_player_death_fails_the_run() -> void:
 func test_finish_is_idempotent_failure_first() -> void:
 	var results: Array = []
 	var stage := _running_stage(30.0, results)
-	_kill(stage, stage.building.asc)
+	ActorFixture.kill(self, stage.building.asc)
 	stage.player.died.emit()
 	stage.clock.ended.emit()
 	assert_eq(results.size(), 1, "later finish paths must hit the terminal guard")
@@ -79,7 +72,7 @@ func test_finish_is_idempotent_cleared_first() -> void:
 	var results: Array = []
 	var stage := _running_stage(30.0, results)
 	stage.clock.ended.emit()
-	_kill(stage, stage.building.asc)
+	ActorFixture.kill(self, stage.building.asc)
 	stage.player.died.emit()
 	assert_eq(results.size(), 1)
 	assert_eq((results[0] as RunResult).outcome, RunResult.Outcome.CLEARED)
@@ -114,7 +107,7 @@ func test_killed_enemies_are_counted_and_drop_pickups() -> void:
 	var victims := host.get_tree().get_nodes_in_group(Groups.ENEMIES)
 	assert_true(victims.size() > 0)
 	for victim in victims:
-		_kill(stage, victim.get_node("AbilitySystemComponent"))
+		ActorFixture.kill(self, victim.get_node("AbilitySystemComponent"))
 	await next_frame()
 	await next_frame()
 	assert_eq(stage.run_state.kills, victims.size())
@@ -125,7 +118,7 @@ func test_restart_starts_clean() -> void:
 	var first_results: Array = []
 	var first := _running_stage(30.0, first_results)
 	first.run_state.wallet.add(Wallet.Kind.GOLD, 50)
-	_kill(first, first.building.asc)
+	ActorFixture.kill(self, first.building.asc)
 	first.free()
 	await next_frame()
 	var second_results: Array = []
@@ -154,7 +147,7 @@ func test_every_enemy_death_sends_event_kill_to_the_player() -> void:
 	var victims := host.get_tree().get_nodes_in_group(Groups.ENEMIES)
 	assert_true(victims.size() > 0)
 	for victim in victims:
-		_kill(stage, victim.get_node("AbilitySystemComponent"))
+		ActorFixture.kill(self, victim.get_node("AbilitySystemComponent"))
 	assert_eq(events.size(), victims.size())
 	assert_eq(events[0][0], GameplayTags.Event_Kill)
 	assert_true(events[0][1] is Enemy, "payload is the dead enemy")
@@ -233,7 +226,7 @@ func test_bounty_pays_gold_when_the_stage_reports_a_kill() -> void:
 	var victims := host.get_tree().get_nodes_in_group(Groups.ENEMIES)
 	assert_true(victims.size() > 0)
 	for victim in victims:
-		_kill(stage, victim.get_node("AbilitySystemComponent"))
+		ActorFixture.kill(self, victim.get_node("AbilitySystemComponent"))
 	assert_eq(stage.run_state.wallet.gold, victims.size(), "1 gold per kill at COMMON; the drops are never collected")
 
 

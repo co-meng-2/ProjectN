@@ -64,3 +64,46 @@ static func hurt_target(test: TestCase, position: Vector2, layer: int = PhysicsL
 	actor.add_child(hurtbox)
 	hurtbox.bind(asc_of(actor), actor)
 	return actor
+
+
+const KILL_EFFECT: GameplayEffect = preload("res://data/effects/damage_basic.tres")
+
+
+## Lethal damage from a throwaway attacker, through the real damage pipeline.
+static func kill(test: TestCase, target_asc: AbilitySystemComponent) -> void:
+	var attacker := bare_actor(test, StatBlock.new())
+	var spec := EffectBuilder.damage(attacker, attacker, KILL_EFFECT, 99999.0)
+	asc_of(attacker).apply_effect_spec_to_target(spec, target_asc)
+
+
+## An EventContext inside the test tree: an events layer, an enemy layer with a bound EnemyFactory, a
+## TargetProvider, a building stand-in at `building_at`, `player` (or a plain Node2D at building_at + (0, 150)),
+## RunRng(7), a 2400x1600 arena centred on the origin and a 300 px spawn ring.
+static func event_context(test: TestCase, def: EventDef, player: Node2D = null, building_at: Vector2 = Vector2.ZERO) -> EventContext:
+	var layer := test.adopt(Node2D.new()) as Node2D
+	var enemies := test.adopt(Node2D.new()) as Node2D
+	var targets := test.adopt(TargetProvider.new()) as TargetProvider
+	var building := test.adopt(Node2D.new()) as Node2D
+	building.global_position = building_at
+	if player == null:
+		player = test.adopt(Node2D.new()) as Node2D
+		player.global_position = building_at + Vector2(0, 150)
+	targets.building = building
+	targets.player = player
+	var rng := RunRng.new(7)
+	var factory := test.adopt(EnemyFactory.new()) as EnemyFactory
+	factory.bind(enemies, targets, rng)
+	return EventContext.new(layer, factory, targets, player, building, rng, Rect2(-1200, -800, 2400, 1600), 300.0, def)
+
+
+## Records an event's signals. Returned keys (all Arrays, appended to in emission order):
+##   "succeeded" - one `true` per `succeeded` emission
+##   "failed"    - one `true` per `failed` emission
+##   "progress"  - the String of each `progress_changed` emission
+## Call before `event.begin(...)`: begin may report progress immediately.
+static func watch_event(event: StageEvent) -> Dictionary:
+	var record := {"succeeded": [], "failed": [], "progress": []}
+	event.succeeded.connect(func() -> void: (record["succeeded"] as Array).append(true))
+	event.failed.connect(func() -> void: (record["failed"] as Array).append(true))
+	event.progress_changed.connect(func(text: String) -> void: (record["progress"] as Array).append(text))
+	return record

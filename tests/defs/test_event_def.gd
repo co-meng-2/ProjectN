@@ -39,3 +39,11 @@ func test_controller_root_validate_errors_are_reported() -> void:
 	var errors := DefFactory.event(DefFactory.packed(root)).validate()
 	assert_eq(errors.size(), 1, ", ".join(errors))
 	assert_true(errors[0].contains("probe controller is invalid"))
+
+
+func test_controller_root_may_reject_itself() -> void:
+	var probe := (load("res://tests/support/probe_event.tscn") as PackedScene).instantiate() as ProbeEvent
+	probe.reject_reason = "probe says no"
+	var errors := DefFactory.event(DefFactory.packed(probe)).validate()
+	assert_eq(errors.size(), 1)
+	assert_true(errors[0].contains("probe says no"))
