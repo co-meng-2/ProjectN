@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://src/boss/patterns/charge_pattern.gd" id="1_charge"]
+[ext_resource type="PackedScene" path="res://src/components/area_strike.tscn" id="2_strike"]
+[ext_resource type="Resource" path="res://data/effects/damage_basic.tres" id="3_damage"]
+
+[node name="ChargePattern" type="Node"]
+script = ExtResource("1_charge")
+ability_name = "Charge"
+ability_tag = &"Ability.Boss.Charge"
+activation_owned_tags = Array[StringName]([&"State.Casting"])
+strike_scene = ExtResource("2_strike")
+hit_effect = ExtResource("3_damage")
+warning = 0.7
+speed = 520.0
+distance = 360.0
+damage = 25.0
+hit_radius = 40.0
+line_width = 24.0

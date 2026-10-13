@@ -10,6 +10,8 @@
 class_name GameplayTags
 
 const Ability_Arrow: StringName = &"Ability.Arrow"
+const Ability_Boss_Charge: StringName = &"Ability.Boss.Charge"
+const Ability_Boss_Slam: StringName = &"Ability.Boss.Slam"
 const Ability_Bounty: StringName = &"Ability.Bounty"
 const Ability_Dash: StringName = &"Ability.Dash"
 const Ability_Sweep: StringName = &"Ability.Sweep"
