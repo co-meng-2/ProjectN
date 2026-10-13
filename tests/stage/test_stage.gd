@@ -238,7 +238,7 @@ func test_bounty_pays_gold_when_the_stage_reports_a_kill() -> void:
 
 
 func test_an_ability_def_with_a_non_ability_scene_is_rejected_before_anything_starts() -> void:
-	var root := Node.new()  # any non-ActorAbility root
+	var root := BareGameplayAbility.new()  # passes AbilityDef validation; only validate_defs rejects it
 	var scene := PackedScene.new()
 	assert_eq(scene.pack(root), OK)
 	root.free()
