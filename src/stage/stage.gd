@@ -9,6 +9,9 @@ signal finished(result: RunResult)
 const PLAYER_START: Vector2 = Vector2(0.0, 150.0)
 
 var run_state: RunState
+## The ability slots and the shop rules over them; the HUD binds to these through Main.
+var loadout: Loadout
+var grade_service: GradeService
 
 var _flow := StageFlow.new()
 
@@ -25,6 +28,7 @@ var _flow := StageFlow.new()
 @onready var _factory: EnemyFactory = $Systems/EnemyFactory
 @onready var _spawner: SpawnDirector = $Systems/SpawnDirector
 @onready var _loot: LootDirector = $Systems/LootDirector
+@onready var _installer: AbilityInstaller = $Systems/AbilityInstaller
 
 
 ## Returns false, after logging every problem, when a def is invalid; nothing is started then.
@@ -34,6 +38,7 @@ func start(stage_def: StageDef, profile: PlayerProfile, run_seed: int = 0) -> bo
 		return false
 	var errors := stage_def.validate()
 	errors.append_array(profile.validate())
+	errors.append_array(AbilityInstaller.validate_defs(profile.abilities))
 	if not errors.is_empty():
 		for error in errors:
 			push_error("Stage.start: %s" % error)
@@ -51,6 +56,10 @@ func start(stage_def: StageDef, profile: PlayerProfile, run_seed: int = 0) -> bo
 	_spawner.bind(stage_def, clock, _factory, building, run_state.rng, _arena.bounds)
 	waves.bind(stage_def, clock, _factory, building, run_state.rng, _arena.bounds)
 	_loot.bind(_factory, _pickup_layer, player, run_state.wallet, stage_def.drop_multiplier)
+	# The shop: pure rules over the run's wallet and rng; the installer mirrors slots onto the player.
+	loadout = Loadout.new(profile.slot_count)
+	grade_service = GradeService.new(loadout, AbilityPool.new(profile.abilities), stage_def.grade_table, run_state.wallet, run_state.rng)
+	_installer.bind(loadout, player)
 	_wire()
 	_flow.transition_to(StageFlow.State.RUNNING)
 	clock.start(stage_def.duration)

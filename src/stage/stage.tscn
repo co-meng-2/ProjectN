@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://src/stage/stage.gd" id="1_stage"]
 [ext_resource type="PackedScene" path="res://src/stage/arena.tscn" id="2_arena"]
@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://src/stage/spawn_director.gd" id="8_spawner"]
 [ext_resource type="Script" path="res://src/stage/wave_director.gd" id="9_waves"]
 [ext_resource type="Script" path="res://src/stage/loot_director.gd" id="10_loot"]
+[ext_resource type="Script" path="res://src/abilities/ability_installer.gd" id="11_installer"]
 
 [node name="Stage" type="Node2D"]
 script = ExtResource("1_stage")
@@ -51,3 +52,6 @@ script = ExtResource("9_waves")
 
 [node name="LootDirector" type="Node" parent="Systems"]
 script = ExtResource("10_loot")
+
+[node name="AbilityInstaller" type="Node" parent="Systems"]
+script = ExtResource("11_installer")

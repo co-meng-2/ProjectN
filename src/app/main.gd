@@ -1,6 +1,6 @@
 extends Node
-## Entry point: runs the default stage with its HUD and restarts on demand.
-## Phase 4 replaces this with the menu flow.
+## Entry point: runs the default stage with its HUD, routes HUD requests to the stage, and restarts
+## on demand. Phase 4 replaces this with the menu flow.
 
 const STAGE_SCENE: PackedScene = preload("res://src/stage/stage.tscn")
 const HUD_SCENE: PackedScene = preload("res://src/ui/hud/hud.tscn")
@@ -37,6 +37,9 @@ func _start_run() -> void:
 		get_tree().quit(1)
 		return
 	_hud.bind(_stage.player.health, _stage.building.health, _stage.run_state.wallet, _stage.clock, _stage.waves.timeline)
+	_hud.ability_bar.bind(_stage.loadout, _stage.run_state.wallet, _stage.grade_service)
+	_hud.ability_bar.promote_requested.connect(_on_promote_requested)
+	_hud.ability_bar.reroll_requested.connect(_on_reroll_requested)
 	_building_bar.bind(_stage.building.health, _stage.building, BUILDING_BAR_OFFSET)
 	_stage.finished.connect(_on_finished)
 
@@ -46,6 +49,17 @@ func _discard_run() -> void:
 		if node != null:
 			remove_child(node)
 			node.queue_free()
+
+
+## The HUD only asks; the app decides. The shop closes with the run.
+func _on_promote_requested(index: int) -> void:
+	if _result == null:
+		_stage.grade_service.promote(index)
+
+
+func _on_reroll_requested(index: int) -> void:
+	if _result == null:
+		_stage.grade_service.reroll(index)
 
 
 func _on_finished(result: RunResult) -> void:

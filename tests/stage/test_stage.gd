@@ -2,6 +2,9 @@ extends TestCase
 
 const STAGE_SCENE: PackedScene = preload("res://src/stage/stage.tscn")
 const DAMAGE: GameplayEffect = preload("res://data/effects/damage_basic.tres")
+const VITALITY: AbilityDef = preload("res://data/abilities/vitality.tres")
+const VOLLEY: AbilityDef = preload("res://data/abilities/volley.tres")
+const BOUNTY: AbilityDef = preload("res://data/abilities/bounty.tres")
 
 
 func _stage_def(duration: float) -> StageDef:
@@ -156,3 +159,96 @@ func test_every_enemy_death_sends_event_kill_to_the_player() -> void:
 	assert_eq(events[0][0], GameplayTags.Event_Kill)
 	assert_true(events[0][1] is Enemy, "payload is the dead enemy")
 	assert_eq(stage.run_state.kills, victims.size())
+
+
+## A stage whose profile offers `abilities`; `quiet` removes every enemy so nothing dies or drops.
+func _shop_stage(abilities: Array[AbilityDef], gold: int, stone: int, quiet: bool = true) -> Stage:
+	var def := _stage_def(60.0)
+	if quiet:
+		def.trickle_enemies.clear()
+		def.waves.entries.clear()
+	def.start_gold = gold
+	def.start_stone = stone
+	var profile := DefFactory.profile()
+	profile.slot_count = 2
+	profile.abilities = abilities
+	var stage := adopt(STAGE_SCENE.instantiate()) as Stage
+	assert_true(stage.start(def, profile, 11))
+	return stage
+
+
+func test_stage_builds_the_loadout_and_grade_service_from_the_profile() -> void:
+	var defs: Array[AbilityDef] = [VITALITY]
+	var stage := _shop_stage(defs, 200, 0)
+	assert_eq(stage.loadout.size(), 2)
+	assert_eq(stage.run_state.wallet.gold, 200)
+	assert_eq(stage.grade_service.promote_cost(0).amount, 100)
+	assert_null(stage.grade_service.reroll_cost(0))
+
+
+func test_buying_promoting_and_revealing_through_the_service_changes_the_player() -> void:
+	var defs: Array[AbilityDef] = [VITALITY]
+	var stage := _shop_stage(defs, 1500, 20)
+	var asc := stage.player.asc
+	assert_eq(stage.grade_service.promote(0).outcome, GradeResult.Outcome.OK)
+	assert_eq(stage.run_state.wallet.gold, 1400)
+	assert_almost_eq(asc.get_attribute("max_health").current_value, 120.0)
+	for i in 4:
+		assert_eq(stage.grade_service.promote(0).outcome, GradeResult.Outcome.OK)
+	assert_eq(stage.loadout.slot(0).grade, Grade.Value.LEGENDARY)
+	assert_eq(stage.run_state.wallet.gold, 0)
+	assert_almost_eq(asc.get_attribute("max_health").current_value, 260.0)
+	assert_eq(stage.grade_service.reroll(0).outcome, GradeResult.Outcome.OK)
+	assert_eq(stage.run_state.wallet.stone, 18)
+	assert_almost_eq(asc.get_attribute("max_health").current_value, 260.0, 0.001, "reinstalled, not stacked")
+	assert_eq(stage.grade_service.promote(0).outcome, GradeResult.Outcome.OK)
+	assert_eq(stage.loadout.slot(0).grade, Grade.Value.REVEALED)
+	assert_eq(stage.loadout.slot(0).def, VITALITY)
+	assert_eq(stage.run_state.wallet.stone, 8)
+	assert_almost_eq(asc.get_attribute("max_health").current_value, 340.0)
+	assert_eq(stage.grade_service.promote(0).outcome, GradeResult.Outcome.NOT_APPLICABLE)
+	assert_eq(stage.run_state.wallet.stone, 8)
+
+
+func test_an_attack_ability_is_granted_to_the_player_asc() -> void:
+	var defs: Array[AbilityDef] = [VOLLEY]
+	var stage := _shop_stage(defs, 100, 0)
+	assert_eq(stage.grade_service.promote(0).outcome, GradeResult.Outcome.OK)
+	var volley: VolleyAbility = null
+	for child in stage.player.asc.get_children():
+		if child is VolleyAbility:
+			volley = child
+	assert_not_null(volley)
+	assert_almost_eq(volley.ability_level, 1.0)
+	assert_true(volley.context == stage.player.ability_context)
+	assert_true(volley.is_physics_processing(), "auto-fires in the running stage")
+
+
+func test_bounty_pays_gold_when_the_stage_reports_a_kill() -> void:
+	var defs: Array[AbilityDef] = [BOUNTY]
+	var stage := _shop_stage(defs, 100, 0, false)
+	assert_eq(stage.grade_service.promote(0).outcome, GradeResult.Outcome.OK)
+	assert_eq(stage.run_state.wallet.gold, 0)
+	await wait_seconds(0.9)
+	var victims := host.get_tree().get_nodes_in_group(Groups.ENEMIES)
+	assert_true(victims.size() > 0)
+	for victim in victims:
+		_kill(stage, victim.get_node("AbilitySystemComponent"))
+	assert_eq(stage.run_state.wallet.gold, victims.size(), "1 gold per kill at COMMON; the drops are never collected")
+
+
+func test_an_ability_def_with_a_non_ability_scene_is_rejected_before_anything_starts() -> void:
+	var root := Node.new()  # any non-ActorAbility root
+	var scene := PackedScene.new()
+	assert_eq(scene.pack(root), OK)
+	root.free()
+	var broken := DefFactory.ability(&"broken", null, scene)
+	var defs: Array[AbilityDef] = [broken]
+	var def := _stage_def(60.0)
+	var profile := DefFactory.profile()
+	profile.slot_count = 2
+	profile.abilities = defs
+	var stage := adopt(STAGE_SCENE.instantiate()) as Stage
+	assert_false(stage.start(def, profile, 11))
+	assert_null(stage.run_state)
+	assert_null(stage.loadout)
