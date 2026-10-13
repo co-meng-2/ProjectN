@@ -17,6 +17,25 @@ func test_strip_width_must_divide_by_frame_count() -> void:
 	assert_eq(def.validate().size(), 1)
 
 
+func test_zero_frame_count_is_an_error_without_crashing() -> void:
+	var def := DefFactory.visual()
+	def.strips[0].frame_count = 0
+	assert_eq(def.validate().size(), 1)
+
+
+func test_non_positive_fps_is_an_error() -> void:
+	var def := DefFactory.visual()
+	def.strips[0].fps = 0.0
+	assert_eq(def.validate().size(), 1)
+
+
+func test_duplicate_animation_names_are_reported_once_per_name() -> void:
+	var def := DefFactory.visual()
+	def.strips.append(def.strips[0].duplicate())
+	def.strips.append(def.strips[0].duplicate())
+	assert_eq(def.validate().size(), 1)
+
+
 func test_null_texture_is_an_error() -> void:
 	var def := DefFactory.visual()
 	def.strips[0].texture = null

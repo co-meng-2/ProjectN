@@ -1,6 +1,6 @@
 class_name VisualDef
 extends Resource
-## The set of animations an actor can play. Turned into SpriteFrames by ActorVisual.
+## The set of animations an actor can play. sprite_frames() builds and memoises the SpriteFrames.
 
 @export var strips: Array[AnimationStrip] = []
 @export var offset: Vector2 = Vector2.ZERO
@@ -26,11 +26,17 @@ func validate() -> PackedStringArray:
 	var errors := PackedStringArray()
 	if find_strip(AnimNames.IDLE) == null:
 		errors.append("VisualDef: missing required '%s' strip" % AnimNames.IDLE)
+	var seen := {}
+	var reported := {}
 	for strip in strips:
 		if strip == null:
 			errors.append("VisualDef: null strip")
-		else:
-			errors.append_array(strip.validate())
+			continue
+		errors.append_array(strip.validate())
+		if seen.has(strip.animation) and not reported.has(strip.animation):
+			reported[strip.animation] = true
+			errors.append("VisualDef: duplicate strip for animation '%s'" % strip.animation)
+		seen[strip.animation] = true
 	return errors
 
 
