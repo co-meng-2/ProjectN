@@ -97,7 +97,12 @@ func test_dead_enemy_stops_dealing_damage() -> void:
 	stats.max_health = 200.0
 	var building := adopt(BUILDING_SCENE.instantiate()) as Building
 	building.setup(DefFactory.texture(64, 64), stats)
-	var enemy := _enemy(_def(), building)
+	var def := _def()
+	def.contact_interval = 0.2
+	var enemy := _enemy(def, building)
+	await wait_seconds(0.3)
+	assert_true(building.health.current() < 200.0, "enemy hit the building before dying")
 	_kill(enemy)
+	var health_at_death := building.health.current()
 	await wait_seconds(0.5)
-	assert_almost_eq(building.health.current(), 200.0)
+	assert_almost_eq(building.health.current(), health_at_death)
