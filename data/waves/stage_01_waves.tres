@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="WaveSchedule" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://src/defs/wave_schedule.gd" id="1_schedule"]
+[ext_resource type="Script" path="res://src/defs/wave_entry.gd" id="2_entry"]
+[ext_resource type="Resource" path="res://data/enemies/orc.tres" id="3_orc"]
+[ext_resource type="Resource" path="res://data/enemies/orc_swarmer.tres" id="4_swarmer"]
+
+[sub_resource type="Resource" id="Resource_w1"]
+script = ExtResource("2_entry")
+time = 30.0
+enemy = ExtResource("3_orc")
+count = 10
+label = "Orc Raid"
+
+[sub_resource type="Resource" id="Resource_w2"]
+script = ExtResource("2_entry")
+time = 60.0
+enemy = ExtResource("4_swarmer")
+count = 20
+label = "Swarm"
+
+[sub_resource type="Resource" id="Resource_w3"]
+script = ExtResource("2_entry")
+time = 90.0
+enemy = ExtResource("3_orc")
+count = 16
+label = "Orc Raid II"
+
+[sub_resource type="Resource" id="Resource_w4"]
+script = ExtResource("2_entry")
+time = 120.0
+enemy = ExtResource("4_swarmer")
+count = 28
+label = "Swarm II"
+
+[sub_resource type="Resource" id="Resource_w5"]
+script = ExtResource("2_entry")
+time = 150.0
+enemy = ExtResource("3_orc")
+count = 22
+label = "Final Raid"
+
+[resource]
+script = ExtResource("1_schedule")
+entries = Array[ExtResource("2_entry")]([SubResource("Resource_w1"), SubResource("Resource_w2"), SubResource("Resource_w3"), SubResource("Resource_w4"), SubResource("Resource_w5")])
