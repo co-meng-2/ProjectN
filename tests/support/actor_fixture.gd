@@ -34,3 +34,23 @@ static func player(test: TestCase, wallet: Wallet = Wallet.new(), silence_arrow:
 	if silence_arrow:
 		(asc_of(player).get_node("ArrowAbility") as ArrowAbility).auto_fire = false
 	return player
+
+
+## An enemy-group actor with a real Hurtbox (default layer ENEMY_HURT, radius 10) at `position`,
+## so projectiles and sweeps can damage it. Read its health through `asc_of(result)`.
+static func hurt_target(test: TestCase, position: Vector2, layer: int = PhysicsLayers.ENEMY_HURT) -> Node2D:
+	var actor := bare_actor(test, StatBlock.new())
+	actor.global_position = position
+	actor.add_to_group(Groups.ENEMIES)
+	var hurtbox := Hurtbox.new()
+	hurtbox.collision_layer = layer
+	hurtbox.collision_mask = 0
+	hurtbox.monitoring = false
+	var shape := CollisionShape2D.new()
+	var circle := CircleShape2D.new()
+	circle.radius = 10.0
+	shape.shape = circle
+	hurtbox.add_child(shape)
+	actor.add_child(hurtbox)
+	hurtbox.bind(asc_of(actor), actor)
+	return actor

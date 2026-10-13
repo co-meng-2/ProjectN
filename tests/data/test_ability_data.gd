@@ -49,3 +49,12 @@ func test_passive_curves_are_strictly_increasing_over_levels_one_to_six() -> voi
 			var value := modifier.calculate_magnitude(float(level))
 			assert_true(value > previous, "%s level %d (%f <= %f)" % [path, level, value, previous])
 			previous = value
+
+
+func test_volley_def_validates_and_carries_the_scene() -> void:
+	var def := _def("res://data/abilities/volley.tres")
+	assert_no_errors(def.validate(), "volley")
+	assert_null(def.passive_effect)
+	var root := def.ability_scene.instantiate()
+	assert_true(root is VolleyAbility)
+	root.free()

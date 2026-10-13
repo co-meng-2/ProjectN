@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="AbilityDef" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/defs/ability_def.gd" id="1_def"]
+[ext_resource type="PackedScene" path="res://src/abilities/volley/volley_ability.tscn" id="2_scene"]
+[ext_resource type="Texture2D" path="res://assets/art/icons/prismatic_knives_green.png" id="3_icon"]
+[ext_resource type="Texture2D" path="res://assets/art/icons/arcane_knives_purple.png" id="4_revealed"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"volley"
+display_name = "Volley"
+description = "Periodically looses extra arrows at the nearest enemies."
+icon = ExtResource("3_icon")
+revealed_icon = ExtResource("4_revealed")
+min_grade = 1
+ability_scene = ExtResource("2_scene")
