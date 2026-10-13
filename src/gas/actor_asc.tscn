@@ -1,0 +1,20 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://addons/GodotGAS/components/ability_system_component.gd" id="1_asc"]
+[ext_resource type="Script" path="res://addons/GodotGAS/attributes/attribute_set.gd" id="2_set"]
+[ext_resource type="Script" path="res://src/gas/attributes/vitals_attribute_set.gd" id="3_vitals"]
+[ext_resource type="Script" path="res://src/gas/attributes/combat_attribute_set.gd" id="4_combat"]
+[ext_resource type="Script" path="res://src/gas/attributes/economy_attribute_set.gd" id="5_economy"]
+
+[sub_resource type="Resource" id="Resource_vitals"]
+script = ExtResource("3_vitals")
+
+[sub_resource type="Resource" id="Resource_combat"]
+script = ExtResource("4_combat")
+
+[sub_resource type="Resource" id="Resource_economy"]
+script = ExtResource("5_economy")
+
+[node name="AbilitySystemComponent" type="Node"]
+script = ExtResource("1_asc")
+attribute_sets = Array[ExtResource("2_set")]([SubResource("Resource_vitals"), SubResource("Resource_combat"), SubResource("Resource_economy")])

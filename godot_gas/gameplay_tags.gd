@@ -9,14 +9,9 @@
 @tool
 class_name GameplayTags
 
-const Example_Ability_Arrow_Impact: StringName = &"Example.Ability.Arrow.Impact"
-const Example_Ability_Arrow_Shoot: StringName = &"Example.Ability.Arrow.Shoot"
-const Example_Ability_Heal_Triggered: StringName = &"Example.Ability.Heal.Triggered"
-const Example_Ability_Poison_Applied: StringName = &"Example.Ability.Poison.Applied"
-const Example_Ability_Poison_Cast: StringName = &"Example.Ability.Poison.Cast"
-const Example_Event_Damage_Critical: StringName = &"Example.Event.Damage.Critical"
-const Example_Event_Damage_Missed: StringName = &"Example.Event.Damage.Missed"
-const Example_Event_Damage_Normal: StringName = &"Example.Event.Damage.Normal"
-const Example_Event_Defend_Hit: StringName = &"Example.Event.Defend.Hit"
-const Example_State_Cooldown_Arrow: StringName = &"Example.State.Cooldown.Arrow"
-const Example_State_Cooldown_Poison: StringName = &"Example.State.Cooldown.Poison"
+const Ability_Arrow: StringName = &"Ability.Arrow"
+const Ability_Dash: StringName = &"Ability.Dash"
+const Cooldown_Arrow: StringName = &"Cooldown.Arrow"
+const Cooldown_Dash: StringName = &"Cooldown.Dash"
+const Damage_Amount: StringName = &"Damage.Amount"
+const State_Invulnerable: StringName = &"State.Invulnerable"
