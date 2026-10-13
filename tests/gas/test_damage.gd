@@ -25,6 +25,12 @@ func test_overrides_set_health_and_max_health() -> void:
 	assert_almost_eq(ActorFixture.asc_of(actor).get_attribute("max_health").current_value, 50.0)
 
 
+func test_overrides_above_default_max_health_apply_to_both() -> void:
+	var actor := ActorFixture.bare_actor(self, _stats(150.0))
+	assert_almost_eq(_health(actor), 150.0)
+	assert_almost_eq(ActorFixture.asc_of(actor).get_attribute("max_health").current_value, 150.0)
+
+
 func test_health_is_clamped_to_max_health() -> void:
 	var actor := ActorFixture.bare_actor(self, _stats(50.0))
 	var overrides: Dictionary[String, float] = {"health": 80.0}
