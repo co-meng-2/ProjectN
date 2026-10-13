@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="EventDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/event_def.gd" id="1_def"]
+[ext_resource type="Script" path="res://src/defs/reward_def.gd" id="2_reward"]
+[ext_resource type="PackedScene" path="res://src/events/statue_event.tscn" id="3_scene"]
+
+[sub_resource type="Resource" id="Resource_reward"]
+script = ExtResource("2_reward")
+gold = 150
+stone = 2
+tickets = 1
+
+[resource]
+script = ExtResource("1_def")
+id = &"statues"
+display_name = "Destroy the Statues"
+controller_scene = ExtResource("3_scene")
+time_limit = 25.0
+reward = SubResource("Resource_reward")

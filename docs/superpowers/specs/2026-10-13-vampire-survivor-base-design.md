@@ -46,7 +46,7 @@ Verified against plugin source (spot-checked 2026-10-13: ASC lookup by child nam
 - `ability_level` / scaling curves for numbers-per-grade.
 
 **Do not use GAS for**
-- Wave/spawn scheduling, stage events, boss sequencing, enemy movement/AI.
+- Wave/spawn scheduling, stage events (controllers; the things they place are GAS actors/effects), boss sequencing (`BossBrain` is plain code; its patterns are abilities), enemy movement/AI.
 - Projectiles (no ASC; a projectile carries a spec + instigator).
 - Wallet/loot, ability grade/promotion/reroll identity switching (Loadout concern), UI, save data.
 - GAS cues for high-churn enemy hit/death FX (cues are reparented under the target and die with it); use the stage `FxSpawner`. GAS cues only for persistent player-attached effects.
@@ -74,18 +74,18 @@ res://
 │  ├─ core/        pure logic: run_rng, timeline, wallet, grade, price, physics_layers, groups, input_actions, anim_names, spawn_geometry
 │  ├─ defs/        Resource classes: enemy_def, wave_schedule, wave_entry, stage_def, drop_table, drop_entry, drop_roll,
 │  │               visual_def, animation_strip, stat_block, projectile_def, player_profile, run_result; ability_def, grade_table [P2];
-│  │               [P3] event_def, reward_def, boss_def, boss_pattern_def
+│  │               [P3] event_def, reward_def, event_schedule, boss_def, boss_pattern_def
 │  ├─ gas/         attributes/{vitals,combat,economy}_attribute_set, executions/damage_execution, cues/, effect_builder
 │  ├─ components/  health, hurtbox, hitbox, effect_applier, mover, contact_damage, loot_dropper,
-│  │               lifetime, actor_visual, target_provider, actor_ability, ability_context
+│  │               lifetime, actor_visual, target_provider, actor_ability, ability_context; [P3] telegraph, area_strike, actor_body
 │  ├─ actors/      player/ (arrow_ability, dash_ability), enemy/, building/, projectile/, pickup/ (incl. loot_collector),
 │  │               [P3] statue/, boss/
 │  ├─ stage/       stage, arena, run_state, stage_clock, stage_flow, spawn_director, wave_director, enemy_factory,
-│  │               loot_director; [P3] fx_spawner, event_director, stage_event, boss_director
+│  │               loot_director; [P3] stage_event, event_context, event_director, boss_director
 │  ├─ abilities/   ability_slot, loadout, ability_pool, grade_result, grade_service, ability_installer, periodic_ability, volley/, blade_sweep/, bounty/ [P2]
-│  ├─ events/      [P3] statue_event, meteor_event (extend stage/stage_event)
-│  ├─ boss/        [P3] boss_pattern, pattern_runner, patterns/
-│  ├─ ui/          hud/ (health, building health, wallet, timeline bar, ability_bar, ability_slot_view [P2]), [P4] menus/, widgets/
+│  ├─ events/      [P3] statue_event, meteor_event, elite_event (extend stage/stage_event)
+│  ├─ boss/        [P3] boss_brain, patterns/ (boss_pattern, charge, radial_burst, summon, ground_slam)
+│  ├─ ui/          hud/ (health, building health, wallet, timeline bar, ability_bar, ability_slot_view [P2]; event_banner, objective_arrows, boss_bar [P3]), [P4] menus/, widgets/
 │  ├─ app/         main (entry scene: instantiates Stage and Hud, binds Hud to the stage models, restart on R); [P4] scene_router (autoload), settings
 │  └─ meta/        [P4] save_service (autoload), save_data, hub/, skill_tree/
 └─ tests/          mirrors src/ (core, defs, gas, components, actors, stage, ui, data) plus support/; in-repo runner `run_tests.tscn`
@@ -98,7 +98,7 @@ Scenes live next to their scripts with the same basename. `[Pn]` = built in phas
 |---|---|---|---|
 | `core/RunRng` | Seeded RNG for the run | `pick`, `weighted`, `randf`, `randi_range` | — |
 | `core/Timeline` | Schedule math over times | `next_after(t)`, `progress(t)` | — |
-| `core/Wallet` | Gold/stone balances | `changed(gold, stone)`, `add`, `try_spend` | — |
+| `core/Wallet` | Gold/stone/ticket balances | `changed(gold, stone, tickets)`, `add`, `try_spend`, `Kind.TICKET` | — |
 | `core/*` consts | Named physics layers, groups, input actions | consts | — |
 | `defs/*` | Typed static tuning data | `@export` fields | GAS Resources |
 | `gas/attributes/*` | Attribute sets + clamps | `var x: AttributeData`, `pre_attribute_change` | addons |
@@ -111,12 +111,12 @@ Scenes live next to their scripts with the same basename. `[Pn]` = built in phas
 | `components/ContactDamage` | Periodic damage to overlapped hurtboxes | `@export effect/interval` | Hitbox, EffectApplier |
 | `components/LootDropper` | Roll drops on death | `drop_requested(roll, position)` | Health, defs |
 | `actors/pickup/LootCollector` | Magnet + pickup | `collected(kind, amount)` | Pickup |
-| `components/ActorAbility` / `AbilityContext` | Base for hand-placed player abilities / the dependencies injected into them (actor, mover, targets, projectile layer, wallet) | `bind_context(ctx)` | Mover, TargetProvider |
+| `components/ActorAbility` / `AbilityContext` | Base for hand-placed actor abilities / the dependencies injected into them (actor, mover, targets, projectile layer, wallet, summon) | `bind_context(ctx)` | Mover, TargetProvider |
 | `components/ActorVisual` | Bind `VisualDef` to AnimatedSprite2D | `apply(def, scale, tint)`, `set_moving`, `face`, `play_once`, `flash_hit` | defs |
 | `components/Lifetime` | Free after time | `@export seconds` | — |
 | `actors/*` | Thin scenes assembled from components | `died`, `asc`, `health`; `Player.ability_context/grant_ability/revoke_ability` | components, defs, gas |
 | `stage/RunState` | Per-run mutable state (rng, wallet, clock, profile, stats) → `RunResult` | `to_result()` | core, defs |
-| `stage/StageClock` | Elapsed time, pause, end | `ticked(t)`, `ended` | — |
+| `stage/StageClock` | Elapsed time, pause, end; keeps ticking after `ended` (overtime) | `ticked(t)`, `ended` | — |
 | `stage/StageFlow` | Enum states PREP/RUNNING/BOSS/CLEARED/FAILED, transitions only | `state_changed(s)` | — |
 | `components/TargetProvider` | "What should this enemy attack" / nearest enemy for the arrow | `target_for(policy)`, `nearest_enemy(origin, range)` | groups |
 | `stage/LootDirector` | Turns `drop_requested` into pickups in the world (deferred add), scaled by `drop_multiplier` | `drop_requested` wiring, `drop_multiplier` | actors, defs |
@@ -130,18 +130,29 @@ Scenes live next to their scripts with the same basename. `[Pn]` = built in phas
 | `abilities/AbilityInstaller` | Mirror slots onto the player's ASC (effect handles / granted abilities) | `bind(loadout, player)`, `validate_defs(defs)` | Loadout, Player |
 | `abilities/PeriodicAbility` / `MeleeStrike` | Cooldown-curve base for attack abilities / radial hit | `step(delta)`, `start_cooldown()` / `strike(...)` | components |
 | `ui/hud/AbilityBar` | Six slot views; emits requests only | `bind(loadout, wallet, service)`, `promote_requested`, `reroll_requested` | signals only |
-| `stage/Stage` | Composition root; exposes `player`, `building`, `run_state`, `clock`, `waves`; enemy and wave spawn rings are centred on the building | `start(StageDef, PlayerProfile)`, `finished(RunResult)`, `loadout`, `grade_service`; sends `Event.Kill` to the player's ASC | all below it |
+| `defs/EventDef` / `RewardDef` / `EventSchedule` | One event (controller scene, time limit, reward) / gold+stone+tickets / seeded event times and pool | `roll_times`, `roll_defs`, `validate_against` | defs |
+| `defs/BossDef` / `BossPatternDef` | The boss actor data, pattern order and gap / one pattern (ability scene + weight) | `validate()` | defs |
+| `components/Telegraph` / `AreaStrike` | Visual warning circle/line / short-lived circular hit (`MeleeStrike` is one) | `show_circle/show_line`, `elapsed` / `strike(..., target_mask, only_actor)`, `struck` | components |
+| `components/ActorBody` | Shape sizing, contact wiring and death sequence shared by `Enemy` and `Boss` | `size_shapes`, `wire_contact`, `die` | components |
+| `actors/statue/Statue`, `actors/boss/Boss` | Destructible event target / the boss | `setup(...)`, `destroyed` / `setup(def, target, targets, projectile_layer, summon)`, `patterns()`, `is_casting()` | components |
+| `stage/StageEvent` / `EventContext` / `EventDirector` | Event controller base / its injected dependencies / rolls times, runs one event at a time | `event_started/progressed/ended`, `event_times()`, `abort_running()`, `validate_defs` | defs, actors |
+| `stage/BossDirector` | Switches to BOSS at time-up, spawns the boss | `appear()`, `boss_appeared`, `boss_defeated`, `validate_def` | actors |
+| `boss/BossBrain` / `boss/patterns/BossPattern` | Picks the next pattern by tag (SEQUENCE/RANDOM, gap) / abstract boss `ActorAbility` | `attach_to`, `validate_def` / `_begin/_advance/_complete/_abort` | components |
+| `ui/hud/EventBanner` / `ObjectiveArrows` / `BossBar` | Event name/progress/timer and result / edge arrows to off-screen objectives / boss health | `show_event`, `show_progress`, `show_result` / `track`, `refresh` / `show_boss` | signals only |
+| `stage/Stage` | Composition root; exposes `player`, `building`, `run_state`, `clock`, `waves`; enemy and wave spawn rings are centred on the building | `start(StageDef, PlayerProfile)`, `finished(RunResult)`, `loadout`, `grade_service`, `events`, `boss_appeared`, `flow_state()`, `current_boss()`; sends `Event.Kill` to the player's ASC | all below it |
 | `ui/Hud` | View only, binds to models (bound by `Main`, not `Stage`) | `bind(...)` | signals only |
 
 ### 3.3 Decisions
 
 - **Autoloads:** none of ours in Phase 1 (only the plugin's `GameplayCueManager`). Phase 4 adds exactly `SceneRouter` and `SaveService`. No global game-state singleton; `RunState` dies with the stage.
 - **Events:** no global event bus. Direct typed past-tense signals wired in `Stage._wire()`, which is the readable map of the game.
-- **Data vs code:** all content as `.tres` in `data/` using typed `defs/` classes; behaviors referenced from data (`EnemyDef.scene`, `AbilityDef.ability_scene`, `EventDef.controller_scene`, `BossPatternDef.script`).
+- **Data vs code:** all content as `.tres` in `data/` using typed `defs/` classes; behaviors referenced from data (`EnemyDef.scene`, `AbilityDef.ability_scene`, `EventDef.controller_scene`, `BossPatternDef.ability_scene`).
 - **Composition over inheritance:** no actor class hierarchy.
 - **UI/model separation:** UI reads models via `bind()` and signals; models never import `ui/`.
 - **Save seam:** `Stage.start(StageDef, PlayerProfile)` → `finished(RunResult)`. Phase 1 uses a default profile and logs the result; Phase 4's `SaveData` is the persisted side of `PlayerProfile` + unlocks.
 - **Asset seams:** `VisualDef` (`AnimationStrip`s built into `SpriteFrames` via `sprite_frames()`, offsets, anim names), `ProjectileDef`, `StageDef.ground_texture` (a repeated `Sprite2D` in `Arena`; a tileset/map scene is deferred). Swapping art touches only `data/` and `assets/`.
+
+- **Where GAS belongs:** an ability is an action an actor with an ASC performs (triggered by input, an AI brain or a gameplay event; constrained by tags/cooldowns); an effect is a state change applied to an actor; stage progression is plain stage code. Boss patterns are abilities driven by `BossBrain`; events are controllers placing GAS actors/effects.
 
 **Considered and rejected:** global EventBus, generic FSM library (StageFlow is an enum; boss patterns are coroutines), ECS, a `Health` that stores HP (duplicates the GAS attribute), pooling now (seam kept in `EnemyFactory`), service locator, input-manager autoload, resource registry/loader, "GameManager" singleton, localization, networking, audio module (`FxSpawner`, Phase 3, is where audio would attach later).
 
@@ -156,7 +167,7 @@ Layers (a module may import only layers below it; upward communication = signals
 3 gas/                             8 app/  meta/   (only layer allowed to touch autoloads)
 4 components/
 ```
-- `stage/Stage` (composition root) may reference `abilities/`; no other `stage/` file may.
+- `stage/Stage` (composition root) may reference `abilities/` and `boss/`; no other `stage/` file may.
 - No `get_node("/root/...")`. `get_parent()` casts only inside components to reach their actor root (documented).
 - Groups only via `Groups` consts, only for physics/targeting queries.
 - `stage/` never imports `events/` or `boss/` scripts; it instantiates `PackedScene`/`Script` fields from defs.
@@ -172,7 +183,7 @@ Layers (a module may import only layers below it; upward communication = signals
 
 **Phase 2 — Ability system (built):** `Grade`, `Price`, `AbilityDef` (passive INFINITE effect and/or ability scene, curves over grade level), `GradeTable`; `Loadout`/`AbilitySlot`, `AbilityPool`, `GradeService` (atomic promote/reveal/reroll over Wallet + RunRng, `GradeResult` outcomes), `AbilityInstaller` (handles per slot; `validate_defs` run by `Stage.start`); `Player.grant_ability/revoke_ability`; `Event.Kill` sent by `Stage`; HUD `AbilityBar` bound by `Main`. Abilities: Prospector, Swift Boots, Vitality, Might (passives), Volley, Blade Sweep (`PeriodicAbility` scenes, tag `Ability.Sweep`), Bounty (on-kill hybrid). Prices 100/150/250/400/600 gold, reveal 10 stone, reroll 2 stone; 200 start gold; `drop_multiplier` 10000 in `stage_01` for prototyping.
 
-**Phase 3 — Events + boss:** `EventDef`, `RewardDef`, `BossDef`, `BossPatternDef`; `EventDirector`, `StageEvent` base, `BossDirector`; statue and meteor events; boss actor and `PatternRunner`. `StageFlow` gains BOSS handling; `WaveDirector` unchanged.
+**Phase 3 — Events + boss (built):** `EventDef`, `RewardDef`, `EventSchedule` (seeded 1-second-grid times with gap/clearance feasibility), `BossDef`, `BossPatternDef`; `StageEvent` + `EventContext` + `EventDirector` (one event at a time, rewards on success), `BossDirector`; `StageClock` overtime; `Telegraph`, `AreaStrike` (Blade Sweep's `MeleeStrike` is one); events statues, meteors, elites; the `Boss` actor, `BossBrain` and four `BossPattern` abilities (charge, radial burst, summon, ground slam); promotion tickets in the wallet and shop; HUD event marks, banner, objective arrows, boss bar. Content: three events (stage_01: 3 per run, 20–155 s) and the Orc Warlord.
 
 **Phase 4 — Meta:** `SceneRouter`, `SaveService` + versioned `SaveData`, hub, stage select/unlock, gem skill tree (modifies `PlayerProfile` → initial overrides/effects), menus, settings (volume etc.). `Stage` unchanged.
 
@@ -208,3 +219,20 @@ Layers (a module may import only layers below it; upward communication = signals
 - Rerolling a one-ability pool returns the same ability and still charges.
 - Icons in `assets/art/icons` are generated placeholders (the 128x128 ones opaque); swap for the real art library.
 - Selling/removing abilities is out of scope.
+
+## 9. Phase 3 notes
+
+**Acceptance (in-editor, godot-ai, partial; throwaway data tweaks were reverted and never committed):**
+- Verified automatically: the main scene started with the shipped data and no game-log errors; the screenshot showed the timeline with five wave diamonds and three green event circles (none on a diamond) and the wallet `Gold 200   Stone 0   Ticket 0`.
+- Verified with a temporary 1-event / 3-10 s window: the event banner appeared top right (`Destroy the Statues`, `Statues 0/4`, countdown) and yellow arrows pointed at off-screen statues; game log clean. The result line (`Failed`/`Success`) was not captured.
+- Verified with a temporary 6 s duration and compressed waves: at time-up the timeline showed `BOSS`, the `Orc Warlord` bar appeared and a large dark orc arrived near the soldier; game log clean.
+- Unattended runs ended in GAME OVER before 180 s (the soldier does not move), so the real 180 s timing, event success/fail results and rewards, tickets in the shop, the meteor and elite events, the boss patterns, the boss kill (STAGE CLEARED), restart and frame rate were NOT verified automatically. They are left to the owner's manual play (checklist: Phase 3 plan, Task 16 Step 4).
+
+**Known follow-ups:**
+- `fx_spawner` (hit/death FX) is still not built.
+- Boss bolts also hit the building (ALLY team).
+- Elites stay in the fight when their event fails or is aborted.
+- With validated data no event can still run at 180 s (`window_end` + longest limit <= duration); the boss's abort and the overlap queue remain safety nets only.
+- Statues draw auto-aim away from nearby enemies.
+- `drop_multiplier` 10000 makes event gold/stone irrelevant while prototyping; tickets still matter.
+- The Phase 2 pre-heal follow-ups stay open (no heal source yet).

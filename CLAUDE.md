@@ -14,10 +14,13 @@ Design: `docs/superpowers/specs/2026-10-13-vampire-survivor-base-design.md`. Pla
 ## Architecture rules
 - Layers (a file may only use layers below it): `core → defs → gas → components → actors → stage/abilities/boss → ui → app/meta`
   (`stage`, `abilities`, `boss` are siblings; `events/` extends `stage/`).
-  Upward communication is signals only. `stage/Stage` (composition root) may reference `abilities/`; no other
-  `stage/` file may. `Stage` is the composition root and wires everything.
-  It does not know the HUD: `Main` (`src/app/main.gd`) instantiates Stage and Hud and calls
-  `Hud.bind(player_health, building_health, wallet, clock, timeline)`.
+  Upward communication is signals only. `Stage` is the composition root and wires everything; it may reference
+  `abilities/` and `boss/` (attaches `BossBrain`, runs `BossBrain.validate_def`), no other `stage/` file may, and
+  `stage/` never imports `events/` or `boss/` scripts - it instantiates the scenes named by defs.
+  It does not know the HUD: `Main` (`src/app/main.gd`) instantiates Stage and Hud, calls
+  `Hud.bind(player_health, building_health, wallet, clock, timeline, event_times)` and connects `Stage.events`
+  (`event_started`/`event_progressed`/`event_ended`) and `Stage.boss_appeared` to
+  `Hud.show_event`/`show_event_progress`/`show_event_result`/`show_boss`.
 - Components never find their neighbours: actors inject dependencies via `bind(...)`.
 - All content is `.tres` in `data/`, typed by `src/defs/`; no balance numbers in code.
 - Damage always flows through `EffectBuilder.damage` -> GAS `GameplayEffect`. Never edit `addons/` (vendored plugins).
@@ -40,12 +43,42 @@ Design: `docs/superpowers/specs/2026-10-13-vampire-survivor-base-design.md`. Pla
 - Attack cooldowns live in `PeriodicAbility` (a curve + `step(delta)`), not in GAS cooldown effects; a
   promoted/rerolled attack starts with a fresh cooldown.
 
+- Where GAS belongs: an *ability* is an action an actor performs (triggered by its controller: input, AI brain,
+  gameplay event; constrained by tags/cooldowns); an *effect* is a state change applied to an actor; *stage code*
+  is progression (waves, events, boss timing). So boss patterns are `BossPattern` (`ActorAbility`) scenes owning
+  `State.Casting`, activated by tag from a `BossBrain`; events are `StageEvent` controllers that place GAS
+  actors/effects (`Statue`, `AreaStrike`) and watch them.
+- Events: `EventDirector` rolls `StageDef.events` (`EventSchedule`) once from `RunRng` on a 1-second grid and runs one
+  `StageEvent` at a time under `World/Events`; success credits the `RewardDef` (gold, stone, tickets) in `Stage`.
+  `StageClock` keeps ticking after `ended` (overtime); with a `StageDef.boss`, `BossDirector` switches to BOSS,
+  aborts a running event and spawns the boss, whose death clears the stage. `EventSchedule.validate_against` requires
+  `window_end + longest time_limit <= duration` (stage_01: window 20-155 s).
+- A held promotion ticket pays any applicable shop action (`GradeService` prices it as `Price(TICKET, 1)` first).
+- Bad scene roots fail at `Stage.start`: `EventDirector.validate_defs` (StageEvent), `BossDirector.validate_def`
+  (Boss), and each controller/pattern `validate()` checks the root type of scenes it instantiates.
+- `ActorBody` (components) holds the shape sizing / contact wiring / death sequence shared by `Enemy` and `Boss`.
+  Cancelling a dash goes through `Mover.cancel_dash`.
+
 ## Adding an enemy (data only)
 1. Duplicate `data/enemies/orc.tres`; change `id`, stats, tint/scale, contact values, `target_policy`.
    `visual` and `drops` point at the orc's shared `.tres` files unless you point them at new ones.
 2. Add it to `StageDef.trickle_enemies` or a `WaveEntry`; `StageDef.validate()` then validates it (checked by
    `test_stage_01_validates`). `tests/data/test_game_data.gd` uses hard-coded lists, so also add the file to `DATA_FILES`
    and to the list in `test_enemy_defs_use_the_generic_enemy_scene` if it should be covered when no stage references it.
+
+## Adding an event (scene + data)
+1. A scene whose root script extends `StageEvent` (`src/events/`): numbers as exported values, `validate()` on the
+   root, placed objects as its children, `objectives()` for HUD arrows, `report_progress(text)`, `_succeed()`/`_fail()`;
+   override `_on_time_up()` if surviving is the goal.
+2. Add an `EventDef` in `data/events/` (id, name, `controller_scene`, `time_limit`, `RewardDef`) and put it in the
+   `EventSchedule.pool` (`data/events/stage_01_events.tres`); `min_gap` must cover the longest time limit.
+   Add the file to `DATA_FILES` in `tests/data/test_game_data.gd`.
+
+## Adding a boss pattern
+1. A scene whose root extends `BossPattern` (`src/boss/patterns/`): a unique `Ability.Boss.<Word>` tag (add it to
+   `TAGS` in `tools/sync_tags.gd`), `activation_owned_tags = [State.Casting]`, exported numbers,
+   `_begin()`/`_advance()`/`_complete()`/`_abort()`, damage through `AreaStrike`/`Projectile` (boss ASC as source).
+2. Add a `BossPatternDef` (scene + weight) to the boss's `patterns` in `data/bosses/`.
 
 ## Adding an ability (data only)
 1. Duplicate a file in `data/abilities/` (`vitality.tres` for a passive, `volley.tres` for an attack): set `id`,
