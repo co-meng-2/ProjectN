@@ -68,8 +68,10 @@ func _on_enemy_spawned(enemy: Enemy) -> void:
 	enemy.died.connect(_on_enemy_died)
 
 
-func _on_enemy_died(_enemy: Enemy) -> void:
+## Every kill is also a gameplay event on the player's ASC, so on-kill abilities react through GAS.
+func _on_enemy_died(enemy: Enemy) -> void:
 	run_state.kills += 1
+	player.asc.send_gameplay_event(GameplayTags.Event_Kill, enemy)
 
 
 func _finish(outcome: RunResult.Outcome) -> void:

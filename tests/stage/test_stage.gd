@@ -140,3 +140,19 @@ func test_second_start_is_rejected_and_does_not_double_wire() -> void:
 	assert_true(stage.run_state == first_state, "run state untouched by the rejected start")
 	stage.clock.ended.emit()
 	assert_eq(results.size(), 1)
+
+
+func test_every_enemy_death_sends_event_kill_to_the_player() -> void:
+	var results: Array = []
+	var stage := _running_stage(30.0, results)
+	var events: Array = []
+	stage.player.asc.gameplay_event_received.connect(func(tag: StringName, payload: Variant) -> void: events.append([tag, payload]))
+	await wait_seconds(0.9)
+	var victims := host.get_tree().get_nodes_in_group(Groups.ENEMIES)
+	assert_true(victims.size() > 0)
+	for victim in victims:
+		_kill(stage, victim.get_node("AbilitySystemComponent"))
+	assert_eq(events.size(), victims.size())
+	assert_eq(events[0][0], GameplayTags.Event_Kill)
+	assert_true(events[0][1] is Enemy, "payload is the dead enemy")
+	assert_eq(stage.run_state.kills, victims.size())

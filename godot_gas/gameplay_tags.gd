@@ -10,8 +10,12 @@
 class_name GameplayTags
 
 const Ability_Arrow: StringName = &"Ability.Arrow"
+const Ability_Bounty: StringName = &"Ability.Bounty"
 const Ability_Dash: StringName = &"Ability.Dash"
+const Ability_Sweep: StringName = &"Ability.Sweep"
+const Ability_Volley: StringName = &"Ability.Volley"
 const Cooldown_Arrow: StringName = &"Cooldown.Arrow"
 const Cooldown_Dash: StringName = &"Cooldown.Dash"
 const Damage_Amount: StringName = &"Damage.Amount"
+const Event_Kill: StringName = &"Event.Kill"
 const State_Invulnerable: StringName = &"State.Invulnerable"
