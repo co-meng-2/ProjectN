@@ -14,9 +14,9 @@ Design: `docs/superpowers/specs/2026-10-13-vampire-survivor-base-design.md`. Pla
 ## Architecture rules
 - Layers (a file may only use layers below it): `core → defs → gas → components → actors → stage/abilities/boss → ui → app/meta`
   (`stage`, `abilities`, `boss` are siblings; `events/` extends `stage/`).
-  Upward communication is signals only. `Stage` is the composition root and wires everything; it may reference
-  `abilities/` and `boss/` (attaches `BossBrain`, runs `BossBrain.validate_def`), no other `stage/` file may, and
-  `stage/` never imports `events/` or `boss/` scripts - it instantiates the scenes named by defs.
+  Upward communication is signals only. `Stage` is the composition root and wires everything.
+  `stage/` never imports `events/` scripts (it instantiates event scenes from defs); only `Stage` may reference
+  `abilities/` and `boss/` (`BossBrain.attach_to` / `validate_def`).
   It does not know the HUD: `Main` (`src/app/main.gd`) instantiates Stage and Hud, calls
   `Hud.bind(player_health, building_health, wallet, clock, timeline, event_times)` and connects `Stage.events`
   (`event_started`/`event_progressed`/`event_ended`) and `Stage.boss_appeared` to
@@ -42,7 +42,6 @@ Design: `docs/superpowers/specs/2026-10-13-vampire-survivor-base-design.md`. Pla
   camel-case segments like `Ability.BladeSweep`.
 - Attack cooldowns live in `PeriodicAbility` (a curve + `step(delta)`), not in GAS cooldown effects; a
   promoted/rerolled attack starts with a fresh cooldown.
-
 - Where GAS belongs: an *ability* is an action an actor performs (triggered by its controller: input, AI brain,
   gameplay event; constrained by tags/cooldowns); an *effect* is a state change applied to an actor; *stage code*
   is progression (waves, events, boss timing). So boss patterns are `BossPattern` (`ActorAbility`) scenes owning
@@ -57,7 +56,6 @@ Design: `docs/superpowers/specs/2026-10-13-vampire-survivor-base-design.md`. Pla
 - Bad scene roots fail at `Stage.start`: `EventDirector.validate_defs` (StageEvent), `BossDirector.validate_def`
   (Boss), and each controller/pattern `validate()` checks the root type of scenes it instantiates.
 - `ActorBody` (components) holds the shape sizing / contact wiring / death sequence shared by `Enemy` and `Boss`.
-  Cancelling a dash goes through `Mover.cancel_dash`.
 
 ## Adding an enemy (data only)
 1. Duplicate `data/enemies/orc.tres`; change `id`, stats, tint/scale, contact values, `target_policy`.

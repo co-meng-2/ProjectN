@@ -227,9 +227,10 @@ Decisions and deviations from the sections above:
 - Scene-root checks fail at `Stage.start`: `EventDirector.validate_defs` (controller root is a `StageEvent`; defs cannot name stage classes), `BossDirector.validate_def` (boss scene root is `Boss`), `BossBrain.validate_def` (patterns are `ActorAbility`), and each controller/pattern `validate()` checks the root of the scenes it instantiates (`Statue`, `AreaStrike`, `Projectile`).
 - Events get a dedicated `World/Events` layer.
 - An event whose time is crossed while another runs waits and starts when the running one ends (deferred). With validated data (`min_gap` >= longest limit) this queue never triggers: it is a safety net. `abort_running()` emits `event_ended(def, false)` and drops waiting events; an abort from an `event_started` listener never begins the event.
-- Controller ruling: `EventSchedule.validate_against` rejects `window_end + longest time_limit > duration`; stage_01's window is therefore 20-155 s instead of section 3's 20-160 s (allowed seconds end at 144 because of the 150 s wave clearance; 144 + 25 = 169 < 180).
+- Controller ruling: `EventSchedule.validate_against` rejects `window_end + longest time_limit > duration`; stage_01 uses a 20-155 s window (allowed seconds end at 144 because of the 150 s wave clearance; 144 + 25 = 169 < 180).
 - Elites are ordinary enemies once spawned and stay in the fight on abort and on time-up (deviation: they are not despawned).
 - Meteors count only landed hits: a dash's invulnerability dodges the strike, so `Hits k/3` counts real hits.
+- `Telegraph` has static spawn helpers (`spawn_circle`, `spawn_line`) used by the meteor, charge and slam code instead of repeated spawn code.
 - `AreaStrike` filters by actor (`only_actor`, compared to `Hurtbox.actor`), not by hurtbox.
 - `Mover.cancel_dash` stops a charge dash when the pattern aborts; `ActorBody` (components) is the helper shared by `Enemy` and `Boss` for shape sizing, contact wiring and the death sequence.
 - A ticket price shows as `1T` on the slot label; the first meteor drops one `interval` after the event begins.

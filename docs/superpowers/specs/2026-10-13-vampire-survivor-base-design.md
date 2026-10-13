@@ -49,7 +49,7 @@ Verified against plugin source (spot-checked 2026-10-13: ASC lookup by child nam
 - Wave/spawn scheduling, stage events (controllers; the things they place are GAS actors/effects), boss sequencing (`BossBrain` is plain code; its patterns are abilities), enemy movement/AI.
 - Projectiles (no ASC; a projectile carries a spec + instigator).
 - Wallet/loot, ability grade/promotion/reroll identity switching (Loadout concern), UI, save data.
-- GAS cues for high-churn enemy hit/death FX (cues are reparented under the target and die with it); use the stage `FxSpawner`. GAS cues only for persistent player-attached effects.
+- GAS cues for high-churn enemy hit/death FX (cues are reparented under the target and die with it); use the stage `FxSpawner` (deferred: not built in Phase 3). GAS cues only for persistent player-attached effects.
 - `INSTANCED_PER_EXECUTION`; the dashboard attribute-set generator (sets are hand-written, ~20 lines each); `grant_ability_from_script` (double `ability_granted` emission — use `grant_ability(node)`).
 
 **Plugin conventions that constrain us**
@@ -154,7 +154,7 @@ Scenes live next to their scripts with the same basename. `[Pn]` = built in phas
 
 - **Where GAS belongs:** an ability is an action an actor with an ASC performs (triggered by input, an AI brain or a gameplay event; constrained by tags/cooldowns); an effect is a state change applied to an actor; stage progression is plain stage code. Boss patterns are abilities driven by `BossBrain`; events are controllers placing GAS actors/effects.
 
-**Considered and rejected:** global EventBus, generic FSM library (StageFlow is an enum; boss patterns are coroutines), ECS, a `Health` that stores HP (duplicates the GAS attribute), pooling now (seam kept in `EnemyFactory`), service locator, input-manager autoload, resource registry/loader, "GameManager" singleton, localization, networking, audio module (`FxSpawner`, Phase 3, is where audio would attach later).
+**Considered and rejected:** global EventBus, generic FSM library (StageFlow is an enum; boss patterns are coroutines), ECS, a `Health` that stores HP (duplicates the GAS attribute), pooling now (seam kept in `EnemyFactory`), service locator, input-manager autoload, resource registry/loader, "GameManager" singleton, localization, networking, audio module (`FxSpawner`, deferred past Phase 3, is where audio would attach later).
 
 ### 3.4 Dependency rules and conventions
 
@@ -167,10 +167,9 @@ Layers (a module may import only layers below it; upward communication = signals
 3 gas/                             8 app/  meta/   (only layer allowed to touch autoloads)
 4 components/
 ```
-- `stage/Stage` (composition root) may reference `abilities/` and `boss/`; no other `stage/` file may.
+- `stage/` never imports `events/` scripts (it instantiates event scenes from defs); only `Stage` (composition root) may reference `abilities/` and `boss/` (`BossBrain.attach_to` / `validate_def`).
 - No `get_node("/root/...")`. `get_parent()` casts only inside components to reach their actor root (documented).
 - Groups only via `Groups` consts, only for physics/targeting queries.
-- `stage/` never imports `events/` or `boss/` scripts; it instantiates `PackedScene`/`Script` fields from defs.
 - Typed GDScript everywhere (`var x: T`, `-> T`); `class_name` on any script referenced by another script or def; `snake_case.gd` files ↔ `PascalCase` classes.
 - Signals are past-tense events with typed args (`wave_started(entry: WaveEntry)`, `died`).
 - Member order: signals, `@export`, vars, `_ready`, public, private (`_prefixed`); constants `UPPER_SNAKE`; `#region` per concern.
@@ -224,9 +223,9 @@ Layers (a module may import only layers below it; upward communication = signals
 
 **Acceptance (in-editor, godot-ai, partial; throwaway data tweaks were reverted and never committed):**
 - Verified automatically: the main scene started with the shipped data and no game-log errors; the screenshot showed the timeline with five wave diamonds and three green event circles (none on a diamond) and the wallet `Gold 200   Stone 0   Ticket 0`.
-- Verified with a temporary 1-event / 3-10 s window: the event banner appeared top right (`Destroy the Statues`, `Statues 0/4`, countdown) and yellow arrows pointed at off-screen statues; game log clean. The result line (`Failed`/`Success`) was not captured.
-- Verified with a temporary 6 s duration and compressed waves: at time-up the timeline showed `BOSS`, the `Orc Warlord` bar appeared and a large dark orc arrived near the soldier; game log clean.
-- Unattended runs ended in GAME OVER before 180 s (the soldier does not move), so the real 180 s timing, event success/fail results and rewards, tickets in the shop, the meteor and elite events, the boss patterns, the boss kill (STAGE CLEARED), restart and frame rate were NOT verified automatically. They are left to the owner's manual play (checklist: Phase 3 plan, Task 16 Step 4).
+- Verified with a temporary 1-event / 3-10 s window: the event banner showed `Destroy the Statues`, `Statues 0/4` and a countdown, and yellow edge arrows were visible; game log clean. The result line (`Failed`/`Success`) was not captured.
+- Verified with a temporary 6 s duration and compressed waves: at time-up the timeline showed `BOSS`, the `Orc Warlord` bar appeared and a large dark orc was visible; game log clean.
+- Unattended runs ended in GAME OVER before 180 s (the run was unattended), so the real 180 s timing, event success/fail results and rewards, tickets in the shop, the meteor and elite events, the boss patterns, the boss kill (STAGE CLEARED), restart and frame rate were NOT verified automatically. They are left to the owner's manual play (checklist: Phase 3 plan, Task 16 Step 4).
 
 **Known follow-ups:**
 - `fx_spawner` (hit/death FX) is still not built.
