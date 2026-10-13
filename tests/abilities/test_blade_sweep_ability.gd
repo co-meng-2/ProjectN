@@ -29,16 +29,18 @@ func _strikes(layer: Node) -> Array[MeleeStrike]:
 func test_sweeps_only_when_an_enemy_is_within_the_level_radius() -> void:
 	var player := ActorFixture.player(self)
 	var layer := player.ability_context.projectile_layer
+	player.global_position = Vector2(100, 50)
 	var sweep := _sweep(player, 1.0)  # radius 40
-	var enemy := _enemy_at(Vector2(60, 0))
+	var enemy := _enemy_at(Vector2(160, 50))
 	sweep.step(0.1)
 	assert_true(_strikes(layer).is_empty(), "60 px is outside a 40 px sweep")
-	enemy.global_position = Vector2(30, 0)
+	enemy.global_position = Vector2(130, 50)
 	sweep.step(0.1)
 	var strikes := _strikes(layer)
 	assert_eq(strikes.size(), 1)
 	assert_almost_eq((strikes[0].get_node("Hitbox/CollisionShape2D").shape as CircleShape2D).radius, 40.0)
-	assert_almost_eq(strikes[0].global_position.x, player.global_position.x, 0.001, "centred on the player")
+	assert_almost_eq(strikes[0].global_position.x, 100.0, 0.001, "centred on the player")
+	assert_almost_eq(strikes[0].global_position.y, 50.0, 0.001, "centred on the player")
 
 
 func test_cooldown_follows_the_curve() -> void:
