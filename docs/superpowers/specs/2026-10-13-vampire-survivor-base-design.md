@@ -27,17 +27,18 @@ Each phase gets its own plan and implementation cycle. **This spec defines the w
 ### 1.3 Defaults assumed (owner may override at spec review)
 
 1. Shop (ability promote/reroll) is a pause overlay available at any time during a stage; only currency gates it.
-2. Arrow auto-fires at the nearest enemy in range; a manual-aim seam is kept.
+2. Arrow auto-fires at the nearest enemy in range; the manual-aim seam is deferred (the arrow always targets the nearest enemy).
 3. Boss death = stage CLEARED; building death at any time = FAILED.
 4. Abilities, gold and stone live only within a stage run; **gem** is the only persistent currency.
 5. Assets are **copied** from `D:\CM\Godot\res` into `res://assets/` (no external path dependency).
+6. Player death also ends the run as FAILED.
 
 ## 2. GodotGAS: where it is used and where it is not
 
 Verified against plugin source (spot-checked 2026-10-13: ASC lookup by child name `"AbilitySystemComponent"` at `ability_system_component.gd:691,731,752,966`; `cleanup()` `:219`; `grant_ability` `:279`; `apply_effect_spec_to_target` `:616`; `apply_gameplay_effect` `:633`; `initialize_attribute_overrides` `:588`; `INSTANCED_PER_ACTOR/EXECUTION` and `ability_level`, `cooldown_effect`, `activation_owned_tags` in `abilities/gameplay_ability.gd`; `GameplayExecutionCalculation.execute(spec, target_asc) -> Dictionary`).
 
 **Use GAS for**
-- Stats on player, enemy, building, statue: health, max_health, move_speed, attack, gold multiplier, cooldown reduction (attributes only change through effects).
+- Stats on player, enemy, building, statue: health, max_health, move_speed, attack, gold multiplier (attributes only change through effects; a `cooldown_reduction` attribute is not implemented yet).
 - One damage pipeline: every hit is a `GameplayEffect` spec applied via `apply_effect_spec_to_target`.
 - States as tags: `State.Invulnerable`, `State.Stunned`, `State.Slowed`.
 - Player active abilities: dash (cooldown effect + `activation_owned_tags = [State.Invulnerable]`), arrow shot (PER_ACTOR ability gated by cooldown). Damage effects carry an `application_query` ignoring `State.Invulnerable`.
@@ -67,26 +68,27 @@ Verified against plugin source (spot-checked 2026-10-13: ASC lookup by child nam
 res://
 ├─ addons/GodotGAS/            plugin (untouched)
 ├─ godot_gas/                  plugin-generated only (gameplay_tags.gd, registries)
-├─ assets/                     art/, fonts/, tiles/, SpriteFrames .tres
+├─ assets/                     art/, fonts/, tiles/ (sprites are described by `AnimationStrip` resources in `VisualDef` and built into `SpriteFrames` at runtime)
 ├─ data/                       .tres instances: stages/ waves/ enemies/ effects/ abilities/ events/ bosses/ characters/ drops/
 ├─ src/
-│  ├─ core/        pure logic: run_rng, timeline, wallet, physics_layers, groups, input_actions
-│  ├─ defs/        Resource classes: enemy_def, wave_schedule(+entry), stage_def, drop_table, visual_def,
-│  │               projectile_def, player_profile, run_result; [P2] ability_def, ability_pool, grade_table;
+│  ├─ core/        pure logic: run_rng, timeline, wallet, physics_layers, groups, input_actions, anim_names, spawn_geometry
+│  ├─ defs/        Resource classes: enemy_def, wave_schedule, wave_entry, stage_def, drop_table, drop_entry, drop_roll,
+│  │               visual_def, animation_strip, stat_block, projectile_def, player_profile, run_result; [P2] ability_def, ability_pool, grade_table;
 │  │               [P3] event_def, reward_def, boss_def, boss_pattern_def
 │  ├─ gas/         attributes/{vitals,combat,economy}_attribute_set, executions/damage_execution, cues/, effect_builder
 │  ├─ components/  health, hurtbox, hitbox, effect_applier, mover, contact_damage, loot_dropper,
-│  │               loot_collector, lifetime, actor_visual
-│  ├─ actors/      player/, enemy/, building/, projectile/, pickup/, [P3] statue/, boss/
-│  ├─ stage/       stage, run_state, stage_clock, stage_flow, spawn_director, wave_director, target_provider,
-│  │               fx_spawner, enemy_factory; [P3] event_director, stage_event, boss_director
+│  │               lifetime, actor_visual, target_provider, actor_ability, ability_context
+│  ├─ actors/      player/ (arrow_ability, dash_ability), enemy/, building/, projectile/, pickup/ (incl. loot_collector),
+│  │               [P3] statue/, boss/
+│  ├─ stage/       stage, arena, run_state, stage_clock, stage_flow, spawn_director, wave_director, enemy_factory,
+│  │               loot_director; [P3] fx_spawner, event_director, stage_event, boss_director
 │  ├─ abilities/   [P2] loadout, ability_slot, grade_service, ability_installer
 │  ├─ events/      [P3] statue_event, meteor_event (extend stage/stage_event)
 │  ├─ boss/        [P3] boss_pattern, pattern_runner, patterns/
 │  ├─ ui/          hud/ (health, building health, wallet, timeline bar), [P2] shop/, [P4] menus/, widgets/
-│  ├─ app/         main.tscn; [P4] scene_router (autoload), settings
+│  ├─ app/         main (entry scene: instantiates Stage and Hud, binds Hud to the stage models, restart on R); [P4] scene_router (autoload), settings
 │  └─ meta/        [P4] save_service (autoload), save_data, hub/, skill_tree/
-└─ tests/          logic tests for core/ and abilities/ (framework chosen in the plan)
+└─ tests/          mirrors src/ (core, defs, gas, components, actors, stage, ui, data) plus support/; in-repo runner `run_tests.tscn`
 ```
 Scenes live next to their scripts with the same basename. `[Pn]` = built in phase n.
 
@@ -103,24 +105,26 @@ Scenes live next to their scripts with the same basename. `[Pn]` = built in phas
 | `gas/DamageExecution` | Damage math (set-by-caller × attack × target mods) | `execute(spec, target_asc)` | addons |
 | `gas/EffectBuilder` | Build damage spec with context | `damage(instigator, causer, effect, amount, level)` | addons |
 | `components/Health` | Observes ASC `health`, emits domain events (UI/loot read this) | `changed(cur,max)`, `died` | ASC |
-| `components/Hurtbox` / `Hitbox` | Receive / detect hits (once per target per activation) | `hit_received(spec)` / `hurtbox_entered(hb)` | ASC |
-| `components/EffectApplier` | Apply spec to target through instigator ASC | `apply(spec, target_asc)` | ASC, EffectBuilder |
+| `components/Hurtbox` / `Hitbox` | Passive hurt area exposing its ASC and actor / detect hurtboxes (once per target per activation) | `bind(asc, actor)` / `hurtbox_entered(hb)` | ASC |
+| `components/EffectApplier` | Apply spec to target through instigator ASC | `bind(source_asc)`, `hit(hurtbox, effect, amount, causer)` | ASC, EffectBuilder |
 | `components/Mover` | Move at ASC `move_speed`; dash override | `set_direction`, `dash` | ASC |
 | `components/ContactDamage` | Periodic damage to overlapped hurtboxes | `@export effect/interval` | Hitbox, EffectApplier |
-| `components/LootDropper` / `LootCollector` | Roll drops on death / magnet + pickup | `drop_requested(...)` / `collected(kind, amount)` | Health, defs |
-| `components/ActorVisual` | Bind `VisualDef` to AnimatedSprite2D | `play(state)`, `face(dir)` | defs |
+| `components/LootDropper` | Roll drops on death | `drop_requested(roll, position)` | Health, defs |
+| `actors/pickup/LootCollector` | Magnet + pickup | `collected(kind, amount)` | Pickup |
+| `components/ActorAbility` / `AbilityContext` | Base for hand-placed player abilities / the dependencies injected into them (actor, mover, targets, projectile layer) | `bind_context(ctx)` | Mover, TargetProvider |
+| `components/ActorVisual` | Bind `VisualDef` to AnimatedSprite2D | `apply(def, scale, tint)`, `set_moving`, `face`, `play_once`, `flash_hit` | defs |
 | `components/Lifetime` | Free after time | `@export seconds` | — |
 | `actors/*` | Thin scenes assembled from components | `died`, `asc`, `health` | components, defs, gas |
 | `stage/RunState` | Per-run mutable state (rng, wallet, clock, profile, stats) → `RunResult` | `to_result()` | core, defs |
 | `stage/StageClock` | Elapsed time, pause, end | `ticked(t)`, `ended` | — |
 | `stage/StageFlow` | Enum states PREP/RUNNING/BOSS/CLEARED/FAILED, transitions only | `state_changed(s)` | — |
-| `stage/TargetProvider` | "What should this enemy attack" | `get_target(policy)` | — |
+| `components/TargetProvider` | "What should this enemy attack" / nearest enemy for the arrow | `target_for(policy)`, `nearest_enemy(origin, range)` | groups |
+| `stage/LootDirector` | Turns `drop_requested` into pickups in the world (deferred add) | `drop_requested` wiring | actors, defs |
 | `stage/EnemyFactory` | Build enemy from `EnemyDef`, apply attribute overrides; pooling seam | `spawn(def, pos)` | actors, defs |
-| `stage/SpawnDirector` | Gentle trickle with caps | `start/stop`, `spawned` | EnemyFactory, RunRng |
-| `stage/WaveDirector` | Drive `WaveSchedule` against clock; expose timeline | `wave_started(entry)`, `schedule` | Timeline, EnemyFactory |
-| `stage/FxSpawner` | One-shot world FX | `spawn(fx_id, pos)` | — |
-| `stage/Stage` | Composition root | `start(StageDef, PlayerProfile)`, `finished(RunResult)` | all below it |
-| `ui/Hud` | View only, binds to models | `bind(...)` | signals only |
+| `stage/SpawnDirector` | Gentle trickle with caps | `bind(...)`, `current_interval(elapsed)` | EnemyFactory, RunRng |
+| `stage/WaveDirector` | Drive `WaveSchedule` against clock; expose timeline | `bind(...)`, `timeline`, `mark_times()`, `wave_started(entry)` | Timeline, EnemyFactory |
+| `stage/Stage` | Composition root; exposes `player`, `building`, `run_state`, `clock`, `waves`; enemy and wave spawn rings are centred on the building | `start(StageDef, PlayerProfile)`, `finished(RunResult)` | all below it |
+| `ui/Hud` | View only, binds to models (bound by `Main`, not `Stage`) | `bind(...)` | signals only |
 
 ### 3.3 Decisions
 
@@ -130,9 +134,9 @@ Scenes live next to their scripts with the same basename. `[Pn]` = built in phas
 - **Composition over inheritance:** no actor class hierarchy.
 - **UI/model separation:** UI reads models via `bind()` and signals; models never import `ui/`.
 - **Save seam:** `Stage.start(StageDef, PlayerProfile)` → `finished(RunResult)`. Phase 1 uses a default profile and logs the result; Phase 4's `SaveData` is the persisted side of `PlayerProfile` + unlocks.
-- **Asset seams:** `VisualDef` (SpriteFrames, offsets, anim names), `ProjectileDef`, `StageDef.tileset/map_scene`. Swapping art touches only `data/` and `assets/`.
+- **Asset seams:** `VisualDef` (`AnimationStrip`s built into `SpriteFrames` via `sprite_frames()`, offsets, anim names), `ProjectileDef`, `StageDef.ground_texture` (a repeated `Sprite2D` in `Arena`; a tileset/map scene is deferred). Swapping art touches only `data/` and `assets/`.
 
-**Considered and rejected:** global EventBus, generic FSM library (StageFlow is an enum; boss patterns are coroutines), ECS, a `Health` that stores HP (duplicates the GAS attribute), pooling now (seam kept in `EnemyFactory`), service locator, input-manager autoload, resource registry/loader, "GameManager" singleton, localization, networking, audio module (`FxSpawner` is where audio would attach later).
+**Considered and rejected:** global EventBus, generic FSM library (StageFlow is an enum; boss patterns are coroutines), ECS, a `Health` that stores HP (duplicates the GAS attribute), pooling now (seam kept in `EnemyFactory`), service locator, input-manager autoload, resource registry/loader, "GameManager" singleton, localization, networking, audio module (`FxSpawner`, Phase 3, is where audio would attach later).
 
 ### 3.4 Dependency rules and conventions
 
@@ -152,11 +156,11 @@ Layers (a module may import only layers below it; upward communication = signals
 - Signals are past-tense events with typed args (`wave_started(entry: WaveEntry)`, `died`).
 - Member order: signals, `@export`, vars, `_ready`, public, private (`_prefixed`); constants `UPPER_SNAKE`; `#region` per concern.
 - Tags: `State.*`, `Cooldown.*`, `Ability.*`, `Event.*`, `Cue.*`, `Damage.*` (set-by-caller keys); referenced only through `GameplayTags` constants.
-- Physics layers: `World, PlayerBody, EnemyBody, PlayerHurt, EnemyHurt, PlayerHit, EnemyHit, Pickup`.
+- Physics layers (six, no `*Hit` layers): `World, AllyBody, EnemyBody, AllyHurt, EnemyHurt, Pickup`.
 
 ## 4. Phase mapping
 
-**Phase 1 — Stage core loop (first plan):** `core/`, Phase-1 `defs/`, `gas/` (three attribute sets, `DamageExecution`, `EffectBuilder`, effects `damage_basic`, `cooldown_dash`, `invulnerable`), all `components/`, actors player/enemy/building/projectile/pickup, `stage/` (non-Phase-3), HUD (health bars, wallet, **timeline bar** showing waves). Player abilities (arrow, dash) are placed by hand in `player.tscn`; Phase 2 replaces this via `abilities/` without touching actors. Initial content: Soldier player, Orc enemy (+ one or two others), Arrow, House as the building, grass tileset. Done = a stage is playable from start to FAILED or time-up, with waves visible on the timeline and gold/stone dropping.
+**Phase 1 — Stage core loop (first plan):** `core/`, Phase-1 `defs/`, `gas/` (three attribute sets, `DamageExecution`, `EffectBuilder`, effects `damage_basic`, `cooldown_dash`, `cooldown_arrow`; invulnerability comes from the dash's `activation_owned_tags`), all `components/`, actors player/enemy/building/projectile/pickup, `stage/` (non-Phase-3), HUD (health bars, wallet, **timeline bar** showing waves). Player abilities (arrow, dash) are placed by hand in `player.tscn`; Phase 2 replaces this via `abilities/` without touching actors. Initial content as built: Soldier + Orc + swarmer content, 5 waves, 180 s, no boss yet (time up = CLEARED); Arrow, House as the building, grass ground texture. Done = a stage is playable from start to FAILED or time-up, with waves visible on the timeline and gold/stone dropping.
 
 **Phase 2 — Ability system:** `AbilityDef` (id, grade, kind flags, passive effects, ability script, `revealed_form`), `AbilityPool` per grade, `GradeTable` (costs); `Loadout`/`AbilitySlot` (holds grant handles), `GradeService` (pure promote/reroll/reveal rules over Wallet + RunRng), `AbilityInstaller` (def → ASC grant/remove); shop UI. Grade maps to `ability_level`.
 
@@ -167,7 +171,7 @@ Layers (a module may import only layers below it; upward communication = signals
 ## 5. Error handling and testing
 
 - Defs validate themselves in `_validate_property`/an explicit `validate() -> PackedStringArray`, run by `Stage.start` in debug builds; a bad `.tres` fails loudly at stage start, not mid-wave.
-- Pure logic (`core/`, `GradeService`, wave scheduling math) is unit-testable without scenes; tests live in `tests/`. The test framework (GUT vs the godot_ai test runner) is chosen in the Phase 1 plan after checking which is available.
+- Pure logic (`core/`, `GradeService`, wave scheduling math) is unit-testable without scenes; tests live in `tests/`. Tests run on an in-repo headless runner (`tests/run_tests.tscn`, `tools/run_tests.sh`); the editor MCP runner cannot call non-`@tool` scripts.
 - Each phase ends with a run-through in the editor via the MCP bridge (`project_run`, screenshot, log read) as acceptance evidence.
 
 ## 6. Risks
@@ -175,4 +179,12 @@ Layers (a module may import only layers below it; upward communication = signals
 - GodotGAS has no docs; behavior beyond the spot-checked calls must be verified in code before relying on it. The Phase 1 plan starts with a short GAS spike (ASC + attribute set + damage effect + dash cooldown on a throwaway scene).
 - ~300 enemies × one ASC `_process` each; mitigated by keeping enemy effect lists empty and leaving a pooling seam in `EnemyFactory`.
 - TinyRPG and FarmRPG assets ship without a license file; fine for prototyping, verify before any release.
-- The project is **not a git repository**; the spec cannot be committed. Recommend `git init` before implementation begins.
+
+## 7. Phase 1 notes
+
+**Acceptance (automated editor run):** no script errors; GAME OVER, CLEARED and R-restart verified; 145 FPS with 100 enemies. The manual play-through is still pending for the owner.
+
+**Known follow-ups:**
+- Enemies do not collide with each other (they stack).
+- Nothing re-clamps health when `max_health` drops mid-run (Phase 2).
+- `application/run/main_scene` was hand-edited in `project.godot` (the godot-ai tool refuses to set it); re-set it in Project Settings if the editor re-saves settings.

@@ -1,0 +1,38 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/actors/building/building.gd" id="1_building"]
+[ext_resource type="PackedScene" path="res://src/gas/actor_asc.tscn" id="2_asc"]
+[ext_resource type="Script" path="res://src/components/health.gd" id="3_health"]
+[ext_resource type="Script" path="res://src/components/hurtbox.gd" id="4_hurtbox"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(68, 32)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hurt"]
+size = Vector2(84, 86)
+
+[node name="Building" type="StaticBody2D"]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_building")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, 28)
+shape = SubResource("RectangleShape2D_body")
+
+[node name="AbilitySystemComponent" parent="." instance=ExtResource("2_asc")]
+
+[node name="Health" type="Node" parent="."]
+script = ExtResource("3_health")
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 8
+collision_mask = 0
+monitoring = false
+script = ExtResource("4_hurtbox")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+position = Vector2(0, 2)
+shape = SubResource("RectangleShape2D_hurt")

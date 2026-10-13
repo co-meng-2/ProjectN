@@ -1,0 +1,81 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://src/actors/player/player.gd" id="1_player"]
+[ext_resource type="PackedScene" path="res://src/gas/actor_asc.tscn" id="2_asc"]
+[ext_resource type="Script" path="res://src/actors/player/arrow_ability.gd" id="3_arrow"]
+[ext_resource type="Script" path="res://src/actors/player/dash_ability.gd" id="4_dash"]
+[ext_resource type="Resource" path="res://data/effects/cooldown_arrow.tres" id="5_cd_arrow"]
+[ext_resource type="Resource" path="res://data/effects/cooldown_dash.tres" id="6_cd_dash"]
+[ext_resource type="PackedScene" path="res://src/actors/projectile/projectile.tscn" id="7_projectile"]
+[ext_resource type="Resource" path="res://data/projectiles/arrow.tres" id="8_arrow_def"]
+[ext_resource type="Script" path="res://src/components/health.gd" id="9_health"]
+[ext_resource type="Script" path="res://src/components/hurtbox.gd" id="10_hurtbox"]
+[ext_resource type="Script" path="res://src/components/mover.gd" id="11_mover"]
+[ext_resource type="Script" path="res://src/components/actor_visual.gd" id="12_visual"]
+[ext_resource type="Script" path="res://src/actors/pickup/loot_collector.gd" id="13_collector"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
+radius = 8.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_hurt"]
+radius = 10.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_magnet"]
+radius = 70.0
+
+[node name="Player" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 1
+motion_mode = 1
+script = ExtResource("1_player")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_body")
+
+[node name="AbilitySystemComponent" parent="." instance=ExtResource("2_asc")]
+
+[node name="ArrowAbility" type="Node" parent="AbilitySystemComponent"]
+script = ExtResource("3_arrow")
+ability_name = "Arrow"
+ability_tag = &"Ability.Arrow"
+cooldown_effect = ExtResource("5_cd_arrow")
+projectile_scene = ExtResource("7_projectile")
+projectile_def = ExtResource("8_arrow_def")
+
+[node name="DashAbility" type="Node" parent="AbilitySystemComponent"]
+script = ExtResource("4_dash")
+ability_name = "Dash"
+ability_tag = &"Ability.Dash"
+activation_owned_tags = Array[StringName]([&"State.Invulnerable"])
+cooldown_effect = ExtResource("6_cd_dash")
+
+[node name="Health" type="Node" parent="."]
+script = ExtResource("9_health")
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 8
+collision_mask = 0
+monitoring = false
+script = ExtResource("10_hurtbox")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("CircleShape2D_hurt")
+
+[node name="Mover" type="Node" parent="."]
+script = ExtResource("11_mover")
+
+[node name="Visual" type="AnimatedSprite2D" parent="."]
+script = ExtResource("12_visual")
+
+[node name="Collector" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 32
+monitorable = false
+script = ExtResource("13_collector")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Collector"]
+shape = SubResource("CircleShape2D_magnet")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+zoom = Vector2(2, 2)
+position_smoothing_enabled = true
