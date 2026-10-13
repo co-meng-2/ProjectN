@@ -199,7 +199,7 @@ Layers (a module may import only layers below it; upward communication = signals
 
 ## 8. Phase 2 notes
 
-**Acceptance (in-editor, godot-ai, partial):** Verified with simulated input: the main scene ran with no game-log errors; six `100g` slots and `Gold 200   Stone 0` at start; buying and promoting slots (slot 0 reached an Epic frame, next cost 400g); `drop_multiplier` applied to pickups; GAME OVER ignored slot clicks; R restarted to 200 gold with empty slots. A Ctrl+click was sent but its outcome was not confirmed. **Not verified (pending manual play by the owner):** refused-click flash/dimming, the Legendary/Revealed walk and the `10s`/`MAX` labels, reroll outcome, passive effects (Vitality/Swift Boots/Might), Volley arrows, Bounty gold, stacked duplicates, clicks not moving the soldier, frame rate.
+**Acceptance (in-editor, godot-ai, partial):** Verified with simulated input: the main scene ran with no game-log errors; six `100g` slots and `Gold 200   Stone 0` at start; buying and promoting slots (slot 0 reached an Epic frame, next cost 400g); `drop_multiplier` applied to pickups; GAME OVER ignored slot clicks; R restarted to 200 gold with empty slots. A Ctrl+click was sent but its outcome was not confirmed. **Verified afterwards by the owner in manual play (2026-10-13):** refused-click flash/dimming, the Legendary/Revealed walk and the `10s`/`MAX` labels, reroll outcome, passive effects (Vitality/Swift Boots/Might), Volley arrows, Bounty gold, stacked duplicates, clicks not moving the soldier, frame rate.
 
 **Known follow-ups:**
 - `max_health` passives do not heal on raise; health is re-clamped when `max_health` drops. In Phase 2 health never exceeds the new max (there is no heal source), so the re-clamp is unreachable in play.
