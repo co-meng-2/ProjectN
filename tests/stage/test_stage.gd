@@ -62,13 +62,24 @@ func test_player_death_fails_the_run() -> void:
 	assert_eq((results[0] as RunResult).outcome, RunResult.Outcome.FAILED)
 
 
-func test_finish_is_idempotent() -> void:
+func test_finish_is_idempotent_failure_first() -> void:
 	var results: Array = []
-	var stage := _running_stage(1.0, results)
+	var stage := _running_stage(30.0, results)
 	_kill(stage, stage.building.asc)
-	await wait_seconds(1.6)
-	assert_eq(results.size(), 1, "time-up after failure must not finish again")
+	stage.player.died.emit()
+	stage.clock.ended.emit()
+	assert_eq(results.size(), 1, "later finish paths must hit the terminal guard")
 	assert_eq((results[0] as RunResult).outcome, RunResult.Outcome.FAILED)
+
+
+func test_finish_is_idempotent_cleared_first() -> void:
+	var results: Array = []
+	var stage := _running_stage(30.0, results)
+	stage.clock.ended.emit()
+	_kill(stage, stage.building.asc)
+	stage.player.died.emit()
+	assert_eq(results.size(), 1)
+	assert_eq((results[0] as RunResult).outcome, RunResult.Outcome.CLEARED)
 
 
 func test_invalid_defs_are_rejected_before_anything_starts() -> void:
@@ -85,9 +96,11 @@ func test_invalid_defs_are_rejected_before_anything_starts() -> void:
 func test_collected_loot_is_credited_with_the_gain_multiplier() -> void:
 	var results: Array = []
 	var stage := _running_stage(30.0, results)
+	var overrides: Dictionary[String, float] = {"gold_gain": 2.0, "stone_gain": 1.0}
+	(stage.player.get_node("AbilitySystemComponent") as AbilitySystemComponent).initialize_attribute_overrides(overrides)
 	stage.player.loot_collected.emit(Wallet.Kind.GOLD, 5)
 	stage.player.loot_collected.emit(Wallet.Kind.STONE, 2)
-	assert_eq(stage.run_state.wallet.gold, 5)
+	assert_eq(stage.run_state.wallet.gold, 10)
 	assert_eq(stage.run_state.wallet.stone, 2)
 
 
