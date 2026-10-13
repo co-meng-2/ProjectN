@@ -6,10 +6,10 @@
 [ext_resource type="Script" path="res://src/components/hurtbox.gd" id="4_hurtbox"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
-size = Vector2(190, 60)
+size = Vector2(68, 32)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hurt"]
-size = Vector2(214, 90)
+size = Vector2(84, 86)
 
 [node name="Building" type="StaticBody2D"]
 collision_layer = 1
@@ -19,7 +19,7 @@ script = ExtResource("1_building")
 [node name="Sprite2D" type="Sprite2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(0, 20)
+position = Vector2(0, 28)
 shape = SubResource("RectangleShape2D_body")
 
 [node name="AbilitySystemComponent" parent="." instance=ExtResource("2_asc")]
@@ -34,5 +34,5 @@ monitoring = false
 script = ExtResource("4_hurtbox")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
-position = Vector2(0, 14)
+position = Vector2(0, 2)
 shape = SubResource("RectangleShape2D_hurt")

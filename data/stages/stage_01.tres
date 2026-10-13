@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="StageDef" load_steps=10 format=3]
+[gd_resource type="Resource" script_class="StageDef" load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://src/defs/stage_def.gd" id="1_stage"]
 [ext_resource type="Script" path="res://src/defs/stat_block.gd" id="2_stats"]
@@ -8,6 +8,10 @@
 [ext_resource type="Resource" path="res://data/enemies/orc.tres" id="6_orc"]
 [ext_resource type="Resource" path="res://data/enemies/orc_swarmer.tres" id="7_swarmer"]
 [ext_resource type="Resource" path="res://data/waves/stage_01_waves.tres" id="8_waves"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_house"]
+atlas = ExtResource("5_house")
+region = Rect2(2, 2, 76, 90)
 
 [sub_resource type="Resource" id="Resource_building"]
 script = ExtResource("2_stats")
@@ -22,7 +26,7 @@ display_name = "Training Grounds"
 duration = 180.0
 arena_size = Vector2(2400, 1600)
 ground_texture = ExtResource("4_grass")
-building_texture = ExtResource("5_house")
+building_texture = SubResource("AtlasTexture_house")
 building_stats = SubResource("Resource_building")
 trickle_enemies = Array[ExtResource("3_enemy_script")]([ExtResource("6_orc"), ExtResource("7_swarmer")])
 trickle_interval_start = 2.0
