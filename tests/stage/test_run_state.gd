@@ -20,3 +20,12 @@ func test_to_result_reports_the_run() -> void:
 	assert_eq(result.stone, 3)
 	assert_eq(result.kills, 9)
 	assert_almost_eq(result.elapsed, 42.0)
+
+
+func test_wallet_is_seeded_from_the_stage_def() -> void:
+	var def := DefFactory.stage()
+	def.start_gold = 200
+	def.start_stone = 3
+	var state := RunState.new(def, PlayerProfile.new(), 7)
+	assert_eq(state.wallet.gold, 200)
+	assert_eq(state.wallet.stone, 3)

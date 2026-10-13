@@ -27,6 +27,13 @@ static func enemy(scene: PackedScene = null) -> EnemyDef:
 	return def
 
 
+static func profile() -> PlayerProfile:
+	var result := PlayerProfile.new()
+	result.stats = StatBlock.new()
+	result.visual = visual()
+	return result
+
+
 static func stage(duration: float = 10.0) -> StageDef:
 	var def := StageDef.new()
 	def.id = &"test_stage"
@@ -35,6 +42,7 @@ static func stage(duration: float = 10.0) -> StageDef:
 	def.building_texture = texture(64, 64)
 	def.building_stats = StatBlock.new()
 	def.waves = WaveSchedule.new()
+	def.grade_table = grade_table()
 	return def
 
 

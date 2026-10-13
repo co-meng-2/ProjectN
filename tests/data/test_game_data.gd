@@ -9,6 +9,7 @@ const DATA_FILES: PackedStringArray = [
 	"res://data/enemies/orc_swarmer.tres",
 	"res://data/waves/stage_01_waves.tres",
 	"res://data/stages/stage_01.tres",
+	"res://data/grade_table.tres",
 	"res://data/projectiles/arrow.tres",
 	"res://data/effects/damage_basic.tres",
 	"res://data/effects/cooldown_dash.tres",
@@ -48,3 +49,13 @@ func test_enemy_defs_use_the_generic_enemy_scene() -> void:
 		var def := load(path) as EnemyDef
 		assert_eq(def.scene.resource_path, "res://src/actors/enemy/enemy.tscn", path)
 		assert_not_null(def.visual.find_strip(AnimNames.DEATH), "%s has a death strip" % path)
+
+
+func test_stage_01_starts_with_the_owner_economy() -> void:
+	var stage := load("res://data/stages/stage_01.tres") as StageDef
+	assert_eq(stage.start_gold, 200)
+	assert_eq(stage.start_stone, 0)
+	assert_not_null(stage.grade_table)
+	assert_eq(stage.grade_table.promote_price(Grade.Value.NONE).amount, 100)
+	assert_eq(stage.grade_table.promote_price(Grade.Value.LEGENDARY).amount, 10)
+	assert_eq(stage.grade_table.reroll_price(Grade.Value.COMMON).amount, 2)

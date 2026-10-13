@@ -15,6 +15,11 @@ extends Resource
 @export var trickle_cap: int = 60
 @export var spawn_radius: float = 520.0
 @export var waves: WaveSchedule
+@export var start_gold: int = 0
+@export var start_stone: int = 0
+## Scales every enemy drop; 1.0 for balanced play, very large for prototype tuning.
+@export var drop_multiplier: float = 1.0
+@export var grade_table: GradeTable
 
 
 func validate() -> PackedStringArray:
@@ -38,4 +43,12 @@ func validate() -> PackedStringArray:
 			errors.append_array(enemy.validate())
 	if waves != null:
 		errors.append_array(waves.validate_against(duration))
+	if start_gold < 0 or start_stone < 0:
+		errors.append("StageDef '%s': start_gold and start_stone must be >= 0" % id)
+	if drop_multiplier <= 0.0:
+		errors.append("StageDef '%s': drop_multiplier must be > 0" % id)
+	if grade_table == null:
+		errors.append("StageDef '%s': grade_table is null" % id)
+	else:
+		errors.append_array(grade_table.validate())
 	return errors

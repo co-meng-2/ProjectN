@@ -50,7 +50,7 @@ func start(stage_def: StageDef, profile: PlayerProfile, run_seed: int = 0) -> bo
 	# Enemies appear on a ring around the defended building, not around the roaming player.
 	_spawner.bind(stage_def, clock, _factory, building, run_state.rng, _arena.bounds)
 	waves.bind(stage_def, clock, _factory, building, run_state.rng, _arena.bounds)
-	_loot.bind(_factory, _pickup_layer, player, run_state.wallet)
+	_loot.bind(_factory, _pickup_layer, player, run_state.wallet, stage_def.drop_multiplier)
 	_wire()
 	_flow.transition_to(StageFlow.State.RUNNING)
 	clock.start(stage_def.duration)
