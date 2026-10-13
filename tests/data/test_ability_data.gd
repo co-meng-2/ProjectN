@@ -66,3 +66,12 @@ func test_blade_sweep_def_validates_and_carries_the_scene() -> void:
 	var root := def.ability_scene.instantiate()
 	assert_true(root is BladeSweepAbility)
 	root.free()
+
+
+func test_bounty_def_validates_and_listens_for_kills() -> void:
+	var def := _def("res://data/abilities/bounty.tres")
+	assert_no_errors(def.validate(), "bounty")
+	var root := def.ability_scene.instantiate() as GameplayAbility
+	assert_true(root is BountyAbility)
+	assert_eq(root.trigger_event_tag, GameplayTags.Event_Kill)
+	root.free()
