@@ -72,3 +72,19 @@ func test_mark_times_are_sorted_for_the_hud() -> void:
 	var entries: Array[WaveEntry] = [_entry(3.0, 1, "b"), _entry(1.0, 1, "a")]
 	var director: WaveDirector = _rig(entries)[2]
 	assert_eq(director.mark_times(), PackedFloat32Array([1.0, 3.0]))
+
+
+func test_waves_never_fire_again_in_overtime() -> void:
+	var entries: Array[WaveEntry] = [_entry(1.0, 2, "a"), _entry(9.5, 1, "b")]
+	var rig := _rig(entries)
+	var clock: StageClock = rig[0]
+	clock.set_physics_process(false)
+	var labels: Array = []
+	(rig[2] as WaveDirector).wave_started.connect(func(entry: WaveEntry) -> void: labels.append(entry.label))
+	clock.step(10.5)
+	assert_eq(labels, ["a", "b"])
+	for i in 5:
+		clock.step(3.0)
+	assert_almost_eq(clock.elapsed, 25.5, 0.001, "the clock ran on past the 10 s stage")
+	assert_eq(labels, ["a", "b"], "no wave re-fires in overtime")
+	assert_eq((rig[1] as EnemyFactory).alive_count(), 3)

@@ -66,3 +66,23 @@ func test_empty_trickle_list_spawns_nothing_and_does_not_fail() -> void:
 
 func get_tree_enemies() -> Array[Node]:
 	return host.get_tree().get_nodes_in_group(Groups.ENEMIES)
+
+
+func test_trickle_continues_in_overtime_at_the_end_interval() -> void:
+	var def := _stage(10)
+	def.duration = 2.0
+	def.trickle_interval_start = 3.0
+	def.trickle_interval_end = 1.0
+	var rig := _rig(def)
+	var clock: StageClock = rig[0]
+	var factory: EnemyFactory = rig[1]
+	var director: SpawnDirector = rig[2]
+	clock.set_physics_process(false)
+	assert_almost_eq(director.current_interval(25.0), 1.0, 0.001, "clamped to the end interval")
+	clock.step(2.5)
+	assert_eq(factory.alive_count(), 1)
+	clock.step(1.0)
+	assert_eq(factory.alive_count(), 2, "spawns keep coming after the stage time")
+	clock.step(1.0)
+	assert_eq(factory.alive_count(), 3)
+	assert_true(clock.elapsed > def.duration)
