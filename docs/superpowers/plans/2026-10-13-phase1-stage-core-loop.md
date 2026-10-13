@@ -63,14 +63,15 @@ src/defs/        animation_strip visual_def stat_block projectile_def drop_entry
 src/gas/         attributes/{vitals,combat,economy}_attribute_set  executions/damage_execution
                  effect_builder  actor_asc.tscn
 src/components/  health hurtbox hitbox effect_applier mover lifetime actor_visual contact_damage
-                 loot_dropper target_provider
+                 loot_dropper target_provider ability_context actor_ability
 src/actors/      projectile/ pickup/(pickup, loot_collector) building/ enemy/ player/(player, arrow_ability, dash_ability)
-src/stage/       stage_clock stage_flow run_state enemy_factory spawn_director wave_director arena stage(.tscn)
+src/stage/       stage_clock stage_flow run_state enemy_factory spawn_director wave_director loot_director
+                 arena stage(.tscn)
 src/ui/hud/      hud(.tscn) timeline_bar
 src/app/         main(.tscn)
 ```
 
-Deviations from the spec's Phase 1 list (all justified by the spec's own "earns its existence" rule; Task 14 updates the spec): `FxSpawner` is deferred to Phase 3 (no Phase 1 consumer; hit feedback is `ActorVisual.flash_hit`); `LootCollector` lives in `actors/pickup/` (it must know `Pickup`, an actor, so it cannot sit in layer 4); `TargetProvider` lives in `components/` (actors need it for auto-aim and may not import `stage/`); sprites are described by `AnimationStrip` resources and turned into `SpriteFrames` at runtime (no hand-authored SpriteFrames); tests use a small in-repo headless runner instead of GUT/the editor runner (the editor runner cannot call non-`@tool` scripts); player death also ends the run as FAILED.
+Deviations from the spec's Phase 1 list (all justified by the spec's own "earns its existence" rule; Task 14 updates the spec): `FxSpawner` is deferred to Phase 3 (no Phase 1 consumer; hit feedback is `ActorVisual.flash_hit`); `LootCollector` lives in `actors/pickup/` (it must know `Pickup`, an actor, so it cannot sit in layer 4); `TargetProvider` lives in `components/` (actors need it for auto-aim and may not import `stage/`); sprites are described by `AnimationStrip` resources and turned into `SpriteFrames` at runtime (no hand-authored SpriteFrames); tests use a small in-repo headless runner instead of GUT/the editor runner (the editor runner cannot call non-`@tool` scripts); player death also ends the run as FAILED. Added after the architecture review: the HUD is instantiated and bound by `Main`, not by `Stage` (the stage layer may not import `ui/`); abilities reach their actor through an `AbilityContext` handed to every `ActorAbility` on the ASC, so Phase 2 can add or remove abilities without touching actor scripts; `LootDirector` owns pickups and wallet credit; `VisualDef` memoises the `SpriteFrames` that all actors of a type share; `EnemyFactory` counts its own live enemies instead of a global group; every spawn ring is centred on the defended building.
 
 ---
 
@@ -183,6 +184,10 @@ const TEST_ROOT: String = "res://tests"
 const TEST_FILE_PREFIX: String = "test_"
 const TEST_METHOD_PREFIX: String = "test_"
 const SUPPORT_DIR: String = "support"
+const TEST_TIMEOUT_SECONDS: float = 10.0
+
+var _token: int = 0
+var _finished_token: int = -1
 
 
 func _ready() -> void:
@@ -240,7 +245,8 @@ func _run_file(path: String) -> Vector2i:
 			return Vector2i(passed, failed + 1)
 		test.host = self
 		test.before_each()
-		await test.call(method_name)
+		if await _run_with_timeout(test, method_name):
+			test.failures.append("timed out after %.0f s" % TEST_TIMEOUT_SECONDS)
 		test.after_each()
 		test.release_owned_nodes()
 		var label := "%s::%s" % [path.trim_prefix(TEST_ROOT + "/"), method_name]
@@ -253,6 +259,23 @@ func _run_file(path: String) -> Vector2i:
 			for failure in test.failures:
 				print("        - %s" % failure)
 	return Vector2i(passed, failed)
+
+
+## Runs one test; returns true when it did not finish within TEST_TIMEOUT_SECONDS.
+## A timed-out coroutine is abandoned; the per-test token keeps its late finish from counting for the next test.
+func _run_with_timeout(test: TestCase, method_name: String) -> bool:
+	_token += 1
+	var token := _token
+	_run_body(test, method_name, token)
+	var timer := get_tree().create_timer(TEST_TIMEOUT_SECONDS)
+	while _finished_token != token and timer.time_left > 0.0:
+		await get_tree().process_frame
+	return _finished_token != token
+
+
+func _run_body(test: TestCase, method_name: String, token: int) -> void:
+	await test.call(method_name)
+	_finished_token = token
 ```
 
 `tests/run_tests.tscn`:
@@ -277,7 +300,7 @@ if [ "${IMPORT:-0}" = "1" ]; then
 fi
 output="$("$GODOT_BIN" --headless --path . res://tests/run_tests.tscn -- --filter="${FILTER:-}" 2>&1)"
 status=$?
-echo "$output" | grep -v "ObjectDB instances were leaked\|resources still in use\|at: cleanup\|at: clear\|BUG: Unreferenced static string"
+echo "$output" | grep -v "ObjectDB instances were leaked\|resources still in use\|at: cleanup\|at: clear\|BUG: Unreferenced static string\|\[godot_ai game_helper\]"
 if echo "$output" | grep -q "SCRIPT ERROR\|Parse Error\|Compile Error"; then
 	echo "!! script errors detected"
 	exit 1
@@ -793,7 +816,7 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 - Produces (all `Resource` unless noted; every one has `validate() -> PackedStringArray` — empty means valid):
   - `StatBlock`: `max_health := 100.0`, `move_speed := 100.0`, `attack := 1.0`; `to_overrides() -> Dictionary[String, float]` (key order **max_health, health, move_speed, attack**).
   - `AnimationStrip`: `animation: StringName`, `texture: Texture2D`, `frame_count: int`, `fps: float`, `loop: bool`.
-  - `VisualDef`: `strips: Array[AnimationStrip]`, `offset: Vector2`; `find_strip(animation) -> AnimationStrip`.
+  - `VisualDef`: `strips: Array[AnimationStrip]`, `offset: Vector2`; `find_strip(animation) -> AnimationStrip`; `sprite_frames() -> SpriteFrames` (built once per def and shared by every actor that uses it).
   - `ProjectileDef`: `texture`, `hit_effect: GameplayEffect`, `speed`, `lifetime`, `pierce: int`, `hit_radius`.
   - `DropEntry`: `kind: Wallet.Kind`, `icon: Texture2D`, `chance`, `min_amount`, `max_amount`. `DropRoll` (RefCounted): `kind`, `amount`, `icon`. `DropTable`: `entries: Array[DropEntry]`; `roll(rng: RunRng) -> Array[DropRoll]`.
   - `EnemyDef`: `enum TargetPolicy { BUILDING, PLAYER }`; `id: StringName`, `scene: PackedScene`, `visual: VisualDef`, `visual_scale: float = 1.0`, `tint: Color`, `stats: StatBlock`, `contact_effect: GameplayEffect`, `contact_damage: float`, `contact_interval: float`, `target_policy`, `body_radius: float`, `drops: DropTable`.
@@ -894,6 +917,14 @@ func test_null_texture_is_an_error() -> void:
 
 func test_find_strip_returns_null_when_absent() -> void:
 	assert_null(DefFactory.visual().find_strip(AnimNames.DEATH))
+
+
+func test_sprite_frames_are_built_from_strips_and_shared() -> void:
+	var def := DefFactory.visual()
+	var frames := def.sprite_frames()
+	assert_eq(frames.get_frame_count(AnimNames.IDLE), 6)
+	assert_false(frames.has_animation(&"default"))
+	assert_true(def.sprite_frames() == frames, "memoised: one SpriteFrames per def")
 ```
 
 `tests/defs/test_drop_table.gd`:
@@ -1074,12 +1105,21 @@ extends Resource
 @export var strips: Array[AnimationStrip] = []
 @export var offset: Vector2 = Vector2.ZERO
 
+var _frames: SpriteFrames
+
 
 func find_strip(animation: StringName) -> AnimationStrip:
 	for strip in strips:
 		if strip != null and strip.animation == animation:
 			return strip
 	return null
+
+
+## Built on first use and shared by every actor that plays this def. Call validate() first.
+func sprite_frames() -> SpriteFrames:
+	if _frames == null:
+		_frames = _build_frames()
+	return _frames
 
 
 func validate() -> PackedStringArray:
@@ -1092,6 +1132,23 @@ func validate() -> PackedStringArray:
 		else:
 			errors.append_array(strip.validate())
 	return errors
+
+
+func _build_frames() -> SpriteFrames:
+	var frames := SpriteFrames.new()
+	frames.remove_animation(&"default")
+	for strip in strips:
+		frames.add_animation(strip.animation)
+		frames.set_animation_loop(strip.animation, strip.loop)
+		frames.set_animation_speed(strip.animation, strip.fps)
+		var frame_width := strip.texture.get_width() / float(strip.frame_count)
+		var frame_height := float(strip.texture.get_height())
+		for i in strip.frame_count:
+			var frame := AtlasTexture.new()
+			frame.atlas = strip.texture
+			frame.region = Rect2(i * frame_width, 0.0, frame_width, frame_height)
+			frames.add_frame(strip.animation, frame)
+	return frames
 ```
 
 `src/defs/projectile_def.gd`:
@@ -1398,7 +1455,7 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
   - `EffectBuilder.damage(instigator: Node, causer: Node, effect: GameplayEffect, amount: float, level := 1.0) -> GameplayEffectSpec` — `instigator` is the **actor root** that has a child named `AbilitySystemComponent`.
   - `res://src/gas/actor_asc.tscn`: scene whose root is an `AbilitySystemComponent` carrying the three attribute sets. Instance it in every actor and name the node `AbilitySystemComponent`.
   - Effects: `damage_basic.tres` (INSTANT, `DamageExecution`, refused while `State.Invulnerable`), `cooldown_dash.tres` (DURATION 1.2 s, grants `Cooldown.Dash`), `cooldown_arrow.tres` (DURATION 0.7 s, grants `Cooldown.Arrow`).
-  - Test helper `ActorFixture.make(test: TestCase, stats: StatBlock = null) -> Node2D`, `ActorFixture.asc_of(actor: Node) -> AbilitySystemComponent`.
+  - Test helper `ActorFixture.bare_actor(test: TestCase, stats: StatBlock = null) -> Node2D` (a bare Node2D + ASC; real actors have the ASC under their scene root), `ActorFixture.asc_of(actor: Node) -> AbilitySystemComponent`.
 
 - [ ] **Step 1: Register the gameplay tags**
 
@@ -1450,7 +1507,7 @@ const ACTOR_ASC: PackedScene = preload("res://src/gas/actor_asc.tscn")
 
 
 ## The ASC must be inside the tree before overrides are applied (attribute sets are copied in _ready).
-static func make(test: TestCase, stats: StatBlock = null) -> Node2D:
+static func bare_actor(test: TestCase, stats: StatBlock = null) -> Node2D:
 	var actor := test.adopt(Node2D.new()) as Node2D
 	var asc := ACTOR_ASC.instantiate() as AbilitySystemComponent
 	asc.name = "AbilitySystemComponent"
@@ -1488,35 +1545,35 @@ func _health(actor: Node2D) -> float:
 
 
 func test_overrides_set_health_and_max_health() -> void:
-	var actor := ActorFixture.make(self, _stats(50.0))
+	var actor := ActorFixture.bare_actor(self, _stats(50.0))
 	assert_almost_eq(_health(actor), 50.0)
 	assert_almost_eq(ActorFixture.asc_of(actor).get_attribute("max_health").current_value, 50.0)
 
 
 func test_health_is_clamped_to_max_health() -> void:
-	var actor := ActorFixture.make(self, _stats(50.0))
+	var actor := ActorFixture.bare_actor(self, _stats(50.0))
 	var overrides: Dictionary[String, float] = {"health": 80.0}
 	ActorFixture.asc_of(actor).initialize_attribute_overrides(overrides)
 	assert_almost_eq(_health(actor), 50.0)
 
 
 func test_damage_scales_with_source_attack() -> void:
-	var attacker := ActorFixture.make(self, _stats(100.0, 2.0))
-	var victim := ActorFixture.make(self, _stats(100.0))
+	var attacker := ActorFixture.bare_actor(self, _stats(100.0, 2.0))
+	var victim := ActorFixture.bare_actor(self, _stats(100.0))
 	assert_not_null(_hit(attacker, victim, 10.0))
 	assert_almost_eq(_health(victim), 80.0)
 
 
 func test_damage_cannot_push_health_below_zero() -> void:
-	var attacker := ActorFixture.make(self, _stats(100.0))
-	var victim := ActorFixture.make(self, _stats(30.0))
+	var attacker := ActorFixture.bare_actor(self, _stats(100.0))
+	var victim := ActorFixture.bare_actor(self, _stats(30.0))
 	_hit(attacker, victim, 500.0)
 	assert_almost_eq(_health(victim), 0.0)
 
 
 func test_invulnerable_target_takes_no_damage_until_the_tag_is_removed() -> void:
-	var attacker := ActorFixture.make(self, _stats(100.0))
-	var victim := ActorFixture.make(self, _stats(100.0))
+	var attacker := ActorFixture.bare_actor(self, _stats(100.0))
+	var victim := ActorFixture.bare_actor(self, _stats(100.0))
 	var victim_asc := ActorFixture.asc_of(victim)
 	victim_asc.add_tag(GameplayTags.State_Invulnerable)
 	assert_null(_hit(attacker, victim, 10.0), "blocked hits return null")
@@ -1527,9 +1584,9 @@ func test_invulnerable_target_takes_no_damage_until_the_tag_is_removed() -> void
 
 
 func test_attribute_sets_are_not_shared_between_actors() -> void:
-	var attacker := ActorFixture.make(self, _stats(100.0))
-	var first := ActorFixture.make(self, _stats(100.0))
-	var second := ActorFixture.make(self, _stats(100.0))
+	var attacker := ActorFixture.bare_actor(self, _stats(100.0))
+	var first := ActorFixture.bare_actor(self, _stats(100.0))
+	var second := ActorFixture.bare_actor(self, _stats(100.0))
 	_hit(attacker, first, 40.0)
 	assert_almost_eq(_health(first), 60.0)
 	assert_almost_eq(_health(second), 100.0)
@@ -1552,7 +1609,7 @@ func test_cooldown_effects_grant_their_tags_for_a_duration() -> void:
 func test_cooldown_tag_is_present_then_expires() -> void:
 	var effect := (load("res://data/effects/cooldown_dash.tres") as GameplayEffect).duplicate() as GameplayEffect
 	effect.duration = 0.1
-	var actor := ActorFixture.make(self)
+	var actor := ActorFixture.bare_actor(self)
 	var asc := ActorFixture.asc_of(actor)
 	asc.apply_gameplay_effect(effect)
 	assert_true(asc.has_tag(GameplayTags.Cooldown_Dash))
@@ -1787,7 +1844,7 @@ func _health_for(actor: Node2D) -> Health:
 
 
 func test_bind_emits_initial_values() -> void:
-	var victim := ActorFixture.make(self, _stats(50.0))
+	var victim := ActorFixture.bare_actor(self, _stats(50.0))
 	var health := _health_for(victim)
 	var seen: Array = []
 	health.changed.connect(func(current: float, maximum: float) -> void: seen.append([current, maximum]))
@@ -1796,8 +1853,8 @@ func test_bind_emits_initial_values() -> void:
 
 
 func test_damage_emits_damaged_with_instigator_and_changed() -> void:
-	var attacker := ActorFixture.make(self, _stats(100.0))
-	var victim := ActorFixture.make(self, _stats(50.0))
+	var attacker := ActorFixture.bare_actor(self, _stats(100.0))
+	var victim := ActorFixture.bare_actor(self, _stats(50.0))
 	var health := _health_for(victim)
 	health.bind(ActorFixture.asc_of(victim))
 	var damages: Array = []
@@ -1811,8 +1868,8 @@ func test_damage_emits_damaged_with_instigator_and_changed() -> void:
 
 
 func test_lethal_damage_emits_died_exactly_once() -> void:
-	var attacker := ActorFixture.make(self, _stats(100.0))
-	var victim := ActorFixture.make(self, _stats(20.0))
+	var attacker := ActorFixture.bare_actor(self, _stats(100.0))
+	var victim := ActorFixture.bare_actor(self, _stats(20.0))
 	var health := _health_for(victim)
 	health.bind(ActorFixture.asc_of(victim))
 	var deaths: Array = []
@@ -1918,22 +1975,22 @@ func _applier_for(actor: Node2D) -> EffectApplier:
 
 
 func test_hit_damages_the_target() -> void:
-	var attacker := ActorFixture.make(self, _stats(100.0))
-	var victim := ActorFixture.make(self, _stats(100.0))
+	var attacker := ActorFixture.bare_actor(self, _stats(100.0))
+	var victim := ActorFixture.bare_actor(self, _stats(100.0))
 	assert_true(_applier_for(attacker).hit(_hurtbox_for(victim), DAMAGE, 15.0))
 	assert_almost_eq(ActorFixture.asc_of(victim).get_attribute("health").current_value, 85.0)
 
 
 func test_hit_reports_false_when_target_is_invulnerable() -> void:
-	var attacker := ActorFixture.make(self, _stats(100.0))
-	var victim := ActorFixture.make(self, _stats(100.0))
+	var attacker := ActorFixture.bare_actor(self, _stats(100.0))
+	var victim := ActorFixture.bare_actor(self, _stats(100.0))
 	ActorFixture.asc_of(victim).add_tag(GameplayTags.State_Invulnerable)
 	assert_false(_applier_for(attacker).hit(_hurtbox_for(victim), DAMAGE, 15.0))
 
 
 func test_hit_with_a_freed_source_is_a_safe_no_op() -> void:
-	var attacker := ActorFixture.make(self, _stats(100.0))
-	var victim := ActorFixture.make(self, _stats(100.0))
+	var attacker := ActorFixture.bare_actor(self, _stats(100.0))
+	var victim := ActorFixture.bare_actor(self, _stats(100.0))
 	var applier := _applier_for(attacker)
 	var hurtbox := _hurtbox_for(victim)
 	ActorFixture.asc_of(attacker).free()
@@ -1941,7 +1998,7 @@ func test_hit_with_a_freed_source_is_a_safe_no_op() -> void:
 
 
 func test_hit_with_an_unbound_hurtbox_is_a_safe_no_op() -> void:
-	var attacker := ActorFixture.make(self, _stats(100.0))
+	var attacker := ActorFixture.bare_actor(self, _stats(100.0))
 	var hurtbox := adopt(Hurtbox.new()) as Hurtbox
 	assert_false(_applier_for(attacker).hit(hurtbox, DAMAGE, 15.0))
 ```
@@ -2120,7 +2177,7 @@ extends TestCase
 func _rig(speed: float) -> Array:
 	var stats := StatBlock.new()
 	stats.move_speed = speed
-	var actor := ActorFixture.make(self, stats)
+	var actor := ActorFixture.bare_actor(self, stats)
 	var body := CharacterBody2D.new()
 	actor.add_child(body)
 	var mover := Mover.new()
@@ -2297,8 +2354,8 @@ func _area(area: Area2D, layer: int, mask: int, parent: Node) -> Area2D:
 
 
 func _rig() -> Array:
-	var attacker := ActorFixture.make(self, _stats())
-	var victim := ActorFixture.make(self, _stats())
+	var attacker := ActorFixture.bare_actor(self, _stats())
+	var victim := ActorFixture.bare_actor(self, _stats())
 	var hitbox := _area(Hitbox.new(), 0, PhysicsLayers.ALLY_HURT, attacker) as Hitbox
 	hitbox.once_per_target = false
 	var hurtbox := _area(Hurtbox.new(), PhysicsLayers.ALLY_HURT, 0, victim) as Hurtbox
@@ -2366,8 +2423,8 @@ func _table(chance: float) -> DropTable:
 func _kill(table: DropTable) -> Array:
 	var stats := StatBlock.new()
 	stats.max_health = 10.0
-	var killer := ActorFixture.make(self, stats)
-	var victim := ActorFixture.make(self, stats)
+	var killer := ActorFixture.bare_actor(self, stats)
+	var victim := ActorFixture.bare_actor(self, stats)
 	victim.position = Vector2(40, 60)
 	var health := Health.new()
 	victim.add_child(health)
@@ -2570,7 +2627,7 @@ func _physics_process(delta: float) -> void:
 ```gdscript
 class_name ActorVisual
 extends AnimatedSprite2D
-## Plays an actor's animations. Builds SpriteFrames at runtime from a VisualDef's strips.
+## Plays an actor's animations from a VisualDef (whose SpriteFrames are shared between actors).
 
 signal one_shot_finished(animation_name: StringName)
 
@@ -2587,7 +2644,7 @@ func _ready() -> void:
 
 
 func apply(def: VisualDef, scale_factor: float = 1.0, tint: Color = Color.WHITE) -> void:
-	sprite_frames = _build_frames(def)
+	sprite_frames = def.sprite_frames()
 	position = def.offset
 	scale = Vector2.ONE * scale_factor
 	_base_tint = tint
@@ -2617,23 +2674,6 @@ func play_once(animation_name: StringName) -> void:
 func flash_hit() -> void:
 	modulate = HIT_FLASH_COLOR
 	create_tween().tween_property(self, "modulate", _base_tint, HIT_FLASH_SECONDS)
-
-
-func _build_frames(def: VisualDef) -> SpriteFrames:
-	var frames := SpriteFrames.new()
-	frames.remove_animation(&"default")
-	for strip in def.strips:
-		frames.add_animation(strip.animation)
-		frames.set_animation_loop(strip.animation, strip.loop)
-		frames.set_animation_speed(strip.animation, strip.fps)
-		var frame_width := strip.texture.get_width() / float(strip.frame_count)
-		var frame_height := float(strip.texture.get_height())
-		for i in strip.frame_count:
-			var frame := AtlasTexture.new()
-			frame.atlas = strip.texture
-			frame.region = Rect2(i * frame_width, 0.0, frame_width, frame_height)
-			frames.add_frame(strip.animation, frame)
-	return frames
 
 
 func _play_locomotion() -> void:
@@ -2850,7 +2890,7 @@ func _def(pierce: int = 0, lifetime: float = 1.0) -> ProjectileDef:
 func _actor(max_health: float = 100.0) -> Node2D:
 	var stats := StatBlock.new()
 	stats.max_health = max_health
-	return ActorFixture.make(self, stats)
+	return ActorFixture.bare_actor(self, stats)
 
 
 func _victim() -> Node2D:
@@ -3255,7 +3295,7 @@ func _building(max_health: float) -> Building:
 
 func _hit(building: Building, amount: float) -> void:
 	var stats := StatBlock.new()
-	var attacker := ActorFixture.make(self, stats)
+	var attacker := ActorFixture.bare_actor(self, stats)
 	var spec := EffectBuilder.damage(attacker, attacker, DAMAGE, amount)
 	ActorFixture.asc_of(attacker).apply_effect_spec_to_target(spec, building.asc)
 
@@ -3317,7 +3357,7 @@ func _enemy(def: EnemyDef, target: Node2D, at: Vector2 = Vector2.ZERO) -> Enemy:
 
 func _kill(enemy: Enemy) -> void:
 	var stats := StatBlock.new()
-	var killer := ActorFixture.make(self, stats)
+	var killer := ActorFixture.bare_actor(self, stats)
 	var spec := EffectBuilder.damage(killer, killer, DAMAGE, 9999.0)
 	ActorFixture.asc_of(killer).apply_effect_spec_to_target(spec, enemy.get_node("AbilitySystemComponent"))
 
@@ -3649,14 +3689,17 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 ### Task 9: Player with arrow and dash abilities
 
 **Files:**
+- Create: `src/components/ability_context.gd`, `src/components/actor_ability.gd`
 - Create: `src/actors/player/arrow_ability.gd`, `dash_ability.gd`, `player.gd`, `player.tscn`; `data/projectiles/arrow.tres`
 - Test: `tests/actors/test_player.gd`
 
 **Interfaces:**
-- Consumes: Tasks 3–8 (`PlayerProfile`, `Projectile`, `LootCollector`, `TargetProvider`, `Mover`, `ActorVisual`, `Health`, `InputActions`, effects `cooldown_arrow.tres`/`cooldown_dash.tres`, tags `Ability_*`/`Cooldown_*`/`State_Invulnerable`).
+- Consumes: Tasks 3–8 (`PlayerProfile`, `Projectile`, `LootCollector`, `TargetProvider`, `Mover`, `ActorVisual`, `Health`, `InputActions`, `AnimNames`, effects `cooldown_arrow.tres`/`cooldown_dash.tres`, tags `Ability_*`/`Cooldown_*`/`State_Invulnerable`).
 - Produces:
-  - `ArrowAbility` (GameplayAbility): `@export projectile_scene, projectile_def, base_damage := 12.0, attack_range := 260.0`; `signal fired(direction: Vector2)`; `bind(actor: Node2D, targets: TargetProvider, projectile_layer: Node)`. Fails without starting a cooldown when no enemy is in range.
-  - `DashAbility` (GameplayAbility): `@export dash_speed := 480.0, dash_duration := 0.18`; `bind(mover: Mover)`. Grants `State.Invulnerable` while active (set in the scene via `activation_owned_tags`).
+  - `AbilityContext` (RefCounted): `_init(p_actor: Node2D, p_mover: Mover, p_targets: TargetProvider, p_projectile_layer: Node)`; fields `actor`, `mover`, `targets`, `projectile_layer`. What an actor offers its abilities.
+  - `ActorAbility` (abstract `GameplayAbility`): `signal animation_requested(animation: StringName, facing: Vector2)`; `context: AbilityContext`; `bind_context(p_context)`. The base of every ability that acts through its owning actor. Phase 2 grants/removes abilities without touching actor scripts: an actor just hands its context to whatever `ActorAbility` children its ASC has.
+  - `ArrowAbility` (`ActorAbility`): `@export projectile_scene, projectile_def, base_damage := 12.0, attack_range := 260.0, auto_fire := true`. With `auto_fire` it retries every physics frame while an enemy is in range; it fails without starting a cooldown when nothing is in range.
+  - `DashAbility` (`ActorAbility`): `@export dash_speed := 480.0, dash_duration := 0.18`. Grants `State.Invulnerable` while active (set in the scene via `activation_owned_tags`); triggered through the tag `Ability.Dash`.
   - `Player` (CharacterBody2D scene `res://src/actors/player/player.tscn`): `signal died`, `signal loot_collected(kind: Wallet.Kind, amount: int)`; public `health: Health`; `setup(profile: PlayerProfile, targets: TargetProvider, projectile_layer: Node)` (after entering the tree); `limit_camera(bounds: Rect2)`; `gain_multiplier(kind: Wallet.Kind) -> float`. Joins `Groups.PLAYER` in `setup`.
   - `data/projectiles/arrow.tres`: ProjectileDef (arrow.png, `damage_basic` hit effect, speed 420, lifetime 0.7, pierce 0).
 
@@ -3699,8 +3742,15 @@ func _asc(player: Player) -> AbilitySystemComponent:
 	return player.get_node("AbilitySystemComponent") as AbilitySystemComponent
 
 
+## Manual-activation tests switch auto-fire off so the per-frame retry cannot interfere.
+func _manual_arrow(player: Player) -> ArrowAbility:
+	var arrow := _asc(player).get_node("ArrowAbility") as ArrowAbility
+	arrow.auto_fire = false
+	return arrow
+
+
 func _hit_player(player: Player, amount: float) -> ActiveGameplayEffect:
-	var attacker := ActorFixture.make(self, StatBlock.new())
+	var attacker := ActorFixture.bare_actor(self, StatBlock.new())
 	var spec := EffectBuilder.damage(attacker, attacker, DAMAGE, amount)
 	return ActorFixture.asc_of(attacker).apply_effect_spec_to_target(spec, _asc(player))
 
@@ -3713,10 +3763,18 @@ func test_setup_applies_profile_stats_and_joins_group() -> void:
 	assert_almost_eq(player.gain_multiplier(Wallet.Kind.GOLD), 1.0)
 
 
+func test_every_actor_ability_on_the_asc_receives_the_context() -> void:
+	var player: Player = _player()[0]
+	for ability_name in ["ArrowAbility", "DashAbility"]:
+		var ability := _asc(player).get_node(ability_name) as ActorAbility
+		assert_not_null(ability.context, ability_name)
+		assert_eq(ability.context.actor, player, ability_name)
+
+
 func test_arrow_without_target_does_not_start_cooldown() -> void:
 	var rig := _player()
 	var player: Player = rig[0]
-	var arrow := _asc(player).get_node("ArrowAbility") as ArrowAbility
+	var arrow := _manual_arrow(player)
 	for i in 3:
 		var fired: bool = await arrow.try_activate()
 		assert_false(fired)
@@ -3729,13 +3787,14 @@ func test_arrow_fires_at_the_nearest_enemy_then_cools_down() -> void:
 	var player: Player = rig[0]
 	_enemy_at(Vector2(400, 0))
 	_enemy_at(Vector2(120, 0))
-	var arrow := _asc(player).get_node("ArrowAbility") as ArrowAbility
-	var directions: Array = []
-	arrow.fired.connect(func(direction: Vector2) -> void: directions.append(direction))
+	var arrow := _manual_arrow(player)
+	var facings: Array = []
+	arrow.animation_requested.connect(func(animation: StringName, facing: Vector2) -> void: facings.append([animation, facing]))
 	var first: bool = await arrow.try_activate()
 	assert_true(first)
 	assert_eq((rig[1] as Node2D).get_child_count(), 1, "one projectile spawned")
-	assert_almost_eq((directions[0] as Vector2).x, 1.0, 0.001)
+	assert_eq(facings[0][0], AnimNames.ATTACK)
+	assert_almost_eq((facings[0][1] as Vector2).x, 1.0, 0.001)
 	assert_true(_asc(player).has_tag(GameplayTags.Cooldown_Arrow))
 	var second: bool = await arrow.try_activate()
 	assert_false(second, "blocked by cooldown")
@@ -3744,9 +3803,20 @@ func test_arrow_fires_at_the_nearest_enemy_then_cools_down() -> void:
 func test_arrow_ignores_enemies_beyond_its_range() -> void:
 	var rig := _player()
 	_enemy_at(Vector2(900, 0))
-	var arrow := _asc(rig[0] as Player).get_node("ArrowAbility") as ArrowAbility
+	var arrow := _manual_arrow(rig[0] as Player)
 	var fired: bool = await arrow.try_activate()
 	assert_false(fired)
+
+
+func test_arrow_auto_fires_when_an_enemy_comes_into_range() -> void:
+	var rig := _player()
+	var player: Player = rig[0]
+	await wait_seconds(0.2)
+	assert_eq((rig[1] as Node2D).get_child_count(), 0, "nothing to shoot yet")
+	_enemy_at(Vector2(100, 0))
+	await wait_seconds(0.3)
+	assert_true((rig[1] as Node2D).get_child_count() >= 1)
+	assert_true(_asc(player).has_tag(GameplayTags.Cooldown_Arrow))
 
 
 func test_dash_grants_invulnerability_only_while_active() -> void:
@@ -3763,89 +3833,120 @@ func test_dash_grants_invulnerability_only_while_active() -> void:
 	assert_almost_eq(player.health.current(), 90.0)
 
 
-func test_dash_starts_a_cooldown_that_blocks_a_second_dash() -> void:
+func test_dash_can_be_triggered_by_its_tag_and_then_cools_down() -> void:
 	var player: Player = _player()[0]
-	var dash := _asc(player).get_node("DashAbility") as DashAbility
-	var first: bool = await dash.try_activate()
-	assert_true(first)
-	assert_true(_asc(player).has_tag(GameplayTags.Cooldown_Dash))
-	var second: bool = await dash.try_activate()
-	assert_false(second)
+	var asc := _asc(player)
+	assert_true(asc.try_activate_abilities_by_tag(GameplayTags.Ability_Dash))
+	await next_frame()
+	assert_true(asc.has_tag(GameplayTags.Cooldown_Dash))
+	await wait_seconds(0.4)
+	assert_false(asc.try_activate_abilities_by_tag(GameplayTags.Ability_Dash), "on cooldown")
 
 
-func test_lethal_damage_emits_died() -> void:
-	var player: Player = _player()[0]
+func test_lethal_damage_emits_died_and_stops_the_abilities() -> void:
+	var rig := _player()
+	var player: Player = rig[0]
 	var deaths: Array = []
 	player.died.connect(func() -> void: deaths.append(true))
 	_hit_player(player, 9999.0)
 	assert_eq(deaths.size(), 1)
+	_enemy_at(Vector2(100, 0))
+	await wait_seconds(0.3)
+	assert_eq((rig[1] as Node2D).get_child_count(), 0, "a dead player no longer shoots")
 ```
 
 - [ ] **Step 2: Run to verify failure**
 
 Run: `FILTER=tests/actors/test_player tools/run_tests.sh`
-Expected: errors — `Player`, `ArrowAbility`, `DashAbility` undefined.
+Expected: errors — `Player`, `ActorAbility`, `ArrowAbility`, `DashAbility` undefined.
 
-- [ ] **Step 3: Implement abilities**
+- [ ] **Step 3: Implement the ability base and the abilities**
+
+`src/components/ability_context.gd`:
+```gdscript
+class_name AbilityContext
+extends RefCounted
+## What an actor offers its abilities. The actor builds it once and hands it to every ActorAbility on its ASC.
+
+var actor: Node2D
+var mover: Mover
+var targets: TargetProvider
+var projectile_layer: Node
+
+
+func _init(p_actor: Node2D, p_mover: Mover, p_targets: TargetProvider, p_projectile_layer: Node) -> void:
+	actor = p_actor
+	mover = p_mover
+	targets = p_targets
+	projectile_layer = p_projectile_layer
+```
+
+`src/components/actor_ability.gd`:
+```gdscript
+@abstract
+class_name ActorAbility
+extends GameplayAbility
+## Base for abilities that act through their owning actor. The actor injects an AbilityContext.
+
+## The ability asks its actor to show an animation; the actor decides how.
+signal animation_requested(animation: StringName, facing: Vector2)
+
+var context: AbilityContext
+
+
+func bind_context(p_context: AbilityContext) -> void:
+	context = p_context
+```
 
 `src/actors/player/arrow_ability.gd`:
 ```gdscript
 class_name ArrowAbility
-extends GameplayAbility
-## Auto-fires a short-range arrow at the nearest enemy. Fails without a cooldown when nothing is in range.
-
-signal fired(direction: Vector2)
+extends ActorAbility
+## Fires a short-range arrow at the nearest enemy. With `auto_fire` it retries every physics frame;
+## it fails without starting a cooldown when nothing is in range.
 
 @export var projectile_scene: PackedScene
 @export var projectile_def: ProjectileDef
 @export var base_damage: float = 12.0
 @export var attack_range: float = 260.0
-
-var _actor: Node2D
-var _targets: TargetProvider
-var _projectile_layer: Node
+@export var auto_fire: bool = true
 
 
-func bind(actor: Node2D, targets: TargetProvider, projectile_layer: Node) -> void:
-	_actor = actor
-	_targets = targets
-	_projectile_layer = projectile_layer
+func _physics_process(_delta: float) -> void:
+	if not auto_fire or context == null or is_active or not check_cooldown():
+		return
+	if context.targets.nearest_enemy(context.actor.global_position, attack_range) != null:
+		try_activate()
 
 
 func _activate_ability() -> bool:
-	var origin := _actor.global_position
-	var target := _targets.nearest_enemy(origin, attack_range)
+	var origin := context.actor.global_position
+	var target := context.targets.nearest_enemy(origin, attack_range)
 	if target == null:
 		return false
 	commit_ability()
 	var direction := (target.global_position - origin).normalized()
 	var projectile := projectile_scene.instantiate() as Projectile
-	_projectile_layer.add_child(projectile)
+	context.projectile_layer.add_child(projectile)
 	projectile.global_position = origin
 	projectile.launch(projectile_def, owner_asc, base_damage * ability_level, direction)
-	fired.emit(direction)
+	animation_requested.emit(AnimNames.ATTACK, direction)
 	return true
 ```
 
 `src/actors/player/dash_ability.gd`:
 ```gdscript
 class_name DashAbility
-extends GameplayAbility
+extends ActorAbility
 ## A short burst of speed. Invulnerability comes from `activation_owned_tags` set in the scene.
 
 @export var dash_speed: float = 480.0
 @export var dash_duration: float = 0.18
 
-var _mover: Mover
-
-
-func bind(mover: Mover) -> void:
-	_mover = mover
-
 
 func _activate_ability() -> bool:
 	commit_ability()
-	_mover.dash(_mover.direction(), dash_speed, dash_duration)
+	context.mover.dash(context.mover.direction(), dash_speed, dash_duration)
 	await task_wait_delay(dash_duration)
 	return true
 ```
@@ -3874,15 +3975,14 @@ hit_radius = 6.0
 ```gdscript
 class_name Player
 extends CharacterBody2D
-## The player's actor: input -> Mover, auto-fire arrow, dash, loot magnet, camera.
+## The player's actor: input -> Mover, dash key -> ability tag, loot magnet, camera.
+## It does not know which abilities it has: every ActorAbility on its ASC gets the same context.
 
 signal died
 signal loot_collected(kind: Wallet.Kind, amount: int)
 
 @onready var health: Health = $Health
 @onready var _asc: AbilitySystemComponent = $AbilitySystemComponent
-@onready var _arrow: ArrowAbility = $AbilitySystemComponent/ArrowAbility
-@onready var _dash: DashAbility = $AbilitySystemComponent/DashAbility
 @onready var _hurtbox: Hurtbox = $Hurtbox
 @onready var _mover: Mover = $Mover
 @onready var _visual: ActorVisual = $Visual
@@ -3897,10 +3997,8 @@ func setup(profile: PlayerProfile, targets: TargetProvider, projectile_layer: No
 	_hurtbox.bind(_asc, self)
 	_mover.bind(self, _asc)
 	_visual.apply(profile.visual)
-	_arrow.bind(self, targets, projectile_layer)
-	_dash.bind(_mover)
 	_collector.bind(self)
-	_arrow.fired.connect(_on_arrow_fired)
+	_bind_abilities(AbilityContext.new(self, _mover, targets, projectile_layer))
 	_collector.collected.connect(loot_collected.emit)
 	health.damaged.connect(_on_damaged)
 	health.died.connect(_on_died)
@@ -3928,14 +4026,20 @@ func _physics_process(_delta: float) -> void:
 	_visual.set_moving(_mover.is_moving())
 	_visual.face(input.x)
 	if Input.is_action_just_pressed(InputActions.DASH):
-		_dash.try_activate()
-	if not _arrow.is_active and _arrow.check_cooldown():
-		_arrow.try_activate()
+		_asc.try_activate_abilities_by_tag(GameplayTags.Ability_Dash)
 
 
-func _on_arrow_fired(direction: Vector2) -> void:
-	_visual.face(direction.x)
-	_visual.play_once(AnimNames.ATTACK)
+func _bind_abilities(context: AbilityContext) -> void:
+	for child in _asc.get_children():
+		var ability := child as ActorAbility
+		if ability != null:
+			ability.bind_context(context)
+			ability.animation_requested.connect(_on_animation_requested)
+
+
+func _on_animation_requested(animation: StringName, facing: Vector2) -> void:
+	_visual.face(facing.x)
+	_visual.play_once(animation)
 
 
 func _on_damaged(_amount: float, _instigator: Node) -> void:
@@ -3943,6 +4047,8 @@ func _on_damaged(_amount: float, _instigator: Node) -> void:
 
 
 func _on_died() -> void:
+	for child in _asc.get_children():
+		child.set_physics_process(false)
 	_visual.play_once(AnimNames.DEATH)
 	_asc.cleanup.call_deferred()
 	died.emit()
@@ -4036,17 +4142,18 @@ position_smoothing_enabled = true
 - [ ] **Step 5: Run to verify pass**
 
 Run: `FILTER=tests/actors/test_player tools/run_tests.sh`
-Expected: 7 PASS. Likely snags and their fixes:
+Expected: 9 PASS. Likely snags and their fixes:
 - `test_dash_grants_invulnerability...` finds no tag: `activation_owned_tags` is applied inside `try_activate` before `_activate_ability`; if the tag is missing the `.tscn` property did not load — open `player.tscn` in the editor and set it in the inspector.
-- `Player` cannot find `$AbilitySystemComponent/ArrowAbility`: children of an instanced scene node must be declared with `parent="AbilitySystemComponent"` exactly as above.
-- Abilities granted twice or not at all: `GameplayAbility._ready` self-grants when its parent is an ASC (`gameplay_ability.gd:_ready`); do not call `grant_ability` manually.
+- `Player` cannot find its abilities: children of an instanced scene node must be declared with `parent="AbilitySystemComponent"` exactly as above; `_bind_abilities` only sees direct ASC children that extend `ActorAbility`.
+- Abilities granted twice or not at all: `GameplayAbility._ready` self-grants when its parent is an ASC; do not call `grant_ability` manually.
+- `try_activate_abilities_by_tag` returns false: it matches `ability_tag` exactly — compare with `&"Ability.Dash"` in the scene.
 
 - [ ] **Step 6: Run the whole suite and commit**
 
 Run: `tools/run_tests.sh` → all PASS.
 ```bash
-git add src/actors data/projectiles tests/actors
-git commit -q -m "feat(player): add Player with auto-fire arrow and invulnerable dash abilities
+git add src/components src/actors data/projectiles tests/actors
+git commit -q -m "feat(player): add Player with context-driven arrow and invulnerable dash abilities
 
 Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 ```
@@ -4056,17 +4163,18 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 ### Task 10: Stage systems — clock, flow, run state, factory, directors, arena
 
 **Files:**
-- Create: `src/stage/stage_clock.gd`, `stage_flow.gd`, `run_state.gd`, `enemy_factory.gd`, `spawn_director.gd`, `wave_director.gd`, `arena.gd`, `arena.tscn`
-- Test: `tests/stage/test_stage_clock.gd`, `test_stage_flow.gd`, `test_run_state.gd`, `test_enemy_factory.gd`, `test_spawn_director.gd`, `test_wave_director.gd`, `test_arena.gd`
+- Create: `src/stage/stage_clock.gd`, `stage_flow.gd`, `run_state.gd`, `enemy_factory.gd`, `spawn_director.gd`, `wave_director.gd`, `loot_director.gd`, `arena.gd`, `arena.tscn`
+- Test: `tests/stage/test_stage_clock.gd`, `test_stage_flow.gd`, `test_run_state.gd`, `test_enemy_factory.gd`, `test_spawn_director.gd`, `test_wave_director.gd`, `test_loot_director.gd`, `test_arena.gd`
 
 **Interfaces:**
 - Consumes: Tasks 2–9 (`Timeline`, `SpawnGeometry`, `RunRng`, `Wallet`, `StageDef`, `WaveEntry`, `EnemyDef`, `Enemy`, `TargetProvider`, `RunResult`, `PlayerProfile`).
 - Produces:
   - `StageClock` (Node): `signal ticked(elapsed: float)`, `signal ended`; `elapsed`, `duration`; `start(p_duration)`, `stop()`, `is_running() -> bool`, `step(delta)` (called by `_physics_process`; clamps at `duration`, emits `ended` once).
   - `StageFlow` (RefCounted): `enum State { PREP, RUNNING, BOSS, CLEARED, FAILED }`, `signal state_changed(state)`, `state`, `transition_to(to) -> bool` (allowed: PREP→RUNNING, RUNNING→BOSS/CLEARED/FAILED, BOSS→CLEARED/FAILED), `is_terminal() -> bool`.
-  - `RunState` (RefCounted): `_init(p_stage_def, p_profile, run_seed := 0)`; `stage_def`, `profile`, `rng: RunRng`, `wallet: Wallet`, `kills: int`, `elapsed: float`; `to_result(outcome: RunResult.Outcome) -> RunResult`.
-  - `EnemyFactory` (Node): `signal spawned(enemy: Enemy)`; `bind(layer: Node2D, targets: TargetProvider, rng: RunRng)`; `spawn(def: EnemyDef, position: Vector2) -> Enemy`; `alive_count() -> int`.
-  - `SpawnDirector` (Node): `bind(stage_def, clock: StageClock, factory: EnemyFactory, anchor: Node2D, rng, arena_bounds: Rect2)`; `current_interval(elapsed: float) -> float`.
+  - `RunState` (RefCounted): `_init(p_stage_def, p_profile, run_seed := 0)`; `stage_def`, `profile`, `rng: RunRng`, `wallet: Wallet`, `kills: int`; `to_result(outcome: RunResult.Outcome, elapsed: float) -> RunResult`.
+  - `EnemyFactory` (Node): `signal spawned(enemy: Enemy)`; `bind(layer: Node2D, targets: TargetProvider, rng: RunRng)`; `spawn(def: EnemyDef, position: Vector2) -> Enemy`; `alive_count() -> int` (enemies this factory spawned that have not died or left the tree).
+  - `SpawnDirector` (Node): `bind(stage_def, clock: StageClock, factory: EnemyFactory, anchor: Node2D, rng, arena_bounds: Rect2)` — enemies appear on a ring of `spawn_radius` around `anchor`; the Stage passes the defended building; `current_interval(elapsed: float) -> float`.
+  - `LootDirector` (Node): `bind(factory: EnemyFactory, pickup_layer: Node2D, player: Player, wallet: Wallet)`; spawns a `Pickup` for every enemy drop (deferred) and credits collected loot to the wallet multiplied by the player's `gain_multiplier(kind)`.
   - `WaveDirector` (Node): `signal wave_started(entry: WaveEntry)`; `timeline: Timeline`; `bind(stage_def, clock, factory, anchor, rng, arena_bounds)`; `mark_times() -> PackedFloat32Array`.
   - `Arena` (Node2D scene `res://src/stage/arena.tscn`): `bounds: Rect2`; `build(size: Vector2, ground_texture: Texture2D)`.
 
@@ -4164,7 +4272,6 @@ func test_new_run_starts_clean() -> void:
 	assert_eq(state.wallet.gold, 0)
 	assert_eq(state.wallet.stone, 0)
 	assert_eq(state.kills, 0)
-	assert_almost_eq(state.elapsed, 0.0)
 	assert_eq(state.rng.seed_value, 7)
 
 
@@ -4173,8 +4280,7 @@ func test_to_result_reports_the_run() -> void:
 	state.wallet.add(Wallet.Kind.GOLD, 12)
 	state.wallet.add(Wallet.Kind.STONE, 3)
 	state.kills = 9
-	state.elapsed = 42.0
-	var result := state.to_result(RunResult.Outcome.CLEARED)
+	var result := state.to_result(RunResult.Outcome.CLEARED, 42.0)
 	assert_eq(result.outcome, RunResult.Outcome.CLEARED)
 	assert_eq(result.gold, 12)
 	assert_eq(result.stone, 3)
@@ -4214,6 +4320,16 @@ func test_spawn_places_a_configured_enemy_in_the_layer() -> void:
 	assert_eq(enemy.global_position, Vector2(30, 40))
 	assert_eq(spawned, [enemy])
 	assert_eq(factory.alive_count(), 1)
+
+
+func test_dead_enemies_no_longer_count_as_alive() -> void:
+	var rig := _rig()
+	var factory: EnemyFactory = rig[0]
+	var enemy := factory.spawn(DefFactory.enemy(ENEMY_SCENE), Vector2.ZERO)
+	var killer := ActorFixture.bare_actor(self, StatBlock.new())
+	var spec := EffectBuilder.damage(killer, killer, load("res://data/effects/damage_basic.tres"), 9999.0)
+	ActorFixture.asc_of(killer).apply_effect_spec_to_target(spec, enemy.get_node("AbilitySystemComponent"))
+	assert_eq(factory.alive_count(), 0)
 
 
 func test_enemies_chase_the_target_of_their_policy() -> void:
@@ -4407,6 +4523,70 @@ func test_rebuilding_replaces_the_walls() -> void:
 	assert_eq(arena.bounds.size, Vector2(800, 600))
 ```
 
+`tests/stage/test_loot_director.gd`:
+```gdscript
+extends TestCase
+
+const ENEMY_SCENE: PackedScene = preload("res://src/actors/enemy/enemy.tscn")
+const PLAYER_SCENE: PackedScene = preload("res://src/actors/player/player.tscn")
+const DAMAGE: GameplayEffect = preload("res://data/effects/damage_basic.tres")
+
+
+func _rig() -> Dictionary:
+	var projectile_layer := adopt(Node2D.new()) as Node2D
+	var targets := adopt(TargetProvider.new()) as TargetProvider
+	var player := adopt(PLAYER_SCENE.instantiate()) as Player
+	var profile := PlayerProfile.new()
+	profile.stats = StatBlock.new()
+	profile.visual = DefFactory.visual()
+	player.setup(profile, targets, projectile_layer)
+	targets.player = player
+	targets.building = player
+	var enemy_layer := adopt(Node2D.new()) as Node2D
+	var pickup_layer := adopt(Node2D.new()) as Node2D
+	var factory := adopt(EnemyFactory.new()) as EnemyFactory
+	factory.bind(enemy_layer, targets, RunRng.new(6))
+	var wallet := Wallet.new()
+	var loot := adopt(LootDirector.new()) as LootDirector
+	loot.bind(factory, pickup_layer, player, wallet)
+	return {"player": player, "factory": factory, "pickups": pickup_layer, "wallet": wallet}
+
+
+func test_collected_loot_is_credited_with_the_gain_multiplier() -> void:
+	var rig := _rig()
+	var player: Player = rig["player"]
+	var wallet: Wallet = rig["wallet"]
+	var overrides: Dictionary[String, float] = {"gold_gain": 2.0}
+	(player.get_node("AbilitySystemComponent") as AbilitySystemComponent).initialize_attribute_overrides(overrides)
+	player.loot_collected.emit(Wallet.Kind.GOLD, 5)
+	player.loot_collected.emit(Wallet.Kind.STONE, 3)
+	assert_eq(wallet.gold, 10)
+	assert_eq(wallet.stone, 3)
+
+
+func test_enemy_drops_become_pickups_on_the_pickup_layer() -> void:
+	var rig := _rig()
+	var factory: EnemyFactory = rig["factory"]
+	var pickups: Node2D = rig["pickups"]
+	var entry := DropEntry.new()
+	entry.chance = 1.0
+	entry.icon = DefFactory.texture(8, 8)
+	var def := DefFactory.enemy(ENEMY_SCENE)
+	def.contact_effect = DAMAGE
+	def.drops = DropTable.new()
+	def.drops.entries.append(entry)
+	var enemy := factory.spawn(def, Vector2(50, 50))
+	var killer := ActorFixture.bare_actor(self, StatBlock.new())
+	var spec := EffectBuilder.damage(killer, killer, DAMAGE, 9999.0)
+	ActorFixture.asc_of(killer).apply_effect_spec_to_target(spec, enemy.get_node("AbilitySystemComponent"))
+	assert_eq(pickups.get_child_count(), 0, "spawned deferred, not inside the physics callback")
+	await next_frame()
+	await next_frame()
+	assert_eq(pickups.get_child_count(), 1)
+	assert_true(pickups.get_child(0) is Pickup)
+	assert_true((pickups.get_child(0) as Pickup).global_position.distance_to(Vector2(50, 50)) <= 12.0)
+```
+
 - [ ] **Step 2: Run to verify failure**
 
 Run: `FILTER=tests/stage tools/run_tests.sh`
@@ -4498,7 +4678,6 @@ var profile: PlayerProfile
 var rng: RunRng
 var wallet: Wallet = Wallet.new()
 var kills: int = 0
-var elapsed: float = 0.0
 
 
 func _init(p_stage_def: StageDef, p_profile: PlayerProfile, run_seed: int = 0) -> void:
@@ -4507,7 +4686,7 @@ func _init(p_stage_def: StageDef, p_profile: PlayerProfile, run_seed: int = 0) -
 	rng = RunRng.new(run_seed)
 
 
-func to_result(outcome: RunResult.Outcome) -> RunResult:
+func to_result(outcome: RunResult.Outcome, elapsed: float) -> RunResult:
 	var result := RunResult.new()
 	result.outcome = outcome
 	result.elapsed = elapsed
@@ -4528,6 +4707,7 @@ signal spawned(enemy: Enemy)
 var _layer: Node2D
 var _targets: TargetProvider
 var _rng: RunRng
+var _alive: Array[Enemy] = []
 
 
 func bind(layer: Node2D, targets: TargetProvider, rng: RunRng) -> void:
@@ -4541,12 +4721,20 @@ func spawn(def: EnemyDef, position: Vector2) -> Enemy:
 	_layer.add_child(enemy)
 	enemy.global_position = position
 	enemy.setup(def, _targets.target_for(def.target_policy), _rng)
+	_alive.append(enemy)
+	enemy.died.connect(_forget)
+	enemy.tree_exited.connect(_forget.bind(enemy))
 	spawned.emit(enemy)
 	return enemy
 
 
+## Enemies this factory created that are still alive (dying enemies no longer count toward spawn caps).
 func alive_count() -> int:
-	return get_tree().get_nodes_in_group(Groups.ENEMIES).size()
+	return _alive.size()
+
+
+func _forget(enemy: Enemy) -> void:
+	_alive.erase(enemy)
 ```
 
 - [ ] **Step 4: Implement the directors and the arena**
@@ -4710,6 +4898,47 @@ z_index = -10
 [node name="Walls" type="StaticBody2D" parent="."]
 collision_layer = 1
 collision_mask = 0
+```
+
+`src/stage/loot_director.gd`:
+```gdscript
+class_name LootDirector
+extends Node
+## Turns enemy drops into pickups and collected pickups into wallet credit.
+
+const PICKUP_SCENE: PackedScene = preload("res://src/actors/pickup/pickup.tscn")
+
+var _pickup_layer: Node2D
+var _player: Player
+var _wallet: Wallet
+
+
+func bind(factory: EnemyFactory, pickup_layer: Node2D, player: Player, wallet: Wallet) -> void:
+	_pickup_layer = pickup_layer
+	_player = player
+	_wallet = wallet
+	factory.spawned.connect(_on_enemy_spawned)
+	player.loot_collected.connect(_on_loot_collected)
+
+
+func _on_enemy_spawned(enemy: Enemy) -> void:
+	enemy.loot_dropped.connect(_on_loot_dropped)
+
+
+## Deferred: pickups are collision objects and must not be added while physics signals are flushing.
+func _on_loot_dropped(roll: DropRoll, position: Vector2) -> void:
+	_spawn_pickup.call_deferred(roll, position)
+
+
+func _spawn_pickup(roll: DropRoll, position: Vector2) -> void:
+	var pickup := PICKUP_SCENE.instantiate() as Pickup
+	_pickup_layer.add_child(pickup)
+	pickup.global_position = position
+	pickup.setup(roll)
+
+
+func _on_loot_collected(kind: Wallet.Kind, amount: int) -> void:
+	_wallet.add(kind, roundi(amount * _player.gain_multiplier(kind)))
 ```
 
 - [ ] **Step 5: Run to verify pass**
@@ -5053,14 +5282,14 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 
 **Files:**
 - Create: `src/ui/hud/timeline_bar.gd`, `hud.gd`, `hud.tscn`; `src/stage/stage.gd`, `stage.tscn`
-- Test: `tests/ui/test_timeline_bar.gd`, `tests/stage/test_stage.gd`
+- Test: `tests/ui/test_timeline_bar.gd`, `tests/ui/test_hud.gd`, `tests/stage/test_stage.gd`
 
 **Interfaces:**
 - Consumes: everything from Tasks 2–11.
 - Produces:
   - `TimelineBar` (Control): `configure(duration: float, marks: PackedFloat32Array)`, `set_elapsed(elapsed: float)`, `mark_x(mark: float) -> float` (pixel x of a mark for the current width).
-  - `Hud` (CanvasLayer scene `res://src/ui/hud/hud.tscn`): `bind(player_health: Health, building_health: Health, wallet: Wallet, clock: StageClock, waves: WaveDirector)`; `show_result(result: RunResult)`.
-  - `Stage` (Node2D scene `res://src/stage/stage.tscn`): `signal finished(result: RunResult)`; public `player: Player`, `building: Building`, `run_state: RunState`; `start(stage_def: StageDef, profile: PlayerProfile, run_seed := 0) -> bool` (false + logged errors when a def is invalid; nothing starts).
+  - `Hud` (CanvasLayer scene `res://src/ui/hud/hud.tscn`): `bind(player_health: Health, building_health: Health, wallet: Wallet, clock: StageClock, timeline: Timeline)`; `show_result(result: RunResult)`. The HUD is **not** part of `Stage` (the stage layer may not import `ui/`); `Main` instantiates and binds it.
+  - `Stage` (Node2D scene `res://src/stage/stage.tscn`): `signal finished(result: RunResult)`; public `player: Player`, `building: Building`, `run_state: RunState`, `clock: StageClock`, `waves: WaveDirector`; `start(stage_def: StageDef, profile: PlayerProfile, run_seed := 0) -> bool` (false + logged errors when a def is invalid; nothing starts).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -5089,6 +5318,66 @@ func test_zero_duration_does_not_divide_by_zero() -> void:
 	bar.configure(0.0, PackedFloat32Array([10.0]))
 	bar.set_elapsed(5.0)
 	assert_almost_eq(bar.mark_x(10.0), 0.0)
+```
+
+`tests/ui/test_hud.gd`:
+```gdscript
+extends TestCase
+
+const HUD_SCENE: PackedScene = preload("res://src/ui/hud/hud.tscn")
+const DAMAGE: GameplayEffect = preload("res://data/effects/damage_basic.tres")
+
+
+func _health_for(actor: Node2D) -> Health:
+	var health := Health.new()
+	actor.add_child(health)
+	health.bind(ActorFixture.asc_of(actor))
+	return health
+
+
+func _rig() -> Dictionary:
+	var stats := StatBlock.new()
+	stats.max_health = 50.0
+	var player_actor := ActorFixture.bare_actor(self, stats)
+	var building_actor := ActorFixture.bare_actor(self, stats)
+	var wallet := Wallet.new()
+	var clock := adopt(StageClock.new()) as StageClock
+	var hud := adopt(HUD_SCENE.instantiate()) as Hud
+	hud.bind(_health_for(player_actor), _health_for(building_actor), wallet, clock, Timeline.new(100.0, PackedFloat32Array([30.0])))
+	return {"hud": hud, "player_actor": player_actor, "wallet": wallet}
+
+
+func test_bars_show_initial_health_and_follow_damage() -> void:
+	var rig := _rig()
+	var hud: Hud = rig["hud"]
+	var bar := hud.get_node("%PlayerBar") as ProgressBar
+	assert_almost_eq(bar.value, 50.0)
+	assert_almost_eq(bar.max_value, 50.0)
+	var attacker := ActorFixture.bare_actor(self, StatBlock.new())
+	var spec := EffectBuilder.damage(attacker, attacker, DAMAGE, 20.0)
+	ActorFixture.asc_of(attacker).apply_effect_spec_to_target(spec, ActorFixture.asc_of(rig["player_actor"]))
+	assert_almost_eq(bar.value, 30.0)
+
+
+func test_wallet_label_follows_the_wallet() -> void:
+	var rig := _rig()
+	var hud: Hud = rig["hud"]
+	var wallet: Wallet = rig["wallet"]
+	wallet.add(Wallet.Kind.GOLD, 7)
+	wallet.add(Wallet.Kind.STONE, 2)
+	assert_eq((hud.get_node("%WalletLabel") as Label).text, "Gold 7   Stone 2")
+
+
+func test_show_result_displays_outcome_and_totals() -> void:
+	var hud: Hud = _rig()["hud"]
+	var result := RunResult.new()
+	result.outcome = RunResult.Outcome.CLEARED
+	result.kills = 3
+	hud.show_result(result)
+	var label := hud.get_node("%ResultLabel") as Label
+	assert_true(label.visible)
+	assert_true(label.text.contains("STAGE CLEARED"))
+	assert_true(label.text.contains("Kills 3"))
 ```
 
 `tests/stage/test_stage.gd`:
@@ -5125,7 +5414,7 @@ func _running_stage(duration: float, results: Array) -> Stage:
 
 
 func _kill(stage: Stage, target_asc: AbilitySystemComponent) -> void:
-	var attacker := ActorFixture.make(self, StatBlock.new())
+	var attacker := ActorFixture.bare_actor(self, StatBlock.new())
 	var spec := EffectBuilder.damage(attacker, attacker, DAMAGE, 99999.0)
 	ActorFixture.asc_of(attacker).apply_effect_spec_to_target(spec, target_asc)
 
@@ -5195,6 +5484,7 @@ func test_killed_enemies_are_counted_and_drop_pickups() -> void:
 	for victim in victims:
 		_kill(stage, victim.get_node("AbilitySystemComponent"))
 	await next_frame()
+	await next_frame()
 	assert_eq(stage.run_state.kills, victims.size())
 	assert_true(stage.get_node("World/Pickups").get_child_count() > 0, "gold dropped")
 
@@ -5209,7 +5499,7 @@ func test_restart_starts_clean() -> void:
 	var second_results: Array = []
 	var second := _running_stage(30.0, second_results)
 	assert_eq(second.run_state.wallet.gold, 0)
-	assert_almost_eq(second.run_state.elapsed, 0.0)
+	assert_almost_eq(second.clock.elapsed, 0.0)
 	assert_eq(host.get_tree().get_nodes_in_group(Groups.ENEMIES).size(), 0)
 ```
 
@@ -5284,14 +5574,14 @@ extends CanvasLayer
 @onready var _result_label: Label = %ResultLabel
 
 
-func bind(player_health: Health, building_health: Health, wallet: Wallet, clock: StageClock, waves: WaveDirector) -> void:
+func bind(player_health: Health, building_health: Health, wallet: Wallet, clock: StageClock, timeline: Timeline) -> void:
 	player_health.changed.connect(func(current: float, maximum: float) -> void: _set_bar(_player_bar, current, maximum))
 	building_health.changed.connect(func(current: float, maximum: float) -> void: _set_bar(_building_bar, current, maximum))
 	_set_bar(_player_bar, player_health.current(), player_health.maximum())
 	_set_bar(_building_bar, building_health.current(), building_health.maximum())
 	wallet.changed.connect(_on_wallet_changed)
 	_on_wallet_changed(wallet.gold, wallet.stone)
-	_timeline.configure(waves.timeline.duration, waves.mark_times())
+	_timeline.configure(timeline.duration, timeline.marks)
 	clock.ticked.connect(_timeline.set_elapsed)
 
 
@@ -5394,10 +5684,10 @@ class_name Stage
 extends Node2D
 ## Composition root of one stage run. Builds everything from (StageDef, PlayerProfile), wires the
 ## signals between modules, and reports a RunResult. Modules never look each other up.
+## The stage knows nothing about UI: whoever presents it binds to the public models below.
 
 signal finished(result: RunResult)
 
-const PICKUP_SCENE: PackedScene = preload("res://src/actors/pickup/pickup.tscn")
 const PLAYER_START: Vector2 = Vector2(0.0, 150.0)
 
 var run_state: RunState
@@ -5406,17 +5696,17 @@ var _flow := StageFlow.new()
 
 @onready var player: Player = $World/Player
 @onready var building: Building = $World/Building
+@onready var clock: StageClock = $Systems/StageClock
+@onready var waves: WaveDirector = $Systems/WaveDirector
 @onready var _world: Node2D = $World
 @onready var _arena: Arena = $Arena
 @onready var _enemy_layer: Node2D = $World/Enemies
 @onready var _projectile_layer: Node2D = $World/Projectiles
 @onready var _pickup_layer: Node2D = $World/Pickups
-@onready var _clock: StageClock = $Systems/StageClock
 @onready var _targets: TargetProvider = $Systems/TargetProvider
 @onready var _factory: EnemyFactory = $Systems/EnemyFactory
 @onready var _spawner: SpawnDirector = $Systems/SpawnDirector
-@onready var _waves: WaveDirector = $Systems/WaveDirector
-@onready var _hud: Hud = $Hud
+@onready var _loot: LootDirector = $Systems/LootDirector
 
 
 ## Returns false, after logging every problem, when a def is invalid; nothing is started then.
@@ -5436,51 +5726,29 @@ func start(stage_def: StageDef, profile: PlayerProfile, run_seed: int = 0) -> bo
 	_targets.building = building
 	_targets.player = player
 	_factory.bind(_enemy_layer, _targets, run_state.rng)
-	_spawner.bind(stage_def, _clock, _factory, player, run_state.rng, _arena.bounds)
-	_waves.bind(stage_def, _clock, _factory, player, run_state.rng, _arena.bounds)
-	_hud.bind(player.health, building.health, run_state.wallet, _clock, _waves)
+	# Enemies appear on a ring around the defended building, not around the roaming player.
+	_spawner.bind(stage_def, clock, _factory, building, run_state.rng, _arena.bounds)
+	waves.bind(stage_def, clock, _factory, building, run_state.rng, _arena.bounds)
+	_loot.bind(_factory, _pickup_layer, player, run_state.wallet)
 	_wire()
 	_flow.transition_to(StageFlow.State.RUNNING)
-	_clock.start(stage_def.duration)
+	clock.start(stage_def.duration)
 	return true
 
 
 func _wire() -> void:
 	building.destroyed.connect(_finish.bind(RunResult.Outcome.FAILED))
 	player.died.connect(_finish.bind(RunResult.Outcome.FAILED))
-	_clock.ended.connect(_finish.bind(RunResult.Outcome.CLEARED))
-	_clock.ticked.connect(_on_clock_ticked)
+	clock.ended.connect(_finish.bind(RunResult.Outcome.CLEARED))
 	_factory.spawned.connect(_on_enemy_spawned)
-	player.loot_collected.connect(_on_loot_collected)
-
-
-func _on_clock_ticked(elapsed: float) -> void:
-	run_state.elapsed = elapsed
 
 
 func _on_enemy_spawned(enemy: Enemy) -> void:
 	enemy.died.connect(_on_enemy_died)
-	enemy.loot_dropped.connect(_on_loot_dropped)
 
 
 func _on_enemy_died(_enemy: Enemy) -> void:
 	run_state.kills += 1
-
-
-## Deferred: pickups are collision objects and must not be added while physics signals are flushing.
-func _on_loot_dropped(roll: DropRoll, position: Vector2) -> void:
-	_spawn_pickup.call_deferred(roll, position)
-
-
-func _spawn_pickup(roll: DropRoll, position: Vector2) -> void:
-	var pickup := PICKUP_SCENE.instantiate() as Pickup
-	_pickup_layer.add_child(pickup)
-	pickup.global_position = position
-	pickup.setup(roll)
-
-
-func _on_loot_collected(kind: Wallet.Kind, amount: int) -> void:
-	run_state.wallet.add(kind, roundi(amount * player.gain_multiplier(kind)))
 
 
 func _finish(outcome: RunResult.Outcome) -> void:
@@ -5488,17 +5756,14 @@ func _finish(outcome: RunResult.Outcome) -> void:
 		return
 	var end_state := StageFlow.State.CLEARED if outcome == RunResult.Outcome.CLEARED else StageFlow.State.FAILED
 	_flow.transition_to(end_state)
-	_clock.stop()
+	clock.stop()
 	_world.process_mode = Node.PROCESS_MODE_DISABLED
-	var result := run_state.to_result(outcome)
-	_hud.show_result(result)
-	finished.emit(result)
+	finished.emit(run_state.to_result(outcome, clock.elapsed))
 ```
-Note: `_spawn_pickup` after the stage is freed (deferred call on a freed node) is dropped by the engine; no guard is needed.
 
 `src/stage/stage.tscn`:
 ```
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://src/stage/stage.gd" id="1_stage"]
 [ext_resource type="PackedScene" path="res://src/stage/arena.tscn" id="2_arena"]
@@ -5509,7 +5774,7 @@ Note: `_spawn_pickup` after the stage is freed (deferred call on a freed node) i
 [ext_resource type="Script" path="res://src/stage/enemy_factory.gd" id="7_factory"]
 [ext_resource type="Script" path="res://src/stage/spawn_director.gd" id="8_spawner"]
 [ext_resource type="Script" path="res://src/stage/wave_director.gd" id="9_waves"]
-[ext_resource type="PackedScene" path="res://src/ui/hud/hud.tscn" id="10_hud"]
+[ext_resource type="Script" path="res://src/stage/loot_director.gd" id="10_loot"]
 
 [node name="Stage" type="Node2D"]
 script = ExtResource("1_stage")
@@ -5549,7 +5814,8 @@ script = ExtResource("8_spawner")
 [node name="WaveDirector" type="Node" parent="Systems"]
 script = ExtResource("9_waves")
 
-[node name="Hud" parent="." instance=ExtResource("10_hud")]
+[node name="LootDirector" type="Node" parent="Systems"]
+script = ExtResource("10_loot")
 ```
 
 - [ ] **Step 5: Run to verify pass**
@@ -5578,7 +5844,7 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 - Modify (editor tools): project setting `rendering/textures/canvas_textures/default_texture_filter`
 
 **Interfaces:**
-- Consumes: `Stage`, `STAGE_DEF` (`stage_01.tres`), `PROFILE` (`default_profile.tres`), `InputActions.RESTART`.
+- Consumes: `Stage`, `Hud`, `STAGE_DEF` (`stage_01.tres`), `PROFILE` (`default_profile.tres`), `InputActions.RESTART`.
 - Produces: the project's main scene `res://src/app/main.tscn`; pressing **R** after a run restarts the stage.
 
 - [ ] **Step 1: Implement Main**
@@ -5586,13 +5852,16 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 `src/app/main.gd`:
 ```gdscript
 extends Node
-## Entry point: runs the default stage and restarts it on demand. Phase 4 replaces this with the menu flow.
+## Entry point: runs the default stage with its HUD and restarts on demand.
+## Phase 4 replaces this with the menu flow.
 
 const STAGE_SCENE: PackedScene = preload("res://src/stage/stage.tscn")
+const HUD_SCENE: PackedScene = preload("res://src/ui/hud/hud.tscn")
 const STAGE_DEF: StageDef = preload("res://data/stages/stage_01.tres")
 const PROFILE: PlayerProfile = preload("res://data/characters/default_profile.tres")
 
 var _stage: Stage
+var _hud: Hud
 var _result: RunResult
 
 
@@ -5606,20 +5875,30 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _start_run() -> void:
-	if _stage != null:
-		remove_child(_stage)
-		_stage.queue_free()
+	_discard_run()
 	_result = null
 	_stage = STAGE_SCENE.instantiate() as Stage
+	_hud = HUD_SCENE.instantiate() as Hud
 	add_child(_stage)
-	_stage.finished.connect(_on_finished)
+	add_child(_hud)
 	if not _stage.start(STAGE_DEF, PROFILE):
 		get_tree().quit(1)
+		return
+	_hud.bind(_stage.player.health, _stage.building.health, _stage.run_state.wallet, _stage.clock, _stage.waves.timeline)
+	_stage.finished.connect(_on_finished)
+
+
+func _discard_run() -> void:
+	for node: Node in [_stage, _hud]:
+		if node != null:
+			remove_child(node)
+			node.queue_free()
 
 
 func _on_finished(result: RunResult) -> void:
 	_result = result
-	print("[Main] %s after %.1fs — kills %d, gold %d, stone %d" % [
+	_hud.show_result(result)
+	print("[Main] %s after %.1fs - kills %d, gold %d, stone %d" % [
 		RunResult.Outcome.keys()[result.outcome], result.elapsed, result.kills, result.gold, result.stone,
 	])
 ```
@@ -5655,6 +5934,8 @@ Via godot-ai MCP `project_manage` `settings_set`: `application/run/main_scene` =
 - Enemies die with their death animation, drop coins (and sometimes crystals); walking near pulls them in and the HUD counters rise.
 - The timeline bar fills as time passes; at 30/60/90/120/150 s a visibly larger group arrives and the diamond turns grey.
 - Letting the house reach 0 HP (or the soldier dying) shows "GAME OVER"; surviving 180 s shows "STAGE CLEARED"; **R** restarts with an empty wallet.
+- Enemies appear on a ring around the house (off-screen while you stand next to it) and waves arrive from all sides.
+- Tuning note, not a bug: enemies only collide with the world, so a crowd stacks on one point; if that looks bad, add separation steering in `Enemy._physics_process` or an `ENEMY_BODY` mask as a follow-up.
 - Frame rate stays smooth during the biggest wave: `editor_manage` `monitors_get` (FPS) shows ≥ 55 with ~80 enemies; if not, note the number — it decides whether the pooling seam in `EnemyFactory` is needed next.
 
 Record anything that fails as a fix inside this task (use `superpowers:systematic-debugging`) before committing. Typical visual tuning knobs live in data, not code: `VisualDef.offset` (sprite vs. collision circle), `Camera2D.zoom` in `player.tscn`, enemy stats in `data/enemies/*.tres`, wave counts in `data/waves/stage_01_waves.tres`.
@@ -5683,6 +5964,8 @@ Edit the spec so it no longer contradicts the code:
 2. Section 1.3: add default 6 — "player death also ends the run as FAILED".
 3. Section 5: replace "framework chosen in the plan" with "an in-repo headless runner (`tests/run_tests.tscn`, `tools/run_tests.sh`); the editor MCP runner cannot call non-`@tool` scripts".
 4. Section 4 Phase 1: note "Soldier + Orc + swarmer content, 5 waves, 180 s, no boss yet (time up = CLEARED)".
+5. Sections 3.1/3.3/3.4: six physics layers (`World, AllyBody, EnemyBody, AllyHurt, EnemyHurt, Pickup`, no `*Hit` layers); `Hurtbox` is passive (no `hit_received`); the ground is a repeated `Sprite2D` from `StageDef.ground_texture` instead of a tileset/map scene; there is no `cooldown_reduction` attribute yet; the arrow always targets the nearest enemy (the manual-aim seam of 1.3 is deferred).
+6. Sections 3.1/3.2: add `ActorAbility`/`AbilityContext` (components), `LootDirector` (stage), `Main` binds the HUD to the stage models (`Stage` exposes `player`, `building`, `run_state`, `clock`, `waves`), enemy/wave spawn rings are centred on the building.
 
 - [ ] **Step 2: Write `CLAUDE.md`**
 
