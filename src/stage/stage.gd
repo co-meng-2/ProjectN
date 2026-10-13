@@ -42,7 +42,7 @@ func start(stage_def: StageDef, profile: PlayerProfile, run_seed: int = 0) -> bo
 	_arena.build(stage_def.arena_size, stage_def.ground_texture)
 	building.setup(stage_def.building_texture, stage_def.building_stats)
 	player.global_position = PLAYER_START
-	player.setup(profile, _targets, _projectile_layer)
+	player.setup(profile, _targets, _projectile_layer, run_state.wallet)
 	player.limit_camera(_arena.bounds)
 	_targets.building = building
 	_targets.player = player

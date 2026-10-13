@@ -8,15 +8,15 @@ const DAMAGE: GameplayEffect = preload("res://data/effects/damage_basic.tres")
 func _rig(drop_multiplier: float = 1.0) -> Dictionary:
 	var projectile_layer := adopt(Node2D.new()) as Node2D
 	var targets := adopt(TargetProvider.new()) as TargetProvider
+	var wallet := Wallet.new()
 	var player := adopt(PLAYER_SCENE.instantiate()) as Player
-	player.setup(DefFactory.profile(), targets, projectile_layer)
+	player.setup(DefFactory.profile(), targets, projectile_layer, wallet)
 	targets.player = player
 	targets.building = player
 	var enemy_layer := adopt(Node2D.new()) as Node2D
 	var pickup_layer := adopt(Node2D.new()) as Node2D
 	var factory := adopt(EnemyFactory.new()) as EnemyFactory
 	factory.bind(enemy_layer, targets, RunRng.new(6))
-	var wallet := Wallet.new()
 	var loot := adopt(LootDirector.new()) as LootDirector
 	loot.bind(factory, pickup_layer, player, wallet, drop_multiplier)
 	return {"player": player, "factory": factory, "pickups": pickup_layer, "wallet": wallet}
