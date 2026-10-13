@@ -37,3 +37,6 @@ desktop.ini
 # Logs and temp
 *.log
 *.tmp
+
+# Subagent-driven-development scratch
+.superpowers/
