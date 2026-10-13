@@ -34,7 +34,7 @@ driving time through `step(delta)`.
 
 | Item | Value |
 |---|---|
-| Events per stage (`stage_01`) | 3, window 20–160 s, `min_gap` 30 s between events, `wave_clearance` 5 s from wave times |
+| Events per stage (`stage_01`) | 3, window 20–155 s, `min_gap` 30 s between events, `wave_clearance` 5 s from wave times |
 | Statues | 4 statues, 60 HP each, ≥ 250 px from building and player, limit 25 s; reward 150 gold, 2 stone, 1 ticket |
 | Meteors | duration 20 s, one meteor every 1.2 s, warning 0.9 s, radius 60 px, 15 damage, landing ≤ 120 px from the player, `max_hits` 3; reward 100 gold, 3 stone, 1 ticket |
 | Elites | 3 elite orcs (300 HP, speed 70, scale 1.8, red tint, target player, contact 15), limit 25 s; reward 200 gold, 2 stone, 1 ticket |
@@ -63,7 +63,7 @@ Event and boss numbers live in the controller/pattern scenes' exported values an
     uniformly from the allowed seconds that are ≥ `min_gap` after the previous event **and** still leave room to place
     the remaining events greedily. This always succeeds when the schedule is feasible.
   - `EventSchedule.validate_against(duration, wave_times)` reports an error when greedy earliest placement fails, when
-    the window lies outside `(0, duration)`, when `count < 0`, or when `min_gap` is shorter than the longest
+    the window lies outside `(0, duration)`, when `window_end` plus the longest `time_limit` in the pool exceeds `duration` (every event can finish before the boss), when `count < 0`, or when `min_gap` is shorter than the longest
     `time_limit` in the pool (so at most one event runs at a time). It also validates every `EventDef`.
   - The event picked for each time is drawn from `pool`, never the same def twice in a row when the pool has
     alternatives.
