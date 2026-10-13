@@ -35,6 +35,10 @@ func next_frame() -> void:
 	await host.get_tree().process_frame
 
 
+func next_physics_frame() -> void:
+	await host.get_tree().physics_frame
+
+
 func wait_seconds(seconds: float) -> void:
 	await host.get_tree().create_timer(seconds).timeout
 
