@@ -93,6 +93,9 @@ func _start_next() -> void:
 	event.succeeded.connect(_on_event_finished.bind(event, def, true))
 	event.failed.connect(_on_event_finished.bind(event, def, false))
 	event_started.emit(def, event)
+	# A listener may have aborted the event already; it must not begin after that.
+	if _running != event:
+		return
 	event.begin(context)
 
 

@@ -98,6 +98,7 @@ func test_abort_running_ends_without_reward_and_drops_waiting_events() -> void:
 	var first := (rig["record"]["started"] as Array)[0][1] as ProbeEvent
 	director.abort_running()
 	assert_eq(first.cleanups, 1)
+	assert_true(first.is_queued_for_deletion(), "the aborted controller is freed")
 	assert_eq((rig["record"]["ended"] as Array).size(), 1)
 	assert_false((rig["record"]["ended"] as Array)[0][1], "an aborted event never succeeds")
 	assert_null(director.running())
@@ -146,3 +147,19 @@ func test_validate_defs_requires_a_stage_event_root() -> void:
 	assert_eq(errors.size(), 1)
 	assert_true(errors[0].contains("plain"))
 	assert_no_errors(EventDirector.validate_defs(null), "no schedule")
+
+
+func test_aborting_from_an_event_started_listener_never_begins_the_event() -> void:
+	var rig := _rig(_pool(_endless_scene()), 1)
+	var director: EventDirector = rig["director"]
+	var clock: StageClock = rig["clock"]
+	director.event_started.connect(func(_def: EventDef, _event: StageEvent) -> void: director.abort_running())
+	clock.step(director.event_times()[0] + 1.0)
+	var event := (rig["record"]["started"] as Array)[0][1] as ProbeEvent
+	assert_eq(event.begins, 0, "aborted before it began")
+	assert_eq(event.cleanups, 0)
+	assert_false(event.is_running())
+	assert_true(event.is_queued_for_deletion())
+	assert_eq((rig["record"]["ended"] as Array).size(), 1)
+	assert_false((rig["record"]["ended"] as Array)[0][1])
+	assert_null(director.running())

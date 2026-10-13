@@ -4,6 +4,10 @@ const STAGE_SCENE: PackedScene = preload("res://src/stage/stage.tscn")
 const VITALITY: AbilityDef = preload("res://data/abilities/vitality.tres")
 const VOLLEY: AbilityDef = preload("res://data/abilities/volley.tres")
 const BOUNTY: AbilityDef = preload("res://data/abilities/bounty.tres")
+const BOSS_SCENE: PackedScene = preload("res://src/actors/boss/boss.tscn")
+const PROBE_PATTERN: PackedScene = preload("res://tests/support/probe_pattern.tscn")
+const PROBE_EVENT: PackedScene = preload("res://tests/support/probe_event.tscn")
+const SUMMON_SCENE: PackedScene = preload("res://src/boss/patterns/summon_pattern.tscn")
 
 
 func _stage_def(duration: float) -> StageDef:
@@ -245,3 +249,184 @@ func test_an_ability_def_with_a_non_ability_scene_is_rejected_before_anything_st
 	assert_false(stage.start(def, profile, 11))
 	assert_null(stage.run_state)
 	assert_null(stage.loadout)
+
+
+
+## A stage without trickle or waves whose clock the test drives by hand.
+func _manual_stage(def: StageDef, results: Array) -> Stage:
+	var stage := adopt(STAGE_SCENE.instantiate()) as Stage
+	stage.finished.connect(func(result: RunResult) -> void: results.append(result))
+	assert_true(stage.start(def, _profile(), 11))
+	stage.clock.set_physics_process(false)
+	return stage
+
+
+func _quiet_def(duration: float) -> StageDef:
+	var def := _stage_def(duration)
+	def.trickle_enemies.clear()
+	def.waves.entries.clear()
+	return def
+
+
+func _boss_def(pattern: PackedScene = PROBE_PATTERN) -> BossDef:
+	var patterns: Array[PackedScene] = [pattern]
+	return DefFactory.boss(BOSS_SCENE, patterns)
+
+
+## One endless probe event somewhere in [window_start, window_end]. Its time limit is 1 s so the schedule
+## passes the window_end + time_limit <= duration rule even on a 5 s stage; being endless, it keeps running
+## past that limit until the test (or the boss) ends it.
+func _probe_events(window_start: float, window_end: float) -> EventSchedule:
+	var probe := PROBE_EVENT.instantiate() as ProbeEvent
+	probe.endless = true
+	var pool: Array[EventDef] = [DefFactory.event(DefFactory.packed(probe), 1.0, &"probe")]
+	return DefFactory.schedule(pool, 1, window_start, window_end, 10.0)
+
+
+func test_time_up_brings_the_boss_and_its_death_clears_the_stage() -> void:
+	var def := _quiet_def(5.0)
+	def.boss = _boss_def()
+	var results: Array = []
+	var stage := _manual_stage(def, results)
+	var appeared: Array = []
+	stage.boss_appeared.connect(func(health: Health, display_name: String) -> void: appeared.append([health, display_name]))
+	stage.clock.step(5.0)
+	assert_true(results.is_empty(), "time up starts the boss fight instead of clearing")
+	assert_eq(stage.flow_state(), StageFlow.State.BOSS)
+	var boss := stage.current_boss()
+	assert_not_null(boss)
+	assert_eq(appeared, [[boss.health, "Test Boss"]])
+	assert_almost_eq(boss.global_position.distance_to(stage.building.global_position), def.spawn_radius, 1.0)
+	assert_true(boss.get_node_or_null("Brain") is BossBrain, "the Stage attached the brain")
+	stage.clock.step(30.0)
+	assert_true(results.is_empty(), "the boss fight has no time limit")
+	assert_almost_eq(stage.clock.elapsed, 35.0)
+	ActorFixture.kill(self, boss.asc)
+	assert_eq(results.size(), 1)
+	assert_eq((results[0] as RunResult).outcome, RunResult.Outcome.CLEARED)
+	assert_eq(stage.run_state.kills, 0, "the boss is not a kill")
+
+
+func test_without_a_boss_time_up_clears_at_once() -> void:
+	var results: Array = []
+	var stage := _manual_stage(_quiet_def(5.0), results)
+	stage.clock.step(5.0)
+	assert_eq(results.size(), 1)
+	assert_eq((results[0] as RunResult).outcome, RunResult.Outcome.CLEARED)
+	assert_null(stage.current_boss())
+	assert_eq(stage.flow_state(), StageFlow.State.CLEARED)
+
+
+func test_player_death_during_the_boss_fight_fails_the_run() -> void:
+	var def := _quiet_def(5.0)
+	def.boss = _boss_def()
+	var results: Array = []
+	var stage := _manual_stage(def, results)
+	stage.clock.step(5.0)
+	ActorFixture.kill(self, stage.player.asc)
+	assert_eq(results.size(), 1)
+	assert_eq((results[0] as RunResult).outcome, RunResult.Outcome.FAILED)
+
+
+func test_boss_appearance_aborts_a_running_event_without_reward() -> void:
+	var def := _quiet_def(5.0)
+	def.boss = _boss_def()
+	def.events = _probe_events(1.0, 3.0)
+	var results: Array = []
+	var stage := _manual_stage(def, results)
+	var ended: Array = []
+	stage.events.event_ended.connect(func(event_def: EventDef, success: bool) -> void: ended.append([event_def.id, success]))
+	stage.clock.step(3.5)
+	var probe := stage.events.running() as ProbeEvent
+	assert_not_null(probe, "the event is running")
+	assert_eq(probe.get_parent(), stage.get_node("World/Events"))
+	stage.clock.step(1.5)
+	assert_not_null(stage.current_boss())
+	assert_eq(ended, [[&"probe", false]])
+	assert_eq(probe.cleanups, 1, "its objects were removed")
+	assert_null(stage.events.running())
+	assert_eq(stage.run_state.wallet.gold, 0)
+	assert_eq(stage.run_state.wallet.tickets, 0)
+
+
+func test_a_successful_event_credits_its_reward() -> void:
+	var def := _quiet_def(60.0)
+	def.events = _probe_events(5.0, 10.0)
+	var results: Array = []
+	var stage := _manual_stage(def, results)
+	stage.clock.step(11.0)
+	(stage.events.running() as ProbeEvent).finish(true)
+	assert_eq(stage.run_state.wallet.gold, 150)
+	assert_eq(stage.run_state.wallet.stone, 2)
+	assert_eq(stage.run_state.wallet.tickets, 1)
+
+
+func test_a_failed_event_pays_nothing() -> void:
+	var def := _quiet_def(60.0)
+	def.events = _probe_events(5.0, 10.0)
+	var results: Array = []
+	var stage := _manual_stage(def, results)
+	stage.clock.step(11.0)
+	(stage.events.running() as ProbeEvent).finish(false)
+	assert_eq(stage.run_state.wallet.gold, 0)
+	assert_eq(stage.run_state.wallet.tickets, 0)
+
+
+func test_the_run_ending_aborts_a_running_event() -> void:
+	var def := _quiet_def(60.0)
+	def.events = _probe_events(5.0, 10.0)
+	var results: Array = []
+	var stage := _manual_stage(def, results)
+	stage.clock.step(11.0)
+	var probe := stage.events.running() as ProbeEvent
+	ActorFixture.kill(self, stage.building.asc)
+	assert_eq((results[0] as RunResult).outcome, RunResult.Outcome.FAILED)
+	assert_eq(probe.cleanups, 1)
+	assert_null(stage.events.running())
+
+
+func test_boss_summons_spawn_through_the_factory_and_count_as_kills() -> void:
+	var def := _quiet_def(5.0)
+	def.boss = _boss_def(SUMMON_SCENE)
+	var results: Array = []
+	var stage := _manual_stage(def, results)
+	stage.clock.step(5.0)
+	var boss := stage.current_boss()
+	assert_true(boss.asc.try_activate_abilities_by_tag(GameplayTags.Ability_Boss_Summon))
+	var summoned: Array = []
+	for node in host.get_tree().get_nodes_in_group(Groups.ENEMIES):
+		if node is Enemy:
+			summoned.append(node)
+	assert_eq(summoned.size(), 4)
+	assert_eq((summoned[0] as Enemy).get_parent(), stage.get_node("World/Enemies"))
+	ActorFixture.kill(self, (summoned[0] as Enemy).get_node("AbilitySystemComponent"))
+	assert_eq(stage.run_state.kills, 1, "summons are ordinary kills")
+
+
+func test_event_controllers_must_be_stage_events() -> void:
+	var def := _quiet_def(60.0)
+	var pool: Array[EventDef] = [DefFactory.event(DefFactory.packed(Node2D.new()), 10.0, &"plain")]
+	def.events = DefFactory.schedule(pool, 1, 5.0, 10.0, 10.0)
+	assert_no_errors(def.validate(), "the def alone cannot see the problem")
+	var stage := adopt(STAGE_SCENE.instantiate()) as Stage
+	assert_false(stage.start(def, _profile(), 11))
+	assert_null(stage.run_state)
+
+
+func test_boss_patterns_must_be_actor_abilities() -> void:
+	var def := _quiet_def(60.0)
+	def.boss = _boss_def(DefFactory.packed(BareGameplayAbility.new()))
+	assert_no_errors(def.validate(), "the def alone cannot see the problem")
+	var stage := adopt(STAGE_SCENE.instantiate()) as Stage
+	assert_false(stage.start(def, _profile(), 11))
+	assert_null(stage.run_state)
+
+
+func test_boss_scene_must_be_a_boss() -> void:
+	var def := _quiet_def(60.0)
+	var patterns: Array[PackedScene] = [PROBE_PATTERN]
+	def.boss = DefFactory.boss(DefFactory.packed(Node2D.new()), patterns)
+	assert_no_errors(def.validate(), "the def alone cannot see the problem")
+	var stage := adopt(STAGE_SCENE.instantiate()) as Stage
+	assert_false(stage.start(def, _profile(), 11))
+	assert_null(stage.run_state)

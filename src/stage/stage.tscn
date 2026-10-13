@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://src/stage/stage.gd" id="1_stage"]
 [ext_resource type="PackedScene" path="res://src/stage/arena.tscn" id="2_arena"]
@@ -11,6 +11,8 @@
 [ext_resource type="Script" path="res://src/stage/wave_director.gd" id="9_waves"]
 [ext_resource type="Script" path="res://src/stage/loot_director.gd" id="10_loot"]
 [ext_resource type="Script" path="res://src/abilities/ability_installer.gd" id="11_installer"]
+[ext_resource type="Script" path="res://src/stage/event_director.gd" id="12_events"]
+[ext_resource type="Script" path="res://src/stage/boss_director.gd" id="13_boss"]
 
 [node name="Stage" type="Node2D"]
 script = ExtResource("1_stage")
@@ -29,6 +31,9 @@ z_index = -1
 y_sort_enabled = true
 
 [node name="Player" parent="World" instance=ExtResource("4_player")]
+
+[node name="Events" type="Node2D" parent="World"]
+y_sort_enabled = true
 
 [node name="Projectiles" type="Node2D" parent="World"]
 y_sort_enabled = true
@@ -55,3 +60,9 @@ script = ExtResource("10_loot")
 
 [node name="AbilityInstaller" type="Node" parent="Systems"]
 script = ExtResource("11_installer")
+
+[node name="EventDirector" type="Node" parent="Systems"]
+script = ExtResource("12_events")
+
+[node name="BossDirector" type="Node" parent="Systems"]
+script = ExtResource("13_boss")
