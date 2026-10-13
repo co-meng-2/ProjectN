@@ -135,3 +135,27 @@ static func schedule(pool: Array[EventDef], count: int = 1, window_start: float 
 	result.min_gap = min_gap
 	result.wave_clearance = wave_clearance
 	return result
+
+
+## A valid boss def with contact damage 0 (tests then see only pattern damage), SEQUENCE order, gap 2 s,
+## and one weight-1 pattern per scene. `scene` defaults to an empty PackedScene (enough for validation).
+static func boss(scene: PackedScene = null, pattern_scenes: Array[PackedScene] = []) -> BossDef:
+	var def := BossDef.new()
+	def.id = &"test_boss"
+	def.display_name = "Test Boss"
+	def.scene = scene if scene != null else PackedScene.new()
+	def.visual = visual()
+	def.stats = StatBlock.new()
+	def.stats.max_health = 500.0
+	def.contact_effect = GameplayEffect.new()
+	def.contact_damage = 0.0
+	def.contact_interval = 1.0
+	def.body_radius = 20.0
+	def.pattern_gap = 2.0
+	def.order = BossDef.Order.SEQUENCE
+	for pattern_scene in pattern_scenes:
+		var pattern := BossPatternDef.new()
+		pattern.ability_scene = pattern_scene
+		pattern.weight = 1.0
+		def.patterns.append(pattern)
+	return def

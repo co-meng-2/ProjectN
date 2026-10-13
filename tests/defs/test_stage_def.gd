@@ -70,3 +70,13 @@ func test_null_wave_entry_with_events_reports_errors_without_crashing() -> void:
 	var errors := def.validate()
 	assert_eq(errors.size(), 1, ", ".join(errors))
 	assert_true(errors[0].contains("null entry"))
+
+
+func test_stage_validates_its_optional_boss() -> void:
+	var def := DefFactory.stage()
+	assert_null(def.boss, "no boss by default")
+	def.boss = BossDef.new()
+	assert_eq(def.validate().size(), 8, "the boss's errors are the stage's errors")
+	var patterns: Array[PackedScene] = [preload("res://tests/support/probe_ability.tscn")]
+	def.boss = DefFactory.boss(null, patterns)
+	assert_no_errors(def.validate(), "valid boss")

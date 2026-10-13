@@ -22,6 +22,8 @@ extends Resource
 @export var grade_table: GradeTable
 ## Optional announced events (Phase 3); null = none.
 @export var events: EventSchedule
+## Optional end-of-stage boss (Phase 3); null = time up clears the stage.
+@export var boss: BossDef
 
 
 func validate() -> PackedStringArray:
@@ -60,4 +62,6 @@ func validate() -> PackedStringArray:
 				if entry != null:
 					wave_times.append(entry.time)
 		errors.append_array(events.validate_against(duration, wave_times))
+	if boss != null:
+		errors.append_array(boss.validate())
 	return errors
