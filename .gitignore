@@ -1,0 +1,39 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Godot export / build output
+/build/
+/export/
+*.translation
+export_presets.cfg
+export_credentials.cfg
+
+# Mono / C# (unused, kept for safety)
+.mono/
+data_*/
+mono_crash.*.json
+
+# Plugins are symlinks to the shared D:\CM\Godot\plugins directory (machine-specific)
+/addons/GodotGAS
+/addons/godot_ai
+
+# Editor / IDE
+.vscode/
+.idea/
+*.code-workspace
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Claude Code / OMC local state
+.claude/settings.local.json
+.omc/
+
+# Logs and temp
+*.log
+*.tmp
