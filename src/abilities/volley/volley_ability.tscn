@@ -1,0 +1,31 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://src/abilities/volley/volley_ability.gd" id="1_volley"]
+[ext_resource type="PackedScene" path="res://src/actors/projectile/projectile.tscn" id="2_projectile"]
+[ext_resource type="Resource" path="res://data/projectiles/arrow.tres" id="3_arrow"]
+
+[sub_resource type="Curve" id="Curve_cooldown"]
+_limits = [0.0, 3.0, 1.0, 6.0]
+_data = [Vector2(1, 2.4), 0.0, 0.0, 0, 0, Vector2(2, 2.1), 0.0, 0.0, 0, 0, Vector2(3, 1.8), 0.0, 0.0, 0, 0, Vector2(4, 1.5), 0.0, 0.0, 0, 0, Vector2(5, 1.2), 0.0, 0.0, 0, 0, Vector2(6, 0.9), 0.0, 0.0, 0, 0]
+point_count = 6
+
+[sub_resource type="Curve" id="Curve_count"]
+_limits = [0.0, 10.0, 1.0, 6.0]
+_data = [Vector2(1, 2), 0.0, 0.0, 0, 0, Vector2(2, 3), 0.0, 0.0, 0, 0, Vector2(3, 4), 0.0, 0.0, 0, 0, Vector2(4, 5), 0.0, 0.0, 0, 0, Vector2(5, 6), 0.0, 0.0, 0, 0, Vector2(6, 8), 0.0, 0.0, 0, 0]
+point_count = 6
+
+[sub_resource type="Curve" id="Curve_damage"]
+_limits = [0.0, 40.0, 1.0, 6.0]
+_data = [Vector2(1, 8), 0.0, 0.0, 0, 0, Vector2(2, 10), 0.0, 0.0, 0, 0, Vector2(3, 13), 0.0, 0.0, 0, 0, Vector2(4, 17), 0.0, 0.0, 0, 0, Vector2(5, 22), 0.0, 0.0, 0, 0, Vector2(6, 30), 0.0, 0.0, 0, 0]
+point_count = 6
+
+[node name="VolleyAbility" type="Node"]
+script = ExtResource("1_volley")
+ability_name = "Volley"
+ability_tag = &"Ability.Volley"
+cooldown = SubResource("Curve_cooldown")
+projectile_scene = ExtResource("2_projectile")
+projectile_def = ExtResource("3_arrow")
+arrow_count = SubResource("Curve_count")
+damage = SubResource("Curve_damage")
+attack_range = 300.0

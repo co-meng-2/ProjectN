@@ -28,3 +28,19 @@ func test_stage_validates_waves_against_its_own_duration() -> void:
 	entry.enemy = DefFactory.enemy()
 	def.waves.entries.append(entry)
 	assert_eq(def.validate().size(), 1)
+
+
+func test_stage_requires_a_grade_table_and_a_sane_economy() -> void:
+	var def := DefFactory.stage()
+	def.grade_table = null
+	assert_eq(def.validate().size(), 1, "grade_table required")
+	def.grade_table = DefFactory.grade_table()
+	def.start_gold = -1
+	def.drop_multiplier = 0.0
+	assert_eq(def.validate().size(), 2, "negative start gold, zero multiplier")
+
+
+func test_stage_collects_grade_table_errors() -> void:
+	var def := DefFactory.stage()
+	def.grade_table.promote_gold = PackedInt32Array([1])
+	assert_eq(def.validate().size(), 1)

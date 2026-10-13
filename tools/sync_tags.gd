@@ -5,10 +5,14 @@ extends SceneTree
 const REGISTRY_PATH: String = "res://godot_gas/tag_registry.tres"
 const TAGS: PackedStringArray = [
 	"Ability.Arrow",
+	"Ability.Bounty",
 	"Ability.Dash",
+	"Ability.Sweep",
+	"Ability.Volley",
 	"Cooldown.Arrow",
 	"Cooldown.Dash",
 	"Damage.Amount",
+	"Event.Kill",
 	"State.Invulnerable",
 ]
 

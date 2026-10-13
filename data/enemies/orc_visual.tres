@@ -1,28 +1,24 @@
-[gd_resource type="Resource" script_class="VisualDef" load_steps=14 format=3]
+[gd_resource type="Resource" script_class="VisualDef" format=3 uid="uid://y6rgouyb0s4i"]
 
-[ext_resource type="Script" path="res://src/defs/visual_def.gd" id="1_visual"]
-[ext_resource type="Script" path="res://src/defs/animation_strip.gd" id="2_strip"]
-[ext_resource type="Texture2D" path="res://assets/art/tinyrpg/orc/Orc_Idle.png" id="3_idle"]
-[ext_resource type="Texture2D" path="res://assets/art/tinyrpg/orc/Orc_Walk.png" id="4_walk"]
-[ext_resource type="Texture2D" path="res://assets/art/tinyrpg/orc/Orc_Attack01.png" id="5_attack"]
-[ext_resource type="Texture2D" path="res://assets/art/tinyrpg/orc/Orc_Hurt.png" id="6_hurt"]
-[ext_resource type="Texture2D" path="res://assets/art/tinyrpg/orc/Orc_Death.png" id="7_death"]
+[ext_resource type="Script" uid="uid://bdxsb2hc5tgdb" path="res://src/defs/visual_def.gd" id="1_visual"]
+[ext_resource type="Script" uid="uid://krhpq5pi4a4f" path="res://src/defs/animation_strip.gd" id="2_strip"]
+[ext_resource type="Texture2D" uid="uid://rxff8lnwg2xt" path="res://assets/art/tinyrpg/orc/Orc_Idle.png" id="3_idle"]
+[ext_resource type="Texture2D" uid="uid://d10pr07wwj6fw" path="res://assets/art/tinyrpg/orc/Orc_Walk.png" id="4_walk"]
+[ext_resource type="Texture2D" uid="uid://wvlih7fcy4ru" path="res://assets/art/tinyrpg/orc/Orc_Attack01.png" id="5_attack"]
+[ext_resource type="Texture2D" uid="uid://ds8pseeo303q7" path="res://assets/art/tinyrpg/orc/Orc_Hurt.png" id="6_hurt"]
+[ext_resource type="Texture2D" uid="uid://dae06s54ykg4h" path="res://assets/art/tinyrpg/orc/Orc_Death.png" id="7_death"]
 
 [sub_resource type="Resource" id="Resource_idle"]
 script = ExtResource("2_strip")
-animation = &"idle"
 texture = ExtResource("3_idle")
 frame_count = 6
 fps = 8.0
-loop = true
 
 [sub_resource type="Resource" id="Resource_walk"]
 script = ExtResource("2_strip")
 animation = &"walk"
 texture = ExtResource("4_walk")
 frame_count = 8
-fps = 10.0
-loop = true
 
 [sub_resource type="Resource" id="Resource_attack"]
 script = ExtResource("2_strip")

@@ -2,7 +2,7 @@
 
 Date: 2026-10-13
 Engine: Godot 4.7 (Forward Plus), typed GDScript
-Plugins: GodotGAS v1.1.2 (`addons/GodotGAS`, symlink to `D:\CM\Godot\plugins\GodotGAS`, **read-only: never edit plugin source**), godot_ai (MCP editor bridge, not a game dependency)
+Plugins: GodotGAS v1.1.2 (`addons/GodotGAS`, vendored copy of the plugin, **read-only: never edit plugin source**), godot_ai (MCP editor bridge, not a game dependency)
 
 ## 1. Intent
 
@@ -26,7 +26,7 @@ Each phase gets its own plan and implementation cycle. **This spec defines the w
 
 ### 1.3 Defaults assumed (owner may override at spec review)
 
-1. Shop (ability promote/reroll) is a pause overlay available at any time during a stage; only currency gates it.
+1. The shop is the six HUD slots (click = promote, Ctrl+click = reroll), usable at any time while the stage keeps running; only currency gates it (Phase 2).
 2. Arrow auto-fires at the nearest enemy in range; the manual-aim seam is deferred (the arrow always targets the nearest enemy).
 3. Boss death = stage CLEARED; building death at any time = FAILED.
 4. Abilities, gold and stone live only within a stage run; **gem** is the only persistent currency.
@@ -69,11 +69,11 @@ res://
 ├─ addons/GodotGAS/            plugin (untouched)
 ├─ godot_gas/                  plugin-generated only (gameplay_tags.gd, registries)
 ├─ assets/                     art/, fonts/, tiles/ (sprites are described by `AnimationStrip` resources in `VisualDef` and built into `SpriteFrames` at runtime)
-├─ data/                       .tres instances: stages/ waves/ enemies/ effects/ abilities/ events/ bosses/ characters/ drops/
+├─ data/                       .tres instances: stages/ waves/ enemies/ effects/ abilities/ grade_table.tres events/ bosses/ characters/ drops/
 ├─ src/
-│  ├─ core/        pure logic: run_rng, timeline, wallet, physics_layers, groups, input_actions, anim_names, spawn_geometry
+│  ├─ core/        pure logic: run_rng, timeline, wallet, grade, price, physics_layers, groups, input_actions, anim_names, spawn_geometry
 │  ├─ defs/        Resource classes: enemy_def, wave_schedule, wave_entry, stage_def, drop_table, drop_entry, drop_roll,
-│  │               visual_def, animation_strip, stat_block, projectile_def, player_profile, run_result; [P2] ability_def, ability_pool, grade_table;
+│  │               visual_def, animation_strip, stat_block, projectile_def, player_profile, run_result; ability_def, grade_table [P2];
 │  │               [P3] event_def, reward_def, boss_def, boss_pattern_def
 │  ├─ gas/         attributes/{vitals,combat,economy}_attribute_set, executions/damage_execution, cues/, effect_builder
 │  ├─ components/  health, hurtbox, hitbox, effect_applier, mover, contact_damage, loot_dropper,
@@ -82,10 +82,10 @@ res://
 │  │               [P3] statue/, boss/
 │  ├─ stage/       stage, arena, run_state, stage_clock, stage_flow, spawn_director, wave_director, enemy_factory,
 │  │               loot_director; [P3] fx_spawner, event_director, stage_event, boss_director
-│  ├─ abilities/   [P2] loadout, ability_slot, grade_service, ability_installer
+│  ├─ abilities/   ability_slot, loadout, ability_pool, grade_result, grade_service, ability_installer, periodic_ability, volley/, blade_sweep/, bounty/ [P2]
 │  ├─ events/      [P3] statue_event, meteor_event (extend stage/stage_event)
 │  ├─ boss/        [P3] boss_pattern, pattern_runner, patterns/
-│  ├─ ui/          hud/ (health, building health, wallet, timeline bar), [P2] shop/, [P4] menus/, widgets/
+│  ├─ ui/          hud/ (health, building health, wallet, timeline bar, ability_bar, ability_slot_view [P2]), [P4] menus/, widgets/
 │  ├─ app/         main (entry scene: instantiates Stage and Hud, binds Hud to the stage models, restart on R); [P4] scene_router (autoload), settings
 │  └─ meta/        [P4] save_service (autoload), save_data, hub/, skill_tree/
 └─ tests/          mirrors src/ (core, defs, gas, components, actors, stage, ui, data) plus support/; in-repo runner `run_tests.tscn`
@@ -111,26 +111,33 @@ Scenes live next to their scripts with the same basename. `[Pn]` = built in phas
 | `components/ContactDamage` | Periodic damage to overlapped hurtboxes | `@export effect/interval` | Hitbox, EffectApplier |
 | `components/LootDropper` | Roll drops on death | `drop_requested(roll, position)` | Health, defs |
 | `actors/pickup/LootCollector` | Magnet + pickup | `collected(kind, amount)` | Pickup |
-| `components/ActorAbility` / `AbilityContext` | Base for hand-placed player abilities / the dependencies injected into them (actor, mover, targets, projectile layer) | `bind_context(ctx)` | Mover, TargetProvider |
+| `components/ActorAbility` / `AbilityContext` | Base for hand-placed player abilities / the dependencies injected into them (actor, mover, targets, projectile layer, wallet) | `bind_context(ctx)` | Mover, TargetProvider |
 | `components/ActorVisual` | Bind `VisualDef` to AnimatedSprite2D | `apply(def, scale, tint)`, `set_moving`, `face`, `play_once`, `flash_hit` | defs |
 | `components/Lifetime` | Free after time | `@export seconds` | — |
-| `actors/*` | Thin scenes assembled from components | `died`, `asc`, `health` | components, defs, gas |
+| `actors/*` | Thin scenes assembled from components | `died`, `asc`, `health`; `Player.ability_context/grant_ability/revoke_ability` | components, defs, gas |
 | `stage/RunState` | Per-run mutable state (rng, wallet, clock, profile, stats) → `RunResult` | `to_result()` | core, defs |
 | `stage/StageClock` | Elapsed time, pause, end | `ticked(t)`, `ended` | — |
 | `stage/StageFlow` | Enum states PREP/RUNNING/BOSS/CLEARED/FAILED, transitions only | `state_changed(s)` | — |
 | `components/TargetProvider` | "What should this enemy attack" / nearest enemy for the arrow | `target_for(policy)`, `nearest_enemy(origin, range)` | groups |
-| `stage/LootDirector` | Turns `drop_requested` into pickups in the world (deferred add) | `drop_requested` wiring | actors, defs |
+| `stage/LootDirector` | Turns `drop_requested` into pickups in the world (deferred add), scaled by `drop_multiplier` | `drop_requested` wiring, `drop_multiplier` | actors, defs |
 | `stage/EnemyFactory` | Build enemy from `EnemyDef`, apply attribute overrides; pooling seam | `spawn(def, pos)` | actors, defs |
 | `stage/SpawnDirector` | Gentle trickle with caps | `bind(...)`, `current_interval(elapsed)` | EnemyFactory, RunRng |
 | `stage/WaveDirector` | Drive `WaveSchedule` against clock; expose timeline | `bind(...)`, `timeline`, `mark_times()`, `wave_started(entry)` | Timeline, EnemyFactory |
-| `stage/Stage` | Composition root; exposes `player`, `building`, `run_state`, `clock`, `waves`; enemy and wave spawn rings are centred on the building | `start(StageDef, PlayerProfile)`, `finished(RunResult)` | all below it |
+| `core/Grade` / `core/Price` | Grade ladder (NONE..REVEALED, `level`, `next`, `color`) / a gold-or-stone cost | `Grade.level(g)`, `Price(kind, amount).is_affordable(wallet)` | - |
+| `defs/AbilityDef` / `defs/GradeTable` | One shop ability (passive INFINITE effect and/or `ability_scene`, curves over grade level) / the prices | `icon_for(grade)`, `validate()` / `promote_price(g)`, `reroll_price(g)` | GAS Resources |
+| `abilities/Loadout` / `AbilityPool` | Slot array / abilities rollable at a grade | `slot`, `set_slot`, `slot_changed` / `roll(grade, rng, exclude)` | defs |
+| `abilities/GradeService` | Atomic promote/reveal/reroll over Wallet + RunRng | `promote`, `reroll`, `promote_cost`, `reroll_cost`, `resolved(GradeResult)` | Loadout, Pool, Wallet |
+| `abilities/AbilityInstaller` | Mirror slots onto the player's ASC (effect handles / granted abilities) | `bind(loadout, player)`, `validate_defs(defs)` | Loadout, Player |
+| `abilities/PeriodicAbility` / `MeleeStrike` | Cooldown-curve base for attack abilities / radial hit | `step(delta)`, `start_cooldown()` / `strike(...)` | components |
+| `ui/hud/AbilityBar` | Six slot views; emits requests only | `bind(loadout, wallet, service)`, `promote_requested`, `reroll_requested` | signals only |
+| `stage/Stage` | Composition root; exposes `player`, `building`, `run_state`, `clock`, `waves`; enemy and wave spawn rings are centred on the building | `start(StageDef, PlayerProfile)`, `finished(RunResult)`, `loadout`, `grade_service`; sends `Event.Kill` to the player's ASC | all below it |
 | `ui/Hud` | View only, binds to models (bound by `Main`, not `Stage`) | `bind(...)` | signals only |
 
 ### 3.3 Decisions
 
 - **Autoloads:** none of ours in Phase 1 (only the plugin's `GameplayCueManager`). Phase 4 adds exactly `SceneRouter` and `SaveService`. No global game-state singleton; `RunState` dies with the stage.
 - **Events:** no global event bus. Direct typed past-tense signals wired in `Stage._wire()`, which is the readable map of the game.
-- **Data vs code:** all content as `.tres` in `data/` using typed `defs/` classes; behaviors referenced from data (`EnemyDef.scene`, `AbilityDef.ability_script`, `EventDef.controller_scene`, `BossPatternDef.script`).
+- **Data vs code:** all content as `.tres` in `data/` using typed `defs/` classes; behaviors referenced from data (`EnemyDef.scene`, `AbilityDef.ability_scene`, `EventDef.controller_scene`, `BossPatternDef.script`).
 - **Composition over inheritance:** no actor class hierarchy.
 - **UI/model separation:** UI reads models via `bind()` and signals; models never import `ui/`.
 - **Save seam:** `Stage.start(StageDef, PlayerProfile)` → `finished(RunResult)`. Phase 1 uses a default profile and logs the result; Phase 4's `SaveData` is the persisted side of `PlayerProfile` + unlocks.
@@ -149,6 +156,7 @@ Layers (a module may import only layers below it; upward communication = signals
 3 gas/                             8 app/  meta/   (only layer allowed to touch autoloads)
 4 components/
 ```
+- `stage/Stage` (composition root) may reference `abilities/`; no other `stage/` file may.
 - No `get_node("/root/...")`. `get_parent()` casts only inside components to reach their actor root (documented).
 - Groups only via `Groups` consts, only for physics/targeting queries.
 - `stage/` never imports `events/` or `boss/` scripts; it instantiates `PackedScene`/`Script` fields from defs.
@@ -162,7 +170,7 @@ Layers (a module may import only layers below it; upward communication = signals
 
 **Phase 1 — Stage core loop (first plan):** `core/`, Phase-1 `defs/`, `gas/` (three attribute sets, `DamageExecution`, `EffectBuilder`, effects `damage_basic`, `cooldown_dash`, `cooldown_arrow`; invulnerability comes from the dash's `activation_owned_tags`), all `components/`, actors player/enemy/building/projectile/pickup, `stage/` (non-Phase-3), HUD (health bars, wallet, **timeline bar** showing waves). Player abilities (arrow, dash) are placed by hand in `player.tscn`; Phase 2 replaces this via `abilities/` without touching actors. Initial content as built: Soldier + Orc + swarmer content, 5 waves, 180 s, no boss yet (time up = CLEARED); Arrow, House as the building, grass ground texture. Done = a stage is playable from start to FAILED or time-up, with waves visible on the timeline and gold/stone dropping.
 
-**Phase 2 — Ability system:** `AbilityDef` (id, grade, kind flags, passive effects, ability script, `revealed_form`), `AbilityPool` per grade, `GradeTable` (costs); `Loadout`/`AbilitySlot` (holds grant handles), `GradeService` (pure promote/reroll/reveal rules over Wallet + RunRng), `AbilityInstaller` (def → ASC grant/remove); shop UI. Grade maps to `ability_level`.
+**Phase 2 — Ability system (built):** `Grade`, `Price`, `AbilityDef` (passive INFINITE effect and/or ability scene, curves over grade level), `GradeTable`; `Loadout`/`AbilitySlot`, `AbilityPool`, `GradeService` (atomic promote/reveal/reroll over Wallet + RunRng, `GradeResult` outcomes), `AbilityInstaller` (handles per slot; `validate_defs` run by `Stage.start`); `Player.grant_ability/revoke_ability`; `Event.Kill` sent by `Stage`; HUD `AbilityBar` bound by `Main`. Abilities: Prospector, Swift Boots, Vitality, Might (passives), Volley, Blade Sweep (`PeriodicAbility` scenes, tag `Ability.Sweep`), Bounty (on-kill hybrid). Prices 100/150/250/400/600 gold, reveal 10 stone, reroll 2 stone; 200 start gold; `drop_multiplier` 10000 in `stage_01` for prototyping.
 
 **Phase 3 — Events + boss:** `EventDef`, `RewardDef`, `BossDef`, `BossPatternDef`; `EventDirector`, `StageEvent` base, `BossDirector`; statue and meteor events; boss actor and `PatternRunner`. `StageFlow` gains BOSS handling; `WaveDirector` unchanged.
 
@@ -186,5 +194,17 @@ Layers (a module may import only layers below it; upward communication = signals
 
 **Known follow-ups:**
 - Enemies do not collide with each other (they stack).
-- Nothing re-clamps health when `max_health` drops mid-run (Phase 2).
+- (Done in Phase 2) `VitalsAttributeSet` re-clamps health when `max_health` drops.
 - `application/run/main_scene` was hand-edited in `project.godot` (the godot-ai tool refuses to set it); re-set it in Project Settings if the editor re-saves settings.
+
+## 8. Phase 2 notes
+
+**Acceptance (in-editor, godot-ai, partial):** Verified with simulated input: the main scene ran with no game-log errors; six `100g` slots and `Gold 200   Stone 0` at start; buying and promoting slots (slot 0 reached an Epic frame, next cost 400g); `drop_multiplier` applied to pickups; GAME OVER ignored slot clicks; R restarted to 200 gold with empty slots. A Ctrl+click was sent but its outcome was not confirmed. **Not verified (pending manual play by the owner):** refused-click flash/dimming, the Legendary/Revealed walk and the `10s`/`MAX` labels, reroll outcome, passive effects (Vitality/Swift Boots/Might), Volley arrows, Bounty gold, stacked duplicates, clicks not moving the soldier, frame rate.
+
+**Known follow-ups:**
+- `max_health` passives do not heal on raise; health is re-clamped when `max_health` drops. In Phase 2 health never exceeds the new max (there is no heal source), so the re-clamp is unreachable in play.
+- Phase 3 follow-up, before the first heal source lands: (a) `Health` should not emit `damaged` for a spec-less decrease (the re-clamp passes no spec); (b) promoting/rerolling a Vitality slot uninstalls the old effect before installing the new one, which would cost healed HP, so it needs install-before-remove or equivalent.
+- Attack cooldowns reset when a slot is promoted/rerolled (fresh instance).
+- Rerolling a one-ability pool returns the same ability and still charges.
+- Icons in `assets/art/icons` are generated placeholders (the 128x128 ones opaque); swap for the real art library.
+- Selling/removing abilities is out of scope.

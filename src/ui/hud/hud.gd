@@ -2,6 +2,8 @@ class_name Hud
 extends CanvasLayer
 ## Read-only view of the stage. It binds to models through signals and never mutates them.
 
+## Bound by Main (the stage layer must not know the HUD); empty until then.
+@onready var ability_bar: AbilityBar = %AbilityBar
 @onready var _player_bar: ProgressBar = %PlayerBar
 @onready var _building_bar: ProgressBar = %BuildingBar
 @onready var _wallet_label: Label = %WalletLabel

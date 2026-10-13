@@ -54,3 +54,25 @@ func test_target_for_prefers_policy_target_then_falls_back() -> void:
 	assert_eq(provider.target_for(EnemyDef.TargetPolicy.PLAYER), building)
 	building.free()
 	assert_null(provider.target_for(EnemyDef.TargetPolicy.BUILDING))
+
+
+func test_nearest_enemies_returns_up_to_count_sorted_by_distance() -> void:
+	var provider := _provider()
+	var fifty := _enemy(Vector2(50, 0))
+	_enemy(Vector2(150, 0))
+	_enemy(Vector2(400, 0))
+	var ninety := _enemy(Vector2(0, 90))
+	var two := provider.nearest_enemies(Vector2.ZERO, 300.0, 2)
+	assert_eq(two.size(), 2)
+	assert_eq(two[0], fifty)
+	assert_eq(two[1], ninety)
+	assert_eq(provider.nearest_enemies(Vector2.ZERO, 300.0, 10).size(), 3, "the one at 400 is out of range")
+	assert_true(provider.nearest_enemies(Vector2.ZERO, 300.0, 0).is_empty())
+
+
+func test_nearest_enemies_skips_doomed_nodes() -> void:
+	var provider := _provider()
+	var doomed := _enemy(Vector2(10, 0))
+	var other := _enemy(Vector2(80, 0))
+	doomed.queue_free()
+	assert_eq(provider.nearest_enemies(Vector2.ZERO, 300.0, 5), [other])

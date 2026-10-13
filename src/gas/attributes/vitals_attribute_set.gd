@@ -13,3 +13,10 @@ func pre_attribute_change(attribute_name: String, proposed_value: float) -> floa
 		"max_health":
 			return maxf(proposed_value, 1.0)
 	return proposed_value
+
+
+## A lowered max_health pulls health down with it; a raised one never heals.
+func post_attribute_change(asc: Node, attribute_name: String, _old_value: float, new_value: float) -> void:
+	if attribute_name == "max_health" and health.current_value > new_value:
+		# Private on purpose: this is the vendored plugin's own pattern for generated attribute sets; re-check on plugin upgrade.
+		(asc as AbilitySystemComponent)._apply_attribute_change("health", new_value - health.current_value)

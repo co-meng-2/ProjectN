@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="GradeTable" format=3]
+
+[ext_resource type="Script" path="res://src/defs/grade_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+promote_gold = PackedInt32Array(100, 150, 250, 400, 600)
+reveal_stone = 10
+reroll_stone = 2

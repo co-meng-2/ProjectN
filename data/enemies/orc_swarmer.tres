@@ -1,17 +1,16 @@
-[gd_resource type="Resource" script_class="EnemyDef" load_steps=8 format=3]
+[gd_resource type="Resource" script_class="EnemyDef" format=3 uid="uid://cvw2bvotb2gvx"]
 
-[ext_resource type="Script" path="res://src/defs/enemy_def.gd" id="1_def"]
-[ext_resource type="Script" path="res://src/defs/stat_block.gd" id="2_stats"]
+[ext_resource type="Script" uid="uid://7lu42npm7k84" path="res://src/defs/enemy_def.gd" id="1_def"]
+[ext_resource type="Script" uid="uid://bpy31rqnwoa0w" path="res://src/defs/stat_block.gd" id="2_stats"]
 [ext_resource type="PackedScene" path="res://src/actors/enemy/enemy.tscn" id="3_scene"]
-[ext_resource type="Resource" path="res://data/enemies/orc_visual.tres" id="4_visual"]
+[ext_resource type="Resource" uid="uid://y6rgouyb0s4i" path="res://data/enemies/orc_visual.tres" id="4_visual"]
 [ext_resource type="Resource" path="res://data/effects/damage_basic.tres" id="5_damage"]
-[ext_resource type="Resource" path="res://data/drops/orc_drops.tres" id="6_drops"]
+[ext_resource type="Resource" uid="uid://cuofrb5rwqfuf" path="res://data/drops/orc_drops.tres" id="6_drops"]
 
 [sub_resource type="Resource" id="Resource_stats"]
 script = ExtResource("2_stats")
 max_health = 14.0
 move_speed = 90.0
-attack = 1.0
 
 [resource]
 script = ExtResource("1_def")

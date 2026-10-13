@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/abilities/bounty/bounty_ability.gd" id="1_bounty"]
+
+[sub_resource type="Curve" id="Curve_gold"]
+_limits = [0.0, 15.0, 1.0, 6.0]
+_data = [Vector2(1, 1), 0.0, 0.0, 0, 0, Vector2(2, 2), 0.0, 0.0, 0, 0, Vector2(3, 3), 0.0, 0.0, 0, 0, Vector2(4, 5), 0.0, 0.0, 0, 0, Vector2(5, 8), 0.0, 0.0, 0, 0, Vector2(6, 12), 0.0, 0.0, 0, 0]
+point_count = 6
+
+[node name="BountyAbility" type="Node"]
+script = ExtResource("1_bounty")
+ability_name = "Bounty"
+ability_tag = &"Ability.Bounty"
+trigger_event_tag = &"Event.Kill"
+gold_per_kill = SubResource("Curve_gold")

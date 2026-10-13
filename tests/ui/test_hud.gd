@@ -54,3 +54,9 @@ func test_show_result_displays_outcome_and_totals() -> void:
 	assert_true(label.visible)
 	assert_true(label.text.contains("STAGE CLEARED"))
 	assert_true(label.text.contains("Kills 3"))
+
+
+func test_hud_hosts_an_unbound_ability_bar() -> void:
+	var hud: Hud = _rig()["hud"]
+	assert_not_null(hud.ability_bar)
+	assert_eq(hud.ability_bar.get_child_count(), 0, "empty until Main binds it")

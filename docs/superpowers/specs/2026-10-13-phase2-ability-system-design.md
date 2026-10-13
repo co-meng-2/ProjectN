@@ -100,3 +100,16 @@ Pure logic (`Grade`, `AbilityPool`, `GradeService`, `Loadout`) has unit tests wi
 - `max_health` passives do not heal; documented behaviour.
 - GAS INFINITE effects stack under `FREE` stacking; same-ability duplicates multiply by design.
 - Mouse clicks on HUD slots must not leak into gameplay (arrows are auto-fired, so there is no click-to-shoot conflict).
+
+## 11. As built (2026-10-13)
+
+Deviations from this design:
+- Outcomes are a `GradeResult` class (`Outcome {OK, NOT_ENOUGH, NOT_APPLICABLE, EMPTY_POOL}`), and costs are `Price(kind, amount)` objects.
+- Attack cooldowns are `PeriodicAbility` curves + `step(delta)`, not GAS cooldown effects.
+- `Player.asc` is public; `Player.setup` takes the `Wallet`; `AbilityContext` carries it.
+- The `AbilityBar` lives inside `hud.tscn` and is bound by `Main`; `Stage` does not know the HUD.
+- The Blade Sweep tag is `Ability.Sweep` (the GAS registry lowercases segment tails, so camel-case tags cannot round-trip).
+- `AbilityInstaller.validate_defs` (each `ability_scene` root must be an `ActorAbility`) is called from `Stage.start` beside `profile.validate()`.
+- `VitalsAttributeSet.post_attribute_change` re-clamps health when `max_health` drops below it (no heal on raise).
+- `addons/` are vendored copies; `assets/art/icons` are generated placeholders pending the real art library.
+- `stage/Stage` (the composition root) references `abilities/`; no other `stage/` file does.

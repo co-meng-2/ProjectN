@@ -7,12 +7,14 @@ const PICKUP_SCENE: PackedScene = preload("res://src/actors/pickup/pickup.tscn")
 var _pickup_layer: Node2D
 var _player: Player
 var _wallet: Wallet
+var _drop_multiplier: float = 1.0
 
 
-func bind(factory: EnemyFactory, pickup_layer: Node2D, player: Player, wallet: Wallet) -> void:
+func bind(factory: EnemyFactory, pickup_layer: Node2D, player: Player, wallet: Wallet, drop_multiplier: float = 1.0) -> void:
 	_pickup_layer = pickup_layer
 	_player = player
 	_wallet = wallet
+	_drop_multiplier = drop_multiplier
 	factory.spawned.connect(_on_enemy_spawned)
 	player.loot_collected.connect(_on_loot_collected)
 
@@ -27,6 +29,8 @@ func _on_loot_dropped(roll: DropRoll, position: Vector2) -> void:
 
 
 func _spawn_pickup(roll: DropRoll, position: Vector2) -> void:
+	# The stage's drop multiplier is applied to the drop itself, so the pickup shows what it pays.
+	roll.amount = maxi(1, roundi(roll.amount * _drop_multiplier))
 	var pickup := PICKUP_SCENE.instantiate() as Pickup
 	_pickup_layer.add_child(pickup)
 	pickup.global_position = position
