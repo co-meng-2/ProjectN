@@ -7,6 +7,8 @@ extends StageEvent
 @export var statue_count: int = 0
 @export var statue_stats: StatBlock
 @export var min_distance: float = 0.0
+## Minimum distance between two statues of the same event.
+@export var statue_spacing: float = 0.0
 ## Keeps statues off the arena walls.
 @export var edge_margin: float = 0.0
 ## Random points tried per statue before settling for the best one found.
@@ -31,8 +33,8 @@ func validate() -> PackedStringArray:
 		errors.append("StatueEvent: statue_stats is null")
 	else:
 		errors.append_array(statue_stats.validate())
-	if min_distance < 0.0 or edge_margin < 0.0:
-		errors.append("StatueEvent: min_distance and edge_margin must be >= 0")
+	if min_distance < 0.0 or edge_margin < 0.0 or statue_spacing < 0.0:
+		errors.append("StatueEvent: min_distance, statue_spacing and edge_margin must be >= 0")
 	if placement_tries < 1:
 		errors.append("StatueEvent: placement_tries must be >= 1")
 	return errors
@@ -60,25 +62,29 @@ func _on_begin() -> void:
 func _pick_point() -> Vector2:
 	var area := context.bounds.grow(-edge_margin)
 	var best := area.get_center()
-	var best_clearance := -INF
+	var best_margin := -INF
 	for attempt in placement_tries:
 		var point := Vector2(context.rng.randf_range(area.position.x, area.end.x), context.rng.randf_range(area.position.y, area.end.y))
-		var clearance := _clearance(point)
-		if clearance >= min_distance:
+		var margin := _margin(point)
+		if margin >= 0.0:
 			return point
-		if clearance > best_clearance:
+		if margin > best_margin:
 			best = point
-			best_clearance = clearance
+			best_margin = margin
 	return best
 
 
-## Distance from `point` to the nearer of the building and the player.
-func _clearance(point: Vector2) -> float:
-	var nearest := INF
+## How far `point` is inside the placement rules: the smaller of (distance to the nearer of the building
+## and the player - min_distance) and (distance to the nearest placed statue - statue_spacing). >= 0 is valid.
+func _margin(point: Vector2) -> float:
+	var margin := INF
 	for anchor in [context.building, context.player]:
 		if is_instance_valid(anchor):
-			nearest = minf(nearest, point.distance_to((anchor as Node2D).global_position))
-	return nearest
+			margin = minf(margin, point.distance_to((anchor as Node2D).global_position) - min_distance)
+	for statue in _statues:
+		if is_instance_valid(statue):
+			margin = minf(margin, point.distance_to(statue.global_position) - statue_spacing)
+	return margin
 
 
 func _on_statue_destroyed(statue: Statue) -> void:

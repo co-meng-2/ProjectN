@@ -56,6 +56,27 @@ func test_failure_shows_failed_without_rewards() -> void:
 	assert_eq(banner.title_text(), "Elites: Failed")
 
 
+func test_aborted_shows_interrupted_without_rewards() -> void:
+	var banner := _banner()
+	var def := DefFactory.event(PROBE, 25.0, &"elites")
+	banner.show_event(def, _running_probe(def))
+	banner.show_aborted(def)
+	assert_true(banner.visible)
+	assert_eq(banner.title_text(), "Elites: Interrupted")
+	assert_eq(banner.timer_text(), "")
+	banner.step(3.0)
+	assert_false(banner.visible, "hidden after result_seconds")
+
+
+func test_the_timer_shows_the_limit_before_the_event_has_begun() -> void:
+	var banner := _banner()
+	var def := DefFactory.event(PROBE, 25.0, &"statues")
+	var event := adopt(PROBE.instantiate()) as ProbeEvent  # event_started fires before begin()
+	event.set_physics_process(false)
+	banner.show_event(def, event)
+	assert_eq(banner.timer_text(), "25s", "not 0s while begin() is still to come")
+
+
 func test_reward_text_omits_zero_amounts_and_pluralises_tickets() -> void:
 	assert_eq(EventBanner.reward_text(DefFactory.reward(0, 3, 2)), "+3 stone +2 tickets")
 	assert_eq(EventBanner.reward_text(DefFactory.reward(200, 0, 0)), "+200 gold")

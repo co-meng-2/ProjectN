@@ -90,6 +90,8 @@ func _drop() -> void:
 func _land(meteor: Incoming) -> void:
 	if is_instance_valid(meteor.telegraph):
 		meteor.telegraph.queue_free()
+	if not is_instance_valid(context.player):
+		return  # a freed only_actor would turn the filter off and hit the building
 	var strike := strike_scene.instantiate() as AreaStrike
 	add_child(strike)
 	strike.global_position = meteor.position

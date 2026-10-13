@@ -95,6 +95,19 @@ func test_a_hit_after_the_event_ended_changes_nothing() -> void:
 	assert_eq(event.hits(), 0)
 
 
+func test_a_meteor_landing_after_the_player_is_gone_strikes_nothing() -> void:
+	var rig := _rig()
+	var event: MeteorEvent = rig["event"]
+	var building := ActorFixture.hurt_target(self, PLAYER_AT + Vector2(15, 0), PhysicsLayers.ALLY_HURT)
+	event.step(1.2)
+	assert_eq(_telegraphs(event).size(), 1)
+	(rig["player"] as Player).free()
+	event.step(0.9)
+	await settle()
+	assert_eq(_strikes(event).size(), 0, "no unfiltered strike")
+	assert_almost_eq(ActorFixture.asc_of(building).get_attribute("health").current_value, 100.0, 0.001, "the building is spared")
+
+
 func test_meteors_spare_the_building() -> void:
 	var rig := _rig()
 	var event: MeteorEvent = rig["event"]

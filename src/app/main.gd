@@ -40,6 +40,7 @@ func _start_run() -> void:
 	_stage.events.event_started.connect(_hud.show_event)
 	_stage.events.event_progressed.connect(_hud.show_event_progress)
 	_stage.events.event_ended.connect(_hud.show_event_result)
+	_stage.events.event_aborted.connect(_hud.show_event_aborted)
 	_stage.boss_appeared.connect(_hud.show_boss)
 	_hud.ability_bar.bind(_stage.loadout, _stage.run_state.wallet, _stage.grade_service)
 	_hud.ability_bar.promote_requested.connect(_on_promote_requested)

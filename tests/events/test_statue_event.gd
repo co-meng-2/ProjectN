@@ -4,13 +4,15 @@ const STATUE_EVENT: PackedScene = preload("res://src/events/statue_event.tscn")
 const BUILDING_AT: Vector2 = Vector2(100, -50)
 
 
-func _rig(min_distance: float = -1.0) -> Dictionary:
+func _rig(min_distance: float = -1.0, spacing: float = -1.0) -> Dictionary:
 	var def := DefFactory.event(STATUE_EVENT, 25.0, &"statues")
 	var context := ActorFixture.event_context(self, def, null, BUILDING_AT)
 	var event := adopt(STATUE_EVENT.instantiate()) as StatueEvent
 	event.set_physics_process(false)
 	if min_distance >= 0.0:
 		event.min_distance = min_distance
+	if spacing >= 0.0:
+		event.statue_spacing = spacing
 	var record := ActorFixture.watch_event(event)
 	event.begin(context)
 	return {"event": event, "context": context, "record": record}
@@ -84,6 +86,25 @@ func test_abort_removes_the_statues_without_a_result() -> void:
 func test_impossible_spacing_still_places_every_statue() -> void:
 	var rig := _rig(100000.0)
 	assert_eq(_statues(rig["event"]).size(), 4, "falls back to the best spot found, never hangs")
+
+
+func test_statues_keep_their_spacing_from_each_other() -> void:
+	var rig := _rig(0.0, 600.0)
+	var statues := _statues(rig["event"])
+	assert_eq(statues.size(), 4)
+	for i in statues.size():
+		for j in range(i + 1, statues.size()):
+			assert_true(statues[i].global_position.distance_to(statues[j].global_position) >= 600.0, "statues %d and %d apart" % [i, j])
+
+
+func test_impossible_statue_spacing_still_places_every_statue() -> void:
+	var rig := _rig(0.0, 100000.0)
+	assert_eq(_statues(rig["event"]).size(), 4, "falls back to the best spot found, never hangs")
+
+
+func test_event_controllers_depth_sort_their_children() -> void:
+	var event := adopt(STATUE_EVENT.instantiate()) as StatueEvent
+	assert_true(event.y_sort_enabled)
 
 
 func test_validate_reports_missing_scene_and_bad_numbers() -> void:

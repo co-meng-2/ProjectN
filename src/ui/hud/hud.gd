@@ -43,6 +43,12 @@ func show_event_result(def: EventDef, success: bool) -> void:
 	_objective_arrows.clear()
 
 
+## Stage.events.event_aborted.
+func show_event_aborted(def: EventDef) -> void:
+	_event_banner.show_aborted(def)
+	_objective_arrows.clear()
+
+
 ## Stage.boss_appeared.
 func show_boss(boss_health: Health, display_name: String) -> void:
 	_boss_bar.show_boss(boss_health, display_name)

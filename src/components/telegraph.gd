@@ -9,6 +9,8 @@ enum Shape { CIRCLE, LINE }
 
 const SEGMENTS: int = 40
 const EDGE_WIDTH: float = 2.0
+## Ground decal: drawn below every actor, whatever the y-sort says.
+const GROUND_Z_INDEX: int = -1
 
 @export var fill_color: Color = Color(1.0, 0.2, 0.15, 0.25)
 @export var edge_color: Color = Color(1.0, 0.3, 0.2, 0.9)
@@ -40,6 +42,10 @@ static func spawn_line(parent: Node, from: Vector2, to: Vector2, width: float, s
 	telegraph.global_position = from
 	telegraph.show_line(to - from, width, seconds)
 	return telegraph
+
+
+func _init() -> void:
+	z_index = GROUND_Z_INDEX
 
 
 func show_circle(p_radius: float, seconds: float) -> void:

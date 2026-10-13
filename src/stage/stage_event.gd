@@ -17,6 +17,10 @@ var _running: bool = false
 var _ended: bool = false
 
 
+func _ready() -> void:
+	y_sort_enabled = true  # statues, meteors and telegraphs depth-sort with the actors
+
+
 func begin(p_context: EventContext) -> void:
 	if _running or _ended:
 		return

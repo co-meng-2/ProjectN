@@ -1,7 +1,7 @@
 class_name EventBanner
 extends VBoxContainer
 ## The running event's name, progress and remaining time; after it ends, "<name>: Success +rewards" or
-## "<name>: Failed" for `result_seconds`. A view: it reads the event and never changes it.
+## "<name>: Failed" (or "<name>: Interrupted" when aborted) for `result_seconds`. A view: it reads the event and never changes it.
 
 @export var result_seconds: float = 2.5
 @export var success_color: Color = Color(0.55, 1.0, 0.5)
@@ -9,6 +9,7 @@ extends VBoxContainer
 
 var _event: StageEvent
 var _tracking: bool = false
+var _limit: float = 0.0
 var _result_left: float = 0.0
 var _title := Label.new()
 var _progress := Label.new()
@@ -26,6 +27,7 @@ func _ready() -> void:
 
 func show_event(def: EventDef, event: StageEvent) -> void:
 	_event = event
+	_limit = def.time_limit
 	_tracking = true
 	_result_left = 0.0
 	_title.text = def.display_name
@@ -49,6 +51,17 @@ func show_result(def: EventDef, success: bool) -> void:
 	else:
 		_title.text = "%s: Failed" % def.display_name
 		_title.modulate = failure_color
+	_progress.text = ""
+	_timer.text = ""
+	_result_left = result_seconds
+	visible = true
+
+
+func show_aborted(def: EventDef) -> void:
+	_event = null
+	_tracking = false
+	_title.text = "%s: Interrupted" % def.display_name
+	_title.modulate = Color.WHITE
 	_progress.text = ""
 	_timer.text = ""
 	_result_left = result_seconds
@@ -83,7 +96,10 @@ func timer_text() -> String:
 func step(delta: float) -> void:
 	if _tracking:
 		if is_instance_valid(_event):
-			_timer.text = "%ds" % ceili(_event.remaining_time())
+			var left := _event.remaining_time()
+			if not _event.is_running() and left <= 0.0:
+				left = _limit  # event_started fires before begin() sets the timer
+			_timer.text = "%ds" % ceili(left)
 		return
 	if _result_left > 0.0:
 		_result_left -= delta

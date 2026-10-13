@@ -132,6 +132,11 @@ func test_restart_starts_clean() -> void:
 	assert_eq(host.get_tree().get_nodes_in_group(Groups.ENEMIES).size(), 0)
 
 
+func test_the_shipped_stage_starts_with_the_default_profile() -> void:
+	var stage := adopt(STAGE_SCENE.instantiate()) as Stage
+	assert_true(stage.start(load("res://data/stages/stage_01.tres") as StageDef, load("res://data/characters/default_profile.tres") as PlayerProfile), "the exact call Main makes")
+
+
 func test_second_start_is_rejected_and_does_not_double_wire() -> void:
 	var results: Array = []
 	var stage := _running_stage(30.0, results)
@@ -251,7 +256,6 @@ func test_an_ability_def_with_a_non_ability_scene_is_rejected_before_anything_st
 	assert_null(stage.loadout)
 
 
-
 ## A stage without trickle or waves whose clock the test drives by hand.
 func _manual_stage(def: StageDef, results: Array) -> Stage:
 	var stage := adopt(STAGE_SCENE.instantiate()) as Stage
@@ -335,14 +339,17 @@ func test_boss_appearance_aborts_a_running_event_without_reward() -> void:
 	var results: Array = []
 	var stage := _manual_stage(def, results)
 	var ended: Array = []
+	var aborted: Array = []
 	stage.events.event_ended.connect(func(event_def: EventDef, success: bool) -> void: ended.append([event_def.id, success]))
+	stage.events.event_aborted.connect(func(event_def: EventDef) -> void: aborted.append(event_def.id))
 	stage.clock.step(3.5)
 	var probe := stage.events.running() as ProbeEvent
 	assert_not_null(probe, "the event is running")
 	assert_eq(probe.get_parent(), stage.get_node("World/Events"))
 	stage.clock.step(1.5)
 	assert_not_null(stage.current_boss())
-	assert_eq(ended, [[&"probe", false]])
+	assert_eq(aborted, [&"probe"])
+	assert_true(ended.is_empty(), "an abort is not a failure")
 	assert_eq(probe.cleanups, 1, "its objects were removed")
 	assert_null(stage.events.running())
 	assert_eq(stage.run_state.wallet.gold, 0)

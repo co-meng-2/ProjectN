@@ -98,6 +98,18 @@ func test_event_signals_drive_the_banner_and_the_arrows() -> void:
 	assert_eq(arrows.arrow_positions().size(), 0, "no arrows once the event ended")
 
 
+func test_aborted_event_shows_interrupted_and_clears_the_arrows() -> void:
+	var hud: Hud = _rig()["hud"]
+	var banner := hud.get_node("%EventBanner") as EventBanner
+	var def := DefFactory.event(PROBE, 25.0, &"meteors")
+	var event := adopt(PROBE.instantiate()) as ProbeEvent
+	event.set_physics_process(false)
+	event.begin(ActorFixture.event_context(self, def))
+	hud.show_event(def, event)
+	hud.show_event_aborted(def)
+	assert_eq(banner.title_text(), "Meteors: Interrupted")
+
+
 func test_boss_appearance_shows_the_bar_and_the_timeline_label() -> void:
 	var rig := _rig()
 	var hud: Hud = rig["hud"]

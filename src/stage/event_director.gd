@@ -7,7 +7,9 @@ extends Node
 
 signal event_started(def: EventDef, event: StageEvent)
 signal event_progressed(def: EventDef, text: String)
+## A real result only (success or failure). An event cut short by the boss or the run end emits `event_aborted`.
 signal event_ended(def: EventDef, success: bool)
+signal event_aborted(def: EventDef)
 
 var _timeline: Timeline = Timeline.new(0.0)
 var _defs: Array[EventDef] = []
@@ -53,7 +55,7 @@ func abort_running() -> void:
 	_running_def = null
 	event.abort()
 	event.queue_free()
-	event_ended.emit(def, false)
+	event_aborted.emit(def)
 
 
 ## Stage-layer check run by Stage.start: every controller root must extend StageEvent.

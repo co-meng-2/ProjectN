@@ -17,10 +17,11 @@ func _rig(pool: Array[EventDef], count: int, run_seed: int = 5) -> Dictionary:
 	var clock := adopt(StageClock.new()) as StageClock
 	clock.set_physics_process(false)
 	var director := adopt(EventDirector.new()) as EventDirector
-	var record := {"started": [], "progress": [], "ended": []}
+	var record := {"started": [], "progress": [], "ended": [], "aborted": []}
 	director.event_started.connect(func(def: EventDef, event: StageEvent) -> void: (record["started"] as Array).append([def, event]))
 	director.event_progressed.connect(func(def: EventDef, text: String) -> void: (record["progress"] as Array).append([def, text]))
 	director.event_ended.connect(func(def: EventDef, success: bool) -> void: (record["ended"] as Array).append([def, success]))
+	director.event_aborted.connect(func(def: EventDef) -> void: (record["aborted"] as Array).append(def))
 	var context_factory := func(def: EventDef) -> EventContext:
 		return EventContext.new(layer, null, null, null, null, RunRng.new(1), Rect2(), 0.0, def)
 	director.bind(stage_def, clock, context_factory, RunRng.new(run_seed), PackedFloat32Array())
@@ -99,11 +100,12 @@ func test_abort_running_ends_without_reward_and_drops_waiting_events() -> void:
 	director.abort_running()
 	assert_eq(first.cleanups, 1)
 	assert_true(first.is_queued_for_deletion(), "the aborted controller is freed")
-	assert_eq((rig["record"]["ended"] as Array).size(), 1)
-	assert_false((rig["record"]["ended"] as Array)[0][1], "an aborted event never succeeds")
+	assert_true((rig["record"]["ended"] as Array).is_empty(), "an aborted event is not a result: no success, no failure")
+	assert_eq((rig["record"]["aborted"] as Array).size(), 1)
+	assert_eq((rig["record"]["aborted"] as Array)[0], first.context.def)
 	assert_null(director.running())
 	director.abort_running()
-	assert_eq((rig["record"]["ended"] as Array).size(), 1, "nothing left to abort")
+	assert_eq((rig["record"]["aborted"] as Array).size(), 1, "nothing left to abort")
 	clock.step(5.0)
 	await next_frame()
 	assert_eq((rig["record"]["started"] as Array).size(), 1, "the waiting event was dropped")
@@ -160,6 +162,6 @@ func test_aborting_from_an_event_started_listener_never_begins_the_event() -> vo
 	assert_eq(event.cleanups, 0)
 	assert_false(event.is_running())
 	assert_true(event.is_queued_for_deletion())
-	assert_eq((rig["record"]["ended"] as Array).size(), 1)
-	assert_false((rig["record"]["ended"] as Array)[0][1])
+	assert_eq((rig["record"]["aborted"] as Array).size(), 1)
+	assert_true((rig["record"]["ended"] as Array).is_empty())
 	assert_null(director.running())

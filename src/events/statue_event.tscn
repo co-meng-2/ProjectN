@@ -15,5 +15,6 @@ statue_scene = ExtResource("2_statue")
 statue_count = 4
 statue_stats = SubResource("Resource_statue_stats")
 min_distance = 250.0
+statue_spacing = 90.0
 edge_margin = 48.0
 placement_tries = 32

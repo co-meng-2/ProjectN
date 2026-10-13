@@ -25,6 +25,11 @@ func test_circle_counts_down_then_announces_and_frees_itself() -> void:
 	assert_eq(elapsed.size(), 1, "announces once")
 
 
+func test_telegraph_is_a_ground_decal_below_the_actors() -> void:
+	var actor := adopt(Node2D.new()) as Node2D
+	assert_true(_telegraph().z_index < actor.z_index, "drawn under actors regardless of y-sort")
+
+
 func test_line_keeps_its_offset_and_width() -> void:
 	var telegraph := _telegraph()
 	telegraph.show_line(Vector2(360, -40), 24.0, 0.7)

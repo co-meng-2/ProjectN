@@ -119,6 +119,7 @@ func test_stage_01_schedules_three_events_and_the_orc_warlord() -> void:
 	assert_eq(ids, ["elites", "meteors", "statues"])
 	assert_no_errors(EventDirector.validate_defs(events), "event controllers")
 	assert_no_errors(BossBrain.validate_def(stage.boss), "boss patterns")
+	assert_no_errors(BossDirector.validate_def(stage.boss), "boss director")
 	for run_seed in range(1, 11):
 		assert_eq(events.roll_times(stage.duration, stage.waves.times(), RunRng.new(run_seed)).size(), 3, "seed %d" % run_seed)
 	assert_eq(stage.boss.display_name, "Orc Warlord")
