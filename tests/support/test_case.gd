@@ -39,6 +39,12 @@ func next_physics_frame() -> void:
 	await host.get_tree().physics_frame
 
 
+## Lets physics settle: awaits two physics frames (enough for newly added areas to report overlaps).
+func settle() -> void:
+	await host.get_tree().physics_frame
+	await host.get_tree().physics_frame
+
+
 func wait_seconds(seconds: float) -> void:
 	await host.get_tree().create_timer(seconds).timeout
 

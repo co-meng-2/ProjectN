@@ -17,6 +17,16 @@ static func bare_actor(test: TestCase, stats: StatBlock = null) -> Node2D:
 	return actor
 
 
+## Children of `parent` whose script is `script` (e.g. Telegraph, AreaStrike) and that are not queued for
+## deletion, in child order.
+static func live_children(parent: Node, script: Script) -> Array:
+	var result: Array = []
+	for child in parent.get_children():
+		if child.get_script() == script and not child.is_queued_for_deletion():
+			result.append(child)
+	return result
+
+
 static func asc_of(actor: Node) -> AbilitySystemComponent:
 	return actor.get_node("AbilitySystemComponent") as AbilitySystemComponent
 

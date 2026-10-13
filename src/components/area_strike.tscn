@@ -1,0 +1,28 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://src/components/area_strike.gd" id="1_strike"]
+[ext_resource type="Script" path="res://src/components/hitbox.gd" id="2_hitbox"]
+[ext_resource type="Script" path="res://src/components/effect_applier.gd" id="3_applier"]
+[ext_resource type="Script" path="res://src/components/lifetime.gd" id="4_lifetime"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_hit"]
+resource_local_to_scene = true
+radius = 40.0
+
+[node name="AreaStrike" type="Node2D"]
+script = ExtResource("1_strike")
+
+[node name="Hitbox" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 16
+monitorable = false
+script = ExtResource("2_hitbox")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hitbox"]
+shape = SubResource("CircleShape2D_hit")
+
+[node name="EffectApplier" type="Node" parent="."]
+script = ExtResource("3_applier")
+
+[node name="Lifetime" type="Node" parent="."]
+script = ExtResource("4_lifetime")
