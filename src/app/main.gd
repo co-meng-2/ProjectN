@@ -7,8 +7,11 @@ const HUD_SCENE: PackedScene = preload("res://src/ui/hud/hud.tscn")
 const STAGE_DEF: StageDef = preload("res://data/stages/stage_01.tres")
 const PROFILE: PlayerProfile = preload("res://data/characters/default_profile.tres")
 
+const BUILDING_BAR_OFFSET := Vector2(0, -60)
+
 var _stage: Stage
 var _hud: Hud
+var _building_bar: WorldHealthBar
 var _result: RunResult
 
 
@@ -26,17 +29,20 @@ func _start_run() -> void:
 	_result = null
 	_stage = STAGE_SCENE.instantiate() as Stage
 	_hud = HUD_SCENE.instantiate() as Hud
+	_building_bar = WorldHealthBar.new()
 	add_child(_stage)
+	add_child(_building_bar)
 	add_child(_hud)
 	if not _stage.start(STAGE_DEF, PROFILE):
 		get_tree().quit(1)
 		return
 	_hud.bind(_stage.player.health, _stage.building.health, _stage.run_state.wallet, _stage.clock, _stage.waves.timeline)
+	_building_bar.bind(_stage.building.health, _stage.building, BUILDING_BAR_OFFSET)
 	_stage.finished.connect(_on_finished)
 
 
 func _discard_run() -> void:
-	for node: Node in [_stage, _hud]:
+	for node: Node in [_stage, _building_bar, _hud]:
 		if node != null:
 			remove_child(node)
 			node.queue_free()
