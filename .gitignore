@@ -14,9 +14,7 @@ export_credentials.cfg
 data_*/
 mono_crash.*.json
 
-# Plugins are symlinks to the shared D:\CM\Godot\plugins directory (machine-specific)
-/addons/GodotGAS
-/addons/godot_ai
+# Plugins in addons/ are vendored (committed). godot_ai's self-update scratch dir ignores itself.
 
 # Editor / IDE
 .vscode/

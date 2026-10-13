@@ -18,7 +18,9 @@ Design: `docs/superpowers/specs/2026-10-13-vampire-survivor-base-design.md`. Pla
   `Hud.bind(player_health, building_health, wallet, clock, timeline)`.
 - Components never find their neighbours: actors inject dependencies via `bind(...)`.
 - All content is `.tres` in `data/`, typed by `src/defs/`; no balance numbers in code.
-- Damage always flows through `EffectBuilder.damage` -> GAS `GameplayEffect`. Never edit `addons/` (symlinked shared plugins).
+- Damage always flows through `EffectBuilder.damage` -> GAS `GameplayEffect`. Never edit `addons/` (vendored plugins).
+- `addons/GodotGAS` and `addons/godot_ai` are real copies committed to git, not symlinks, so the plugin versions are
+  version-controlled with the project. To upgrade one, replace the whole folder and commit it as its own change.
 - Every actor has an `AbilitySystemComponent` child named exactly that (instance `src/gas/actor_asc.tscn`);
   apply stats only after the node is in the tree; call `asc.cleanup()` before freeing, deferred (`_asc.cleanup.call_deferred()` as in `enemy.gd`/`player.gd`,
   since death happens inside physics callbacks). The plugin's ASC also cleans itself up on `NOTIFICATION_PREDELETE`.
