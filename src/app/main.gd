@@ -36,7 +36,11 @@ func _start_run() -> void:
 	if not _stage.start(STAGE_DEF, PROFILE):
 		get_tree().quit(1)
 		return
-	_hud.bind(_stage.player.health, _stage.building.health, _stage.run_state.wallet, _stage.clock, _stage.waves.timeline)
+	_hud.bind(_stage.player.health, _stage.building.health, _stage.run_state.wallet, _stage.clock, _stage.waves.timeline, _stage.events.event_times())
+	_stage.events.event_started.connect(_hud.show_event)
+	_stage.events.event_progressed.connect(_hud.show_event_progress)
+	_stage.events.event_ended.connect(_hud.show_event_result)
+	_stage.boss_appeared.connect(_hud.show_boss)
 	_hud.ability_bar.bind(_stage.loadout, _stage.run_state.wallet, _stage.grade_service)
 	_hud.ability_bar.promote_requested.connect(_on_promote_requested)
 	_hud.ability_bar.reroll_requested.connect(_on_reroll_requested)
