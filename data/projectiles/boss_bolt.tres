@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ProjectileDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/projectile_def.gd" id="1_def"]
+[ext_resource type="Texture2D" path="res://assets/art/tinyrpg/arrow.png" id="2_tex"]
+[ext_resource type="Resource" path="res://data/effects/damage_basic.tres" id="3_damage"]
+
+[resource]
+script = ExtResource("1_def")
+texture = ExtResource("2_tex")
+hit_effect = ExtResource("3_damage")
+speed = 220.0
+lifetime = 2.0
+pierce = 0
+hit_radius = 6.0
+hits = 1

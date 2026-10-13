@@ -114,3 +114,31 @@ func test_projectile_flies_along_its_direction() -> void:
 
 func _consumed(projectile: Variant) -> bool:
 	return not is_instance_valid(projectile) or projectile.is_queued_for_deletion()
+
+
+func _victim_on(layer: int, at: Vector2) -> Node2D:
+	return ActorFixture.hurt_target(self, at, layer)
+
+
+func test_an_ally_hitting_projectile_damages_allies_and_passes_enemies() -> void:
+	var shooter := _actor()
+	var def := _def(1)
+	def.hits = ProjectileDef.Team.ALLIES
+	var ally := _victim_on(PhysicsLayers.ALLY_HURT, Vector2(4, 0))
+	var enemy := _victim_on(PhysicsLayers.ENEMY_HURT, Vector2(-4, 0))
+	var projectile := _fire(shooter, def)
+	assert_eq((projectile.get_node("Hitbox") as Area2D).collision_mask, PhysicsLayers.ALLY_HURT)
+	await next_physics_frame()
+	await next_physics_frame()
+	await next_physics_frame()
+	assert_almost_eq(_health(ally), 90.0)
+	assert_almost_eq(_health(enemy), 100.0, 0.001, "pierce 1 would have hit it too if the mask matched")
+
+
+func test_projectiles_hit_enemies_by_default() -> void:
+	assert_eq(ProjectileDef.new().hit_mask(), PhysicsLayers.ENEMY_HURT)
+	var projectile := adopt(PROJECTILE_SCENE.instantiate()) as Projectile
+	var hitbox := projectile.get_node("Hitbox") as Area2D
+	hitbox.collision_mask = PhysicsLayers.ALLY_HURT
+	projectile.launch(_def(), ActorFixture.asc_of(_actor()), 10.0, Vector2.RIGHT)
+	assert_eq(hitbox.collision_mask, PhysicsLayers.ENEMY_HURT, "launch resets the mask from the def")

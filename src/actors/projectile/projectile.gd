@@ -29,6 +29,7 @@ func launch(def: ProjectileDef, shooter_asc: AbilitySystemComponent, damage: flo
 	rotation = direction.angle()
 	_sprite.texture = def.texture
 	(_hit_shape.shape as CircleShape2D).radius = def.hit_radius
+	_hitbox.collision_mask = def.hit_mask()
 	_applier.bind(shooter_asc)
 	_lifetime.restart(def.lifetime)
 

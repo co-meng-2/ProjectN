@@ -12,6 +12,7 @@ const DATA_FILES: PackedStringArray = [
 	"res://data/stages/stage_01.tres",
 	"res://data/grade_table.tres",
 	"res://data/projectiles/arrow.tres",
+	"res://data/projectiles/boss_bolt.tres",
 	"res://data/effects/damage_basic.tres",
 	"res://data/effects/cooldown_dash.tres",
 	"res://data/effects/cooldown_arrow.tres",
