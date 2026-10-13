@@ -199,7 +199,7 @@ Layers (a module may import only layers below it; upward communication = signals
 
 ## 8. Phase 2 notes
 
-**Acceptance (in-editor, godot-ai):** main scene ran with no game-log errors; six `100g` slots and `Gold 200   Stone 0` at start; slots bought, promoted and Ctrl+click-rerolled with simulated mouse input; GAME OVER ignored clicks and R restarted to 200 gold with empty slots. Per-ability visual checks and the frame-rate item were not performed.
+**Acceptance (in-editor, godot-ai, partial):** Verified with simulated input: the main scene ran with no game-log errors; six `100g` slots and `Gold 200   Stone 0` at start; buying and promoting slots (slot 0 reached an Epic frame, next cost 400g); `drop_multiplier` applied to pickups; GAME OVER ignored slot clicks; R restarted to 200 gold with empty slots. A Ctrl+click was sent but its outcome was not confirmed. **Not verified (pending manual play by the owner):** refused-click flash/dimming, the Legendary/Revealed walk and the `10s`/`MAX` labels, reroll outcome, passive effects (Vitality/Swift Boots/Might), Volley arrows, Bounty gold, stacked duplicates, clicks not moving the soldier, frame rate.
 
 **Known follow-ups:**
 - `max_health` passives do not heal on raise; health is re-clamped when `max_health` drops. The re-clamp lowers health without a spec, so `Health` emits `damaged(amount, null)` and the player may flash as if hit.
