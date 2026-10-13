@@ -63,6 +63,9 @@ func _advance(delta: float) -> void:
 	if _left > 0.0:
 		return
 	if _phase == Phase.WARNING:
+		if not is_instance_valid(context.targets.player):
+			_complete()  # the player is gone: nothing to hit (a null filter would hit every ally)
+			return
 		_start_charge()
 	else:
 		_complete()
@@ -80,6 +83,8 @@ func _start_charge() -> void:
 
 func _abort() -> void:
 	_free_telegraph()
+	if _phase == Phase.CHARGING:
+		context.mover.cancel_dash()
 	if is_instance_valid(_strike):
 		_strike.queue_free()
 	_strike = null

@@ -43,6 +43,14 @@ func dash(dash_direction: Vector2, speed: float, duration: float) -> void:
 	dash_started.emit()
 
 
+## Ends a running dash at once (the actor stops dashing; normal movement resumes next step).
+func cancel_dash() -> void:
+	if _dash_time_left <= 0.0:
+		return
+	_dash_time_left = 0.0
+	dash_finished.emit()
+
+
 func step(delta: float) -> void:
 	if _body == null:
 		return

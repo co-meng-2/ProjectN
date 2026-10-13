@@ -49,6 +49,9 @@ func _advance(delta: float) -> void:
 	if _left > 0.0:
 		return
 	_free_telegraph()
+	if not is_instance_valid(context.targets.player):
+		_complete()  # the player is gone: nothing to hit (a null filter would hit every ally)
+		return
 	var strike := strike_scene.instantiate() as AreaStrike
 	context.projectile_layer.add_child(strike)
 	strike.global_position = _point

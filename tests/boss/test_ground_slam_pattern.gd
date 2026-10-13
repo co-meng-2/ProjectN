@@ -49,6 +49,20 @@ func test_slam_lands_where_the_player_was() -> void:
 	assert_almost_eq(player.health.current(), 100.0, 0.001, "stepped out of the circle")
 
 
+func test_player_gone_during_the_warning_hits_nobody() -> void:
+	var rig := _rig()
+	var boss: Boss = rig["boss"]
+	var slam: GroundSlamPattern = rig["slam"]
+	var building := ActorFixture.hurt_target(self, PLAYER_AT + Vector2(20, 0), PhysicsLayers.ALLY_HURT)
+	boss.asc.try_activate_abilities_by_tag(GameplayTags.Ability_Boss_Slam)
+	(rig["player"] as Player).ability_context.targets.player = null
+	slam.step(1.1)
+	await settle()
+	assert_eq(ActorFixture.live_children(rig["layer"], AreaStrike).size(), 0, "no unfiltered strike")
+	assert_false(boss.is_casting())
+	assert_almost_eq(ActorFixture.asc_of(building).get_attribute("health").current_value, 100.0, 0.001)
+
+
 func test_validate_reports_missing_parts_and_bad_numbers() -> void:
 	var slam := SLAM_SCENE.instantiate() as GroundSlamPattern
 	assert_no_errors(slam.validate(), "scene as shipped")
