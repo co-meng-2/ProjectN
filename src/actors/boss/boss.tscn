@@ -1,0 +1,68 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://src/actors/boss/boss.gd" id="1_boss"]
+[ext_resource type="PackedScene" path="res://src/gas/actor_asc.tscn" id="2_asc"]
+[ext_resource type="Script" path="res://src/components/health.gd" id="3_health"]
+[ext_resource type="Script" path="res://src/components/hurtbox.gd" id="4_hurtbox"]
+[ext_resource type="Script" path="res://src/components/hitbox.gd" id="5_hitbox"]
+[ext_resource type="Script" path="res://src/components/effect_applier.gd" id="6_applier"]
+[ext_resource type="Script" path="res://src/components/contact_damage.gd" id="7_contact"]
+[ext_resource type="Script" path="res://src/components/mover.gd" id="8_mover"]
+[ext_resource type="Script" path="res://src/components/actor_visual.gd" id="9_visual"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
+resource_local_to_scene = true
+radius = 30.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_hurt"]
+resource_local_to_scene = true
+radius = 32.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_contact"]
+resource_local_to_scene = true
+radius = 34.0
+
+[node name="Boss" type="CharacterBody2D"]
+collision_layer = 4
+collision_mask = 1
+motion_mode = 1
+script = ExtResource("1_boss")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_body")
+
+[node name="AbilitySystemComponent" parent="." instance=ExtResource("2_asc")]
+
+[node name="Health" type="Node" parent="."]
+script = ExtResource("3_health")
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 16
+collision_mask = 0
+monitoring = false
+script = ExtResource("4_hurtbox")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("CircleShape2D_hurt")
+
+[node name="ContactHitbox" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 8
+monitorable = false
+script = ExtResource("5_hitbox")
+once_per_target = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ContactHitbox"]
+shape = SubResource("CircleShape2D_contact")
+
+[node name="EffectApplier" type="Node" parent="."]
+script = ExtResource("6_applier")
+
+[node name="ContactDamage" type="Node" parent="."]
+script = ExtResource("7_contact")
+
+[node name="Mover" type="Node" parent="."]
+script = ExtResource("8_mover")
+
+[node name="Visual" type="AnimatedSprite2D" parent="."]
+script = ExtResource("9_visual")

@@ -13,6 +13,7 @@ const TAGS: PackedStringArray = [
 	"Cooldown.Dash",
 	"Damage.Amount",
 	"Event.Kill",
+	"State.Casting",
 	"State.Invulnerable",
 ]
 

@@ -6,11 +6,10 @@ signal died(enemy: Enemy)
 signal loot_dropped(roll: DropRoll, position: Vector2)
 
 const FREE_DELAY_AFTER_DEATH: float = 0.6
-const HURTBOX_PADDING: float = 2.0
-const CONTACT_PADDING: float = 4.0
 
 var def: EnemyDef
 var _target: Node2D
+var _body: ActorBody
 
 @onready var _asc: AbilitySystemComponent = $AbilitySystemComponent
 @onready var _health: Health = $Health
@@ -35,12 +34,11 @@ func setup(p_def: EnemyDef, target: Node2D, rng: RunRng) -> void:
 	_hurtbox.bind(_asc, self)
 	_applier.bind(_asc)
 	_mover.bind(self, _asc)
-	_contact.bind(_contact_hitbox, _applier, def.contact_effect, def.contact_damage, def.contact_interval)
+	_body = ActorBody.new(self, _asc, _visual, _hurtbox, _contact_hitbox, _body_shape)
+	_body.wire_contact(_contact, _applier, def.contact_effect, def.contact_damage, def.contact_interval)
 	_dropper.bind(_health, def.drops, rng, self)
 	_visual.apply(def.visual, def.visual_scale, def.tint)
-	(_body_shape.shape as CircleShape2D).radius = def.body_radius
-	(_hurt_shape.shape as CircleShape2D).radius = def.body_radius + HURTBOX_PADDING
-	(_contact_shape.shape as CircleShape2D).radius = def.body_radius + CONTACT_PADDING
+	_body.size_shapes(def.body_radius, _hurt_shape, _contact_shape)
 	_health.damaged.connect(_on_damaged)
 	_health.died.connect(_on_died)
 	_dropper.drop_requested.connect(loot_dropped.emit)
@@ -68,14 +66,6 @@ func _on_attacked(_targets: Array[Hurtbox]) -> void:
 
 
 func _on_died() -> void:
-	remove_from_group(Groups.ENEMIES)
-	set_physics_process(false)
-	_mover.set_physics_process(false)
-	_contact.set_physics_process(false)
-	_hurtbox.set_deferred("monitorable", false)
-	_contact_hitbox.set_deferred("monitoring", false)
-	_body_shape.set_deferred("disabled", true)
-	_asc.cleanup.call_deferred()
-	_visual.play_once(AnimNames.DEATH)
+	var stopped: Array[Node] = [_mover, _contact]
+	_body.die(stopped, FREE_DELAY_AFTER_DEATH)
 	died.emit(self)
-	get_tree().create_timer(FREE_DELAY_AFTER_DEATH).timeout.connect(queue_free)

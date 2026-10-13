@@ -107,3 +107,12 @@ static func watch_event(event: StageEvent) -> Dictionary:
 	event.failed.connect(func() -> void: (record["failed"] as Array).append(true))
 	event.progress_changed.connect(func(text: String) -> void: (record["progress"] as Array).append(text))
 	return record
+
+
+## A set-up Boss from `def` (its scene must be boss.tscn) at `position`, chasing `player`, sharing the
+## player's TargetProvider and projectile layer. No brain is attached: tests activate patterns by tag.
+static func boss(test: TestCase, player: Player, def: BossDef, position: Vector2, summon: Callable = Callable()) -> Boss:
+	var result := test.adopt(def.scene.instantiate()) as Boss
+	result.global_position = position
+	result.setup(def, player, player.ability_context.targets, player.ability_context.projectile_layer, summon)
+	return result
