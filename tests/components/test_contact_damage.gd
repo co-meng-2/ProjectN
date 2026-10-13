@@ -32,6 +32,7 @@ func _rig() -> Array:
 	attacker.add_child(applier)
 	applier.bind(ActorFixture.asc_of(attacker))
 	var contact := ContactDamage.new()
+	contact.set_physics_process(false)
 	attacker.add_child(contact)
 	contact.bind(hitbox, applier, DAMAGE, 10.0, 1.0)
 	return [contact, victim]

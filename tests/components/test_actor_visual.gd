@@ -10,11 +10,17 @@ func _strip(animation: StringName, frames: int, loop: bool) -> AnimationStrip:
 	return strip
 
 
-func _visual() -> ActorVisual:
+func _def() -> VisualDef:
 	var def := VisualDef.new()
 	def.strips.append(_strip(AnimNames.IDLE, 6, true))
 	def.strips.append(_strip(AnimNames.WALK, 8, true))
 	def.strips.append(_strip(AnimNames.HURT, 4, false))
+	def.strips.append(_strip(AnimNames.DEATH, 5, false))
+	return def
+
+
+func _visual() -> ActorVisual:
+	var def := _def()
 	var visual := adopt(ActorVisual.new()) as ActorVisual
 	visual.apply(def, 2.0, Color.RED)
 	return visual
@@ -47,7 +53,7 @@ func test_one_shot_is_not_interrupted_by_locomotion() -> void:
 
 func test_missing_one_shot_animation_is_ignored() -> void:
 	var visual := _visual()
-	visual.play_once(AnimNames.DEATH)
+	visual.play_once(AnimNames.ATTACK)
 	assert_eq(visual.animation, AnimNames.IDLE)
 
 
@@ -59,3 +65,21 @@ func test_face_flips_horizontally_only_with_real_input() -> void:
 	assert_true(visual.flip_h, "zero input keeps the facing")
 	visual.face(1.0)
 	assert_false(visual.flip_h)
+
+
+func test_apply_again_resets_one_shot_and_moving_state() -> void:
+	var visual := _visual()
+	visual.play_once(AnimNames.DEATH)
+	visual.apply(_def(), 1.0)
+	visual.set_moving(true)
+	assert_eq(visual.animation, AnimNames.WALK)
+
+
+func test_death_is_terminal() -> void:
+	var visual := _visual()
+	visual.play_once(AnimNames.DEATH)
+	var tint := visual.modulate
+	visual.play_once(AnimNames.HURT)
+	visual.flash_hit()
+	assert_eq(visual.animation, AnimNames.DEATH)
+	assert_eq(visual.modulate, tint)

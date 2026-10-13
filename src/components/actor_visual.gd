@@ -10,6 +10,7 @@ const HIT_FLASH_SECONDS: float = 0.15
 var _base_tint: Color = Color.WHITE
 var _moving: bool = false
 var _one_shot_active: bool = false
+var _dead: bool = false
 
 
 func _ready() -> void:
@@ -22,6 +23,9 @@ func apply(def: VisualDef, scale_factor: float = 1.0, tint: Color = Color.WHITE)
 	scale = Vector2.ONE * scale_factor
 	_base_tint = tint
 	modulate = tint
+	_moving = false
+	_one_shot_active = false
+	_dead = false
 	_play_locomotion()
 
 
@@ -38,13 +42,16 @@ func face(direction_x: float) -> void:
 
 ## Plays a non-looping animation, then returns to idle/walk (DEATH stays on its last frame).
 func play_once(animation_name: StringName) -> void:
-	if sprite_frames == null or not sprite_frames.has_animation(animation_name):
+	if _dead or sprite_frames == null or not sprite_frames.has_animation(animation_name):
 		return
+	_dead = animation_name == AnimNames.DEATH
 	_one_shot_active = true
 	play(animation_name)
 
 
 func flash_hit() -> void:
+	if _dead:
+		return
 	modulate = HIT_FLASH_COLOR
 	create_tween().tween_property(self, "modulate", _base_tint, HIT_FLASH_SECONDS)
 
