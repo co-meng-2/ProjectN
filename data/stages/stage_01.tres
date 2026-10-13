@@ -1,36 +1,29 @@
-[gd_resource type="Resource" script_class="StageDef" load_steps=11 format=3]
+[gd_resource type="Resource" script_class="StageDef" format=3 uid="uid://byw2tmxbpjons"]
 
-[ext_resource type="Script" path="res://src/defs/stage_def.gd" id="1_stage"]
-[ext_resource type="Script" path="res://src/defs/stat_block.gd" id="2_stats"]
-[ext_resource type="Script" path="res://src/defs/enemy_def.gd" id="3_enemy_script"]
-[ext_resource type="Texture2D" path="res://assets/art/world/grass.png" id="4_grass"]
-[ext_resource type="Texture2D" path="res://assets/art/farmrpg/house.png" id="5_house"]
-[ext_resource type="Resource" path="res://data/enemies/orc.tres" id="6_orc"]
-[ext_resource type="Resource" path="res://data/enemies/orc_swarmer.tres" id="7_swarmer"]
-[ext_resource type="Resource" path="res://data/waves/stage_01_waves.tres" id="8_waves"]
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_house"]
-atlas = ExtResource("5_house")
-region = Rect2(2, 2, 76, 90)
+[ext_resource type="Script" uid="uid://edi68dpd4cif" path="res://src/defs/stage_def.gd" id="1_stage"]
+[ext_resource type="Script" uid="uid://bpy31rqnwoa0w" path="res://src/defs/stat_block.gd" id="2_stats"]
+[ext_resource type="Script" uid="uid://7lu42npm7k84" path="res://src/defs/enemy_def.gd" id="3_enemy_script"]
+[ext_resource type="Texture2D" uid="uid://5ym870q28bhr" path="res://assets/art/world/grass.png" id="4_grass"]
+[ext_resource type="Texture2D" uid="uid://cadl0aiogqx84" path="res://assets/art/farmrpg/house.png" id="5_house"]
+[ext_resource type="Resource" uid="uid://xtn3qim6evc7" path="res://data/enemies/orc.tres" id="6_orc"]
+[ext_resource type="Resource" uid="uid://cvw2bvotb2gvx" path="res://data/enemies/orc_swarmer.tres" id="7_swarmer"]
+[ext_resource type="Resource" uid="uid://c07j5gs0twowk" path="res://data/waves/stage_01_waves.tres" id="8_waves"]
 
 [sub_resource type="Resource" id="Resource_building"]
 script = ExtResource("2_stats")
 max_health = 500.0
 move_speed = 0.0
-attack = 1.0
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_house"]
+atlas = ExtResource("5_house")
+region = Rect2(2, 2, 76, 90)
 
 [resource]
 script = ExtResource("1_stage")
 id = &"stage_01"
 display_name = "Training Grounds"
-duration = 180.0
-arena_size = Vector2(2400, 1600)
 ground_texture = ExtResource("4_grass")
 building_texture = SubResource("AtlasTexture_house")
 building_stats = SubResource("Resource_building")
 trickle_enemies = Array[ExtResource("3_enemy_script")]([ExtResource("6_orc"), ExtResource("7_swarmer")])
-trickle_interval_start = 2.0
-trickle_interval_end = 0.8
-trickle_cap = 60
-spawn_radius = 520.0
 waves = ExtResource("8_waves")
