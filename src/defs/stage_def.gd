@@ -20,6 +20,8 @@ extends Resource
 ## Scales every enemy drop; 1.0 for balanced play, very large for prototype tuning.
 @export var drop_multiplier: float = 1.0
 @export var grade_table: GradeTable
+## Optional announced events (Phase 3); null = none.
+@export var events: EventSchedule
 
 
 func validate() -> PackedStringArray:
@@ -51,4 +53,7 @@ func validate() -> PackedStringArray:
 		errors.append("StageDef '%s': grade_table is null" % id)
 	else:
 		errors.append_array(grade_table.validate())
+	if events != null:
+		var wave_times := waves.times() if waves != null else PackedFloat32Array()
+		errors.append_array(events.validate_against(duration, wave_times))
 	return errors

@@ -98,3 +98,40 @@ static func grade_table() -> GradeTable:
 	table.reveal_stone = 10
 	table.reroll_stone = 2
 	return table
+
+
+## Packs `node` into a scene and frees it (the scene keeps its own copy).
+static func packed(node: Node) -> PackedScene:
+	var scene := PackedScene.new()
+	scene.pack(node)
+	node.free()
+	return scene
+
+
+static func reward(gold: int = 150, stone: int = 2, tickets: int = 1) -> RewardDef:
+	var result := RewardDef.new()
+	result.gold = gold
+	result.stone = stone
+	result.tickets = tickets
+	return result
+
+
+static func event(scene: PackedScene, time_limit: float = 20.0, id: StringName = &"probe") -> EventDef:
+	var def := EventDef.new()
+	def.id = id
+	def.display_name = String(id).capitalize()
+	def.controller_scene = scene
+	def.time_limit = time_limit
+	def.reward = reward()
+	return def
+
+
+static func schedule(pool: Array[EventDef], count: int = 1, window_start: float = 10.0, window_end: float = 50.0, min_gap: float = 20.0, wave_clearance: float = 0.0) -> EventSchedule:
+	var result := EventSchedule.new()
+	result.pool = pool
+	result.count = count
+	result.window_start = window_start
+	result.window_end = window_end
+	result.min_gap = min_gap
+	result.wave_clearance = wave_clearance
+	return result

@@ -44,3 +44,19 @@ func test_stage_collects_grade_table_errors() -> void:
 	var def := DefFactory.stage()
 	def.grade_table.promote_gold = PackedInt32Array([1])
 	assert_eq(def.validate().size(), 1)
+
+
+func test_stage_validates_its_event_schedule_against_duration_and_waves() -> void:
+	var def := DefFactory.stage(60.0)
+	var entry := WaveEntry.new()
+	entry.time = 30.0
+	entry.count = 3
+	entry.enemy = DefFactory.enemy()
+	def.waves.entries.append(entry)
+	var pool: Array[EventDef] = [DefFactory.event(DefFactory.packed(Node2D.new()), 10.0)]
+	def.events = DefFactory.schedule(pool, 1, 25.0, 35.0, 10.0, 6.0)
+	assert_eq(def.validate().size(), 1, "every allowed second collides with the wave at 30 s")
+	def.events.wave_clearance = 4.0
+	assert_no_errors(def.validate(), "clearance 4 leaves 25 and 35")
+	def.events = null
+	assert_no_errors(def.validate(), "events are optional")
