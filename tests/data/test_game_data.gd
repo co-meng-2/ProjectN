@@ -7,6 +7,7 @@ const DATA_FILES: PackedStringArray = [
 	"res://data/enemies/orc_visual.tres",
 	"res://data/enemies/orc.tres",
 	"res://data/enemies/orc_swarmer.tres",
+	"res://data/enemies/elite_orc.tres",
 	"res://data/waves/stage_01_waves.tres",
 	"res://data/stages/stage_01.tres",
 	"res://data/grade_table.tres",
@@ -52,7 +53,7 @@ func test_stage_01_schedules_five_waves_inside_the_stage() -> void:
 
 
 func test_enemy_defs_use_the_generic_enemy_scene() -> void:
-	for path in ["res://data/enemies/orc.tres", "res://data/enemies/orc_swarmer.tres"]:
+	for path in ["res://data/enemies/orc.tres", "res://data/enemies/orc_swarmer.tres", "res://data/enemies/elite_orc.tres"]:
 		var def := load(path) as EnemyDef
 		assert_eq(def.scene.resource_path, "res://src/actors/enemy/enemy.tscn", path)
 		assert_not_null(def.visual.find_strip(AnimNames.DEATH), "%s has a death strip" % path)
@@ -82,3 +83,15 @@ func test_default_profile_offers_the_seven_phase_2_abilities() -> void:
 func test_stage_01_uses_the_prototype_drop_multiplier() -> void:
 	var stage := load("res://data/stages/stage_01.tres") as StageDef
 	assert_almost_eq(stage.drop_multiplier, 10000.0)
+
+
+func test_elite_orc_matches_the_spec() -> void:
+	var elite := load("res://data/enemies/elite_orc.tres") as EnemyDef
+	assert_no_errors(elite.validate(), "elite_orc")
+	assert_eq(elite.id, &"elite_orc")
+	assert_almost_eq(elite.stats.max_health, 300.0)
+	assert_almost_eq(elite.stats.move_speed, 70.0)
+	assert_almost_eq(elite.visual_scale, 1.8)
+	assert_eq(elite.target_policy, EnemyDef.TargetPolicy.PLAYER)
+	assert_almost_eq(elite.contact_damage, 15.0)
+	assert_true(elite.tint.r > 0.9 and elite.tint.g < 0.5 and elite.tint.b < 0.5, "red tint")
