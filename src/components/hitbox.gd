@@ -8,7 +8,7 @@ signal hurtbox_entered(hurtbox: Hurtbox)
 ## When true, each hurtbox is reported once until reset() (projectiles). Contact damage polls instead.
 @export var once_per_target: bool = true
 
-var _already_hit: Dictionary = {}
+var _already_hit: Dictionary[int, bool] = {}
 
 
 func _ready() -> void:

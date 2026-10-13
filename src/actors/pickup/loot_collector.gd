@@ -17,7 +17,9 @@ func _on_area_entered(area: Area2D) -> void:
 	var pickup := area as Pickup
 	if pickup == null:
 		return
-	pickup.reached.connect(_on_pickup_reached, CONNECT_ONE_SHOT)
+	# A pickup can leave and re-enter the magnet (dash), so connect only once.
+	if not pickup.reached.is_connected(_on_pickup_reached):
+		pickup.reached.connect(_on_pickup_reached, CONNECT_ONE_SHOT)
 	pickup.attract_to(_anchor)
 
 

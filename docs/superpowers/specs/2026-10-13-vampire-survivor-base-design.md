@@ -106,13 +106,13 @@ Scenes live next to their scripts with the same basename. `[Pn]` = built in phas
 | `gas/EffectBuilder` | Build damage spec with context | `damage(instigator, causer, effect, amount, level)` | addons |
 | `components/Health` | Observes ASC `health`, emits domain events (UI/loot read this) | `changed(cur,max)`, `died` | ASC |
 | `components/Hurtbox` / `Hitbox` | Passive hurt area exposing its ASC and actor / detect hurtboxes (once per target per activation) | `bind(asc, actor)` / `hurtbox_entered(hb)` | ASC |
-| `components/EffectApplier` | Apply spec to target through instigator ASC | `apply(spec, target_asc)` | ASC, EffectBuilder |
+| `components/EffectApplier` | Apply spec to target through instigator ASC | `bind(source_asc)`, `hit(hurtbox, effect, amount, causer)` | ASC, EffectBuilder |
 | `components/Mover` | Move at ASC `move_speed`; dash override | `set_direction`, `dash` | ASC |
 | `components/ContactDamage` | Periodic damage to overlapped hurtboxes | `@export effect/interval` | Hitbox, EffectApplier |
 | `components/LootDropper` | Roll drops on death | `drop_requested(roll, position)` | Health, defs |
 | `actors/pickup/LootCollector` | Magnet + pickup | `collected(kind, amount)` | Pickup |
 | `components/ActorAbility` / `AbilityContext` | Base for hand-placed player abilities / the dependencies injected into them (actor, mover, targets, projectile layer) | `bind_context(ctx)` | Mover, TargetProvider |
-| `components/ActorVisual` | Bind `VisualDef` to AnimatedSprite2D | `play(state)`, `face(dir)` | defs |
+| `components/ActorVisual` | Bind `VisualDef` to AnimatedSprite2D | `apply(def, scale, tint)`, `set_moving`, `face`, `play_once`, `flash_hit` | defs |
 | `components/Lifetime` | Free after time | `@export seconds` | — |
 | `actors/*` | Thin scenes assembled from components | `died`, `asc`, `health` | components, defs, gas |
 | `stage/RunState` | Per-run mutable state (rng, wallet, clock, profile, stats) → `RunResult` | `to_result()` | core, defs |
@@ -121,8 +121,8 @@ Scenes live next to their scripts with the same basename. `[Pn]` = built in phas
 | `components/TargetProvider` | "What should this enemy attack" / nearest enemy for the arrow | `target_for(policy)`, `nearest_enemy(origin, range)` | groups |
 | `stage/LootDirector` | Turns `drop_requested` into pickups in the world (deferred add) | `drop_requested` wiring | actors, defs |
 | `stage/EnemyFactory` | Build enemy from `EnemyDef`, apply attribute overrides; pooling seam | `spawn(def, pos)` | actors, defs |
-| `stage/SpawnDirector` | Gentle trickle with caps | `start/stop`, `spawned` | EnemyFactory, RunRng |
-| `stage/WaveDirector` | Drive `WaveSchedule` against clock; expose timeline | `wave_started(entry)`, `schedule` | Timeline, EnemyFactory |
+| `stage/SpawnDirector` | Gentle trickle with caps | `bind(...)`, `current_interval(elapsed)` | EnemyFactory, RunRng |
+| `stage/WaveDirector` | Drive `WaveSchedule` against clock; expose timeline | `bind(...)`, `timeline`, `mark_times()`, `wave_started(entry)` | Timeline, EnemyFactory |
 | `stage/Stage` | Composition root; exposes `player`, `building`, `run_state`, `clock`, `waves`; enemy and wave spawn rings are centred on the building | `start(StageDef, PlayerProfile)`, `finished(RunResult)` | all below it |
 | `ui/Hud` | View only, binds to models (bound by `Main`, not `Stage`) | `bind(...)` | signals only |
 

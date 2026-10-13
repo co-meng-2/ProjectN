@@ -30,6 +30,6 @@ func validate_against(duration: float) -> PackedStringArray:
 			errors.append_array(entry.enemy.validate())
 		if entry.count <= 0:
 			errors.append("WaveEntry '%s': count must be > 0" % entry.label)
-		if entry.time < 0.0 or entry.time > duration:
-			errors.append("WaveEntry '%s': time %s is outside the stage duration %s" % [entry.label, entry.time, duration])
+		if entry.time < 0.0 or entry.time >= duration:
+			errors.append("WaveEntry '%s': time %s is outside [0, stage duration %s)" % [entry.label, entry.time, duration])
 	return errors

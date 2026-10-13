@@ -61,3 +61,29 @@ func test_collector_attracts_and_reports_collected_amounts() -> void:
 	_pickup(Vector2(30, 0))
 	await wait_seconds(0.6)
 	assert_eq(collected, [[Wallet.Kind.STONE, 4]])
+
+
+func test_pickup_leaving_and_reentering_the_magnet_is_collected_once() -> void:
+	var anchor := adopt(Node2D.new()) as Node2D
+	var collector := LootCollector.new()
+	collector.collision_layer = 0
+	collector.collision_mask = PhysicsLayers.PICKUP
+	collector.monitorable = false
+	var shape := CollisionShape2D.new()
+	var circle := CircleShape2D.new()
+	circle.radius = 60.0
+	shape.shape = circle
+	collector.add_child(shape)
+	anchor.add_child(collector)
+	collector.bind(anchor)
+	var collected: Array = []
+	collector.collected.connect(func(kind: Wallet.Kind, amount: int) -> void: collected.append([kind, amount]))
+	var pickup := _pickup(Vector2(50, 0))
+	await next_physics_frame()
+	await next_physics_frame()
+	pickup.global_position = Vector2(400, 0)
+	await next_physics_frame()
+	await next_physics_frame()
+	pickup.global_position = Vector2(50, 0)
+	await wait_seconds(0.6)
+	assert_eq(collected, [[Wallet.Kind.STONE, 4]])

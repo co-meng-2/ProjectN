@@ -130,3 +130,13 @@ func test_restart_starts_clean() -> void:
 	assert_eq(second.run_state.wallet.gold, 0)
 	assert_almost_eq(second.clock.elapsed, 0.0)
 	assert_eq(host.get_tree().get_nodes_in_group(Groups.ENEMIES).size(), 0)
+
+
+func test_second_start_is_rejected_and_does_not_double_wire() -> void:
+	var results: Array = []
+	var stage := _running_stage(30.0, results)
+	var first_state := stage.run_state
+	assert_false(stage.start(_stage_def(30.0), _profile(), 12))
+	assert_true(stage.run_state == first_state, "run state untouched by the rejected start")
+	stage.clock.ended.emit()
+	assert_eq(results.size(), 1)

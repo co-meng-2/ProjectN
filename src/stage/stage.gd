@@ -29,6 +29,9 @@ var _flow := StageFlow.new()
 
 ## Returns false, after logging every problem, when a def is invalid; nothing is started then.
 func start(stage_def: StageDef, profile: PlayerProfile, run_seed: int = 0) -> bool:
+	if run_state != null:
+		push_error("Stage.start: already started; a Stage runs once")
+		return false
 	var errors := stage_def.validate()
 	errors.append_array(profile.validate())
 	if not errors.is_empty():

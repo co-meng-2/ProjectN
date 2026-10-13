@@ -23,6 +23,12 @@ func test_wave_after_stage_end_is_an_error() -> void:
 	assert_eq(schedule.validate_against(100.0).size(), 1)
 
 
+func test_wave_at_exactly_the_stage_end_is_an_error() -> void:
+	var schedule := WaveSchedule.new()
+	schedule.entries.append(_entry(100.0))
+	assert_eq(schedule.validate_against(100.0).size(), 1)
+
+
 func test_non_positive_count_and_null_enemy_are_errors() -> void:
 	var schedule := WaveSchedule.new()
 	var bad_count := _entry(5.0, 0)
