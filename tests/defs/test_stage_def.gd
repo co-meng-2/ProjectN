@@ -60,3 +60,13 @@ func test_stage_validates_its_event_schedule_against_duration_and_waves() -> voi
 	assert_no_errors(def.validate(), "clearance 4 leaves 25 and 35")
 	def.events = null
 	assert_no_errors(def.validate(), "events are optional")
+
+
+func test_null_wave_entry_with_events_reports_errors_without_crashing() -> void:
+	var def := DefFactory.stage(60.0)
+	def.waves.entries.append(null)
+	var pool: Array[EventDef] = [DefFactory.event(DefFactory.packed(Node2D.new()), 10.0)]
+	def.events = DefFactory.schedule(pool, 1, 25.0, 35.0, 10.0)
+	var errors := def.validate()
+	assert_eq(errors.size(), 1, ", ".join(errors))
+	assert_true(errors[0].contains("null entry"))

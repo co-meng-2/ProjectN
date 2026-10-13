@@ -54,6 +54,10 @@ func validate() -> PackedStringArray:
 	else:
 		errors.append_array(grade_table.validate())
 	if events != null:
-		var wave_times := waves.times() if waves != null else PackedFloat32Array()
+		var wave_times := PackedFloat32Array()
+		if waves != null:
+			for entry in waves.entries:
+				if entry != null:
+					wave_times.append(entry.time)
 		errors.append_array(events.validate_against(duration, wave_times))
 	return errors

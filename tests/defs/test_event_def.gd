@@ -31,3 +31,11 @@ func test_reward_errors_are_reported_with_the_event() -> void:
 func test_controller_root_must_be_a_node2d() -> void:
 	var def := DefFactory.event(DefFactory.packed(Node.new()))
 	assert_eq(def.validate().size(), 1, "a plain Node cannot be placed in the world")
+
+
+func test_controller_root_validate_errors_are_reported() -> void:
+	var root := Node2D.new()
+	root.set_script(load("res://tests/support/invalid_event_probe.gd"))
+	var errors := DefFactory.event(DefFactory.packed(root)).validate()
+	assert_eq(errors.size(), 1, ", ".join(errors))
+	assert_true(errors[0].contains("probe controller is invalid"))
