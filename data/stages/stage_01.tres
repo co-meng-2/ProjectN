@@ -30,5 +30,5 @@ trickle_enemies = Array[ExtResource("3_enemy_script")]([ExtResource("6_orc"), Ex
 waves = ExtResource("8_waves")
 start_gold = 200
 start_stone = 0
-drop_multiplier = 1.0
+drop_multiplier = 10000.0
 grade_table = ExtResource("9_grades")

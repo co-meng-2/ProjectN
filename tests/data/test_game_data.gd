@@ -14,6 +14,13 @@ const DATA_FILES: PackedStringArray = [
 	"res://data/effects/damage_basic.tres",
 	"res://data/effects/cooldown_dash.tres",
 	"res://data/effects/cooldown_arrow.tres",
+	"res://data/abilities/prospector.tres",
+	"res://data/abilities/swift_boots.tres",
+	"res://data/abilities/vitality.tres",
+	"res://data/abilities/might.tres",
+	"res://data/abilities/volley.tres",
+	"res://data/abilities/blade_sweep.tres",
+	"res://data/abilities/bounty.tres",
 ]
 
 
@@ -59,3 +66,19 @@ func test_stage_01_starts_with_the_owner_economy() -> void:
 	assert_eq(stage.grade_table.promote_price(Grade.Value.NONE).amount, 100)
 	assert_eq(stage.grade_table.promote_price(Grade.Value.LEGENDARY).amount, 10)
 	assert_eq(stage.grade_table.reroll_price(Grade.Value.COMMON).amount, 2)
+
+
+func test_default_profile_offers_the_seven_phase_2_abilities() -> void:
+	var profile := load("res://data/characters/default_profile.tres") as PlayerProfile
+	assert_eq(profile.slot_count, 6)
+	var ids: Array = []
+	for ability in profile.abilities:
+		ids.append(String(ability.id))
+	ids.sort()
+	assert_eq(ids, ["blade_sweep", "bounty", "might", "prospector", "swift_boots", "vitality", "volley"])
+	assert_no_errors(profile.validate(), "default_profile")
+
+
+func test_stage_01_uses_the_prototype_drop_multiplier() -> void:
+	var stage := load("res://data/stages/stage_01.tres") as StageDef
+	assert_almost_eq(stage.drop_multiplier, 10000.0)

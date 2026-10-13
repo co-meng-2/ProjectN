@@ -8,11 +8,12 @@ Design: `docs/superpowers/specs/2026-10-13-vampire-survivor-base-design.md`. Pla
   `TEST_SUITE_TIMEOUT=<seconds>`, default 120). Tests live in `tests/` mirroring `src/`, plus `support/` helpers;
   a test file extends `TestCase` and is picked up by the runner `tests/run_tests.tscn`.
 - Rebuild gameplay tags after editing `TAGS` in `tools/sync_tags.gd`:
-  `Godot --headless --path . -s res://tools/sync_tags.gd`.
+  `Godot --headless --path . -s res://tools/sync_tags.gd`, then rescan the editor filesystem (godot-ai `filesystem_manage` scan) before running tests.
 
 ## Architecture rules
 - Layers (a file may only use layers below it): `core → defs → gas → components → actors → stage/abilities/boss → ui → app/meta`
   (`stage`, `abilities`, `boss` are siblings; `events/` extends `stage/`).
+  `stage/Stage` (composition root) may reference `abilities/`; no other `stage/` file may.
   Upward communication is signals only. `Stage` is the composition root and wires everything.
   It does not know the HUD: `Main` (`src/app/main.gd`) instantiates Stage and Hud and calls
   `Hud.bind(player_health, building_health, wallet, clock, timeline)`.
@@ -25,6 +26,19 @@ Design: `docs/superpowers/specs/2026-10-13-vampire-survivor-base-design.md`. Pla
   apply stats only after the node is in the tree; call `asc.cleanup()` before freeing, deferred (`_asc.cleanup.call_deferred()` as in `enemy.gd`/`player.gd`,
   since death happens inside physics callbacks). The plugin's ASC also cleans itself up on `NOTIFICATION_PREDELETE`.
 - Add physics objects from physics callbacks with `call_deferred`.
+- Abilities: `src/abilities/` holds the shop (`Loadout`/`AbilitySlot`, `AbilityPool`, `GradeService`) and the
+  `AbilityInstaller` that mirrors slots onto the player's ASC (passives = INFINITE effects held by handle,
+  attacks = `ActorAbility` scenes granted through `Player.grant_ability`). Grade maps to GAS `ability_level`
+  (COMMON 1 ... REVEALED 6); every ability number is a `Curve` sampled at that level. `Stage` exposes `loadout`
+  and `grade_service`; `Main` binds `Hud.ability_bar` and routes its `promote_requested`/`reroll_requested`
+  signals - the HUD never mutates models. `Stage` sends `Event.Kill` (payload: the enemy) to the player's ASC
+  on every enemy death; on-kill abilities use `trigger_event_tag`. `Stage.start` validates the profile and
+  `AbilityInstaller.validate_defs` (every `ability_scene` root must be an `ActorAbility`).
+- Gameplay tag names must survive the GAS registry, which lowercases segment tails: use `Ability.Sweep`, not
+  camel-case segments like `Ability.BladeSweep`.
+- Attack cooldowns live in `PeriodicAbility` (a curve + `step(delta)`), not in GAS cooldown effects; a
+  promoted/rerolled attack starts with a fresh cooldown.
+- `addons/` are vendored plugin copies (committed, not symlinks); still never edit them.
 
 ## Adding an enemy (data only)
 1. Duplicate `data/enemies/orc.tres`; change `id`, stats, tint/scale, contact values, `target_policy`.
@@ -32,6 +46,20 @@ Design: `docs/superpowers/specs/2026-10-13-vampire-survivor-base-design.md`. Pla
 2. Add it to `StageDef.trickle_enemies` or a `WaveEntry`; `StageDef.validate()` then validates it (checked by
    `test_stage_01_validates`). `tests/data/test_game_data.gd` uses hard-coded lists, so also add the file to `DATA_FILES`
    and to the list in `test_enemy_defs_use_the_generic_enemy_scene` if it should be covered when no stage references it.
+
+## Adding an ability (data only)
+1. Duplicate a file in `data/abilities/` (`vitality.tres` for a passive, `volley.tres` for an attack): set `id`,
+   names, `icon` (and `revealed_icon` or rely on the shine tint), `min_grade`. A passive is an INFINITE
+   `GameplayEffect` whose modifiers use `scaling_curve` (6 points, x = grade level 1..6) with `magnitude = 1.0`
+   (GAS multiplies the curve by it - 0 zeroes every grade; `validate()` catches it). An attack points
+   `ability_scene` at a scene whose root extends `ActorAbility` (usually `PeriodicAbility`) with its numbers as
+   exported curves; the root may implement `validate()`.
+2. Add it to `PlayerProfile.abilities` in `data/characters/default_profile.tres`; `Stage.start` validates it.
+   Add the file to `DATA_FILES` in `tests/data/test_game_data.gd` and, for a passive, to `PASSIVES` in
+   `tests/data/test_ability_data.gd`.
+3. Shop prices live in `data/grade_table.tres`; the run's start gold/stone and `drop_multiplier` in the
+   `StageDef` (`stage_01.tres` uses 10000 for prototyping - set it to 1 for balanced play).
+4. Icons in `assets/art/icons/` are currently generated placeholders (see `assets/SOURCES.md`).
 
 ## Running the game
 - Main scene: `src/app/main.tscn`. `application/run/main_scene` in `project.godot` was hand-edited (the godot-ai tool
