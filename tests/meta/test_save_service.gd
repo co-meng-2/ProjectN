@@ -48,3 +48,26 @@ func test_save_then_reload_keeps_gem_and_volume() -> void:
 	var fresh := _service()
 	assert_eq(fresh.data.gem, 9)
 	assert_almost_eq(fresh.data.settings.master_volume, 0.3)
+
+
+func test_record_clear_marks_the_stage_and_emits_changed() -> void:
+	var service := _service()
+	var emitted: Array = []
+	service.changed.connect(func() -> void: emitted.append(true))
+	service.record_clear(&"stage_01")
+	assert_eq(service.data.cleared_stages, [&"stage_01"])
+	assert_eq(emitted.size(), 1)
+
+
+func test_record_clear_twice_keeps_one_entry() -> void:
+	var service := _service()
+	service.record_clear(&"stage_01")
+	service.record_clear(&"stage_01")
+	assert_eq(service.data.cleared_stages.size(), 1)
+
+
+func test_a_recorded_clear_survives_save_and_reload() -> void:
+	var service := _service()
+	service.record_clear(&"stage_01")
+	assert_true(service.save())
+	assert_eq(_service().data.cleared_stages, [&"stage_01"])

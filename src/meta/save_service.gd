@@ -29,5 +29,11 @@ func add_gem(amount: int) -> void:
 	changed.emit()
 
 
+## Marks a stage as cleared. The caller saves (Main does so once, together with the gem credit).
+func record_clear(stage_id: StringName) -> void:
+	data.mark_cleared(stage_id)
+	changed.emit()
+
+
 func save() -> bool:
 	return SaveStore.write(path, data)
