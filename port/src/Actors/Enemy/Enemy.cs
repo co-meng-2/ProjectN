@@ -55,7 +55,7 @@ public partial class Enemy : CharacterBody2D
 	public EnemyDef? Def { get; private set; }
 
 	/// <summary>Call after the enemy has entered the tree.</summary>
-	public void Setup(EnemyDef def, Node2D target, RunRng rng)
+	public void Setup(EnemyDef def, Node2D? target, RunRng rng)
 	{
 		Def = def;
 		_target = target;

@@ -6,6 +6,7 @@ using Gamesmiths.Forge.Effects;
 using Gamesmiths.Forge.Effects.Components;
 using Gamesmiths.Forge.Effects.Duration;
 using Gamesmiths.Forge.Effects.Magnitudes;
+using Gamesmiths.Forge.Events;
 using Gamesmiths.Forge.Godot.Nodes;
 using Godot;
 using VampireSurvivor.Defs;
@@ -45,6 +46,22 @@ public partial class ActorEntity : ForgeEntity
 	public bool TryActivate(string abilityTag, IForgeEntity? target = null)
 	{
 		return Abilities.TryActivateAbilitiesByTag(GameplayTags.ContainerOf(abilityTag), target, out _);
+	}
+
+	/// <summary>
+	/// Raises a gameplay event on this entity (for example <c>event.kill</c> with the dead enemy as payload). Abilities
+	/// triggered by the event tag react through Forge; nothing happens when none listens.
+	/// </summary>
+	public void Raise<T>(string eventTag, T payload)
+	{
+		var data = new EventData<T>
+		{
+			EventTags = GameplayTags.ContainerOf(eventTag),
+			Source = this,
+			Target = this,
+			Payload = payload,
+		};
+		Events.Raise(in data);
 	}
 
 	/// <summary>Applies base stats. Call after the node is in the tree. MaxHealth first: Health clamps to it.</summary>

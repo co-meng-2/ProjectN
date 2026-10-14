@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using Godot;
 using VampireSurvivor.Components;
 using VampireSurvivor.Defs;
 using VampireSurvivor.Gas;
@@ -79,5 +81,17 @@ public class ActorEntityTest : TestCase
 		ActorEntity actor = ActorFixture.BareActor(this, MakeStats(5_000_000f));
 		Assert.Eq(actor.Attributes[Stats.MaxHealth].CurrentValue, 10_000_000);
 		Assert.True(actor.Attributes[Stats.Health].CurrentValue <= 10_000_000);
+	}
+
+	public void TestRaiseDeliversTheEventAndItsPayloadToSubscribers()
+	{
+		ActorEntity entity = ActorFixture.BareActor(this, new StatBlock());
+		var payload = Adopt(new Node2D());
+		var seen = new List<Node>();
+		entity.Events.Subscribe<Node>(
+			GameplayTags.Request(GameplayTags.EventKill), data => seen.Add(data.Payload), 0);
+		entity.Raise<Node>(GameplayTags.EventKill, payload);
+		Assert.Eq(seen.Count, 1);
+		Assert.True(seen[0] == payload, "the payload arrives unchanged");
 	}
 }
