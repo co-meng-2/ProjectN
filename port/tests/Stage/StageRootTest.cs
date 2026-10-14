@@ -297,4 +297,18 @@ public class StageRootTest : TestCase
 
 		Assert.Eq(stage.RunState.Wallet.Gold, victims.Count, "1 gold per kill at Common; the drops are never collected");
 	}
+
+	public void TestAbilitiesWithUnregisteredTagsAreRejectedBeforeAnythingStarts()
+	{
+		PlayerProfile catalog = DefFactory.Profile();
+		catalog.Abilities.Add(DefFactory.Ability("bad", active: new ProbeAbilityDef { Tag = "ability.nonexistent" }));
+		StageRoot first = NewStage();
+		Assert.False(first.Start(MakeDef(30f), catalog), "a catalog attack with an unregistered tag");
+		Assert.Null(first.RunState);
+		PlayerProfile innate = DefFactory.Profile();
+		innate.InnateAbilities.Add(new ProbeAbilityDef { Tag = GameplayTags.AbilityProbe, TriggerEventTag = "event.nonexistent" });
+		StageRoot second = NewStage();
+		Assert.False(second.Start(MakeDef(30f), innate), "an innate ability with an unregistered trigger tag");
+		Assert.Null(second.RunState);
+	}
 }

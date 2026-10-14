@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using VampireSurvivor.Abilities;
 using VampireSurvivor.Actors;
@@ -84,6 +85,12 @@ public partial class StageRoot : Node2D
 
 		List<string> errors = def.Validate();
 		errors.AddRange(profile.Validate());
+
+		// Defs cannot see the Forge tag registry (layer order), so the registry checks happen here, before any purchase.
+		foreach (ActiveAbilityDef active in profile.InnateAbilities.Concat(profile.Abilities.Select(a => a?.Active)).OfType<ActiveAbilityDef>())
+		{
+			errors.AddRange(AbilityFactory.Validate(active));
+		}
 		if (errors.Count > 0)
 		{
 			foreach (string error in errors)
