@@ -42,25 +42,7 @@ func validate() -> PackedStringArray:
 
 
 func _validate_passive() -> PackedStringArray:
-	var errors := PackedStringArray()
-	if passive_effect.policy != GameplayEffect.DurationPolicy.INFINITE:
-		errors.append("AbilityDef '%s': passive_effect must be INFINITE" % id)
-	if passive_effect.stacking_policy != GameplayEffect.StackingPolicy.FREE:
-		# Non-FREE stacking can hand two slots the same handle; clearing one slot would remove both.
-		errors.append("AbilityDef '%s': passive_effect stacking_policy must be FREE" % id)
-	if passive_effect.modifiers.is_empty():
-		errors.append("AbilityDef '%s': passive_effect has no modifiers" % id)
-	for modifier in passive_effect.modifiers:
-		if modifier == null:
-			errors.append("AbilityDef '%s': null modifier" % id)
-		elif modifier.attribute_name == "":
-			errors.append("AbilityDef '%s': modifier without attribute_name" % id)
-		elif modifier.scaling_curve == null:
-			errors.append("AbilityDef '%s': modifier '%s' needs a scaling_curve over the grade level" % [id, modifier.attribute_name])
-		elif is_zero_approx(modifier.magnitude):
-			# GAS multiplies the curve sample by `magnitude`; 0 would silently zero every grade.
-			errors.append("AbilityDef '%s': modifier '%s' has magnitude 0 (use 1.0 with a curve)" % [id, modifier.attribute_name])
-	return errors
+	return PassiveEffectCheck.validate(passive_effect, "AbilityDef '%s': passive_effect" % id)
 
 
 func _validate_scene() -> PackedStringArray:
