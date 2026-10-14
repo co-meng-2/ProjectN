@@ -88,3 +88,27 @@ func test_gem_stored_as_a_float_in_the_file_loads() -> void:
 	SaveFiles.write_text(PATH, '{"version": 1, "gem": 5.0}')
 	assert_eq(SaveStore.load_or_default(PATH).gem, 5)
 	assert_false(FileAccess.file_exists(PATH + ".bak"))
+
+
+func test_a_v1_file_loads_migrated_without_a_backup() -> void:
+	SaveFiles.write_text(PATH, '{"version": 1, "gem": 5, "settings": {"master_volume": 0.5}}')
+	var data := SaveStore.load_or_default(PATH)
+	assert_eq(data.gem, 5)
+	assert_almost_eq(data.settings.master_volume, 0.5)
+	assert_eq(data.cleared_stages.size(), 0)
+	assert_false(FileAccess.file_exists(PATH + ".bak"))
+
+
+func test_cleared_stages_survive_write_and_load() -> void:
+	var data := SaveData.new()
+	data.mark_cleared(&"stage_01")
+	assert_true(SaveStore.write(PATH, data))
+	assert_eq(SaveStore.load_or_default(PATH).cleared_stages, [&"stage_01"])
+
+
+func test_malformed_cleared_stages_are_treated_as_corrupt() -> void:
+	for text in ['{"version": 2, "cleared_stages": [1]}', '{"version": 2, "cleared_stages": "stage_01"}']:
+		SaveFiles.reset(DIR)
+		SaveFiles.write_text(PATH, text)
+		assert_eq(SaveStore.load_or_default(PATH).cleared_stages.size(), 0, text)
+		assert_true(FileAccess.file_exists(PATH + ".bak"), "backup for %s" % text)

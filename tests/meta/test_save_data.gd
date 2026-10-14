@@ -45,3 +45,42 @@ func test_invalid_gem_is_rejected() -> void:
 func test_invalid_settings_are_rejected() -> void:
 	assert_null(SaveData.from_dict({"settings": 3}), "not a dictionary")
 	assert_null(SaveData.from_dict({"settings": {"master_volume": "x"}}), "bad field")
+
+
+func test_cleared_stages_default_to_empty() -> void:
+	assert_eq(SaveData.new().cleared_stages.size(), 0)
+
+
+func test_mark_cleared_ignores_an_id_already_present() -> void:
+	var data := SaveData.new()
+	data.mark_cleared(&"stage_01")
+	data.mark_cleared(&"stage_01")
+	assert_eq(data.cleared_stages, [&"stage_01"])
+
+
+func test_cleared_stages_round_trip() -> void:
+	var data := SaveData.new()
+	data.mark_cleared(&"stage_01")
+	data.mark_cleared(&"stage_02")
+	var restored := SaveData.from_dict(data.to_dict())
+	assert_not_null(restored)
+	assert_eq(restored.cleared_stages, [&"stage_01", &"stage_02"])
+
+
+func test_cleared_stages_are_stored_as_plain_strings() -> void:
+	var data := SaveData.new()
+	data.mark_cleared(&"stage_01")
+	var stored: Array = data.to_dict()["cleared_stages"]
+	assert_eq(typeof(stored[0]), TYPE_STRING)
+
+
+func test_an_unknown_stage_id_survives_load_and_save() -> void:
+	var restored := SaveData.from_dict({"cleared_stages": ["ghost_stage"]})
+	assert_not_null(restored)
+	assert_eq(restored.to_dict()["cleared_stages"], ["ghost_stage"])
+
+
+func test_invalid_cleared_stages_are_rejected() -> void:
+	assert_null(SaveData.from_dict({"cleared_stages": "stage_01"}), "not an array")
+	assert_null(SaveData.from_dict({"cleared_stages": [1]}), "number entry")
+	assert_null(SaveData.from_dict({"cleared_stages": ["stage_01", null]}), "null entry")

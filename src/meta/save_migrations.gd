@@ -3,14 +3,16 @@ extends RefCounted
 ## Brings a loaded save dictionary up to the current schema one version at a time.
 ## To change the schema: bump CURRENT_VERSION and append one step to `steps()`.
 
-const CURRENT_VERSION: int = 1
+const CURRENT_VERSION: int = 2
 ## JSON numbers are floats; anything beyond this is not a plausible whole count.
 const MAX_SAFE_INT: float = 9.0e15
 
 
 ## steps()[i] upgrades a version (i + 1) dictionary to version (i + 2).
 static func steps() -> Array[Callable]:
-	return []
+	var result: Array[Callable] = []
+	result.append(_v1_to_v2)
+	return result
 
 
 ## Returns the migrated copy, or an empty dictionary when the version is missing, invalid or from the future.
@@ -40,3 +42,9 @@ static func read_int(raw: Variant) -> Variant:
 	if typeof(raw) == TYPE_FLOAT and absf(raw) < MAX_SAFE_INT and is_equal_approx(raw, roundf(raw)):
 		return int(raw)
 	return null
+
+
+## v2 adds the list of cleared stage ids.
+static func _v1_to_v2(source: Dictionary) -> Dictionary:
+	source["cleared_stages"] = []
+	return source
