@@ -1,3 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
+using Gamesmiths.Forge.Attributes;
+using Gamesmiths.Forge.Core;
+using Gamesmiths.Forge.Effects.Magnitudes;
+
 namespace VampireSurvivor.Gas;
 
 /// <summary>
@@ -17,6 +22,15 @@ public static class Stats
 	public const int SpeedDecimals = 2;
 	public const int AttackDecimals = 3;
 	public const int GainDecimals = 3;
+
+	/// <summary>
+	/// The entity's attribute for <paramref name="key"/>, or false when it has none. Forge 0.4.0 keeps
+	/// EntityAttributes.ContainsAttribute internal; the capture definition's TryGetAttribute is the public route.
+	/// </summary>
+	public static bool TryGet(IForgeEntity? entity, string key, [NotNullWhen(true)] out EntityAttribute? attribute)
+	{
+		return new AttributeCaptureDefinition(key, AttributeCaptureSource.Target).TryGetAttribute(entity, out attribute);
+	}
 
 	/// <summary>10^decimals: the raw value that stands for 1.0.</summary>
 	public static int Scale(int decimals)
