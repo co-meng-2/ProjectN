@@ -2,7 +2,7 @@
 
 Top-down 2D vampire-survivor-like prototype in Godot 4.7 (GDScript) on top of GodotGAS.
 Design: `docs/superpowers/specs/2026-10-13-vampire-survivor-base-design.md`. Plans: `docs/superpowers/plans/`.
-A C# + Forge port is in progress under `port/` (spec: `docs/superpowers/specs/2026-10-14-csharp-forge-port-design.md`); the GDScript tree stays the regression reference until cutover.
+A C# + Forge port is in progress under `port/` (spec: `docs/superpowers/specs/2026-10-14-csharp-forge-port-design.md`); the GDScript tree stays the regression reference until cutover. Current status and machine setup: `docs/superpowers/notes/2026-10-14-port-status-and-setup.md`.
 
 ## Commands
 - Run all tests: `tools/run_tests.sh` (`RUNNER=gd|cs|both`, default both; `FILTER=<substring>` for one file/label; `IMPORT=1` if the
