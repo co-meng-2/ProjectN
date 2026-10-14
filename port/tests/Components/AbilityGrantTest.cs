@@ -1,4 +1,5 @@
 using Gamesmiths.Forge.Abilities;
+using Godot;
 using VampireSurvivor.Components;
 using VampireSurvivor.Defs;
 using VampireSurvivor.Gas;
@@ -121,5 +122,38 @@ public class AbilityGrantTest : TestCase
 		Assert.Eq(noCurve.Validate().Count, 0, "no cooldown curve means no cooldown");
 		var unregistered = new ProbeAbilityDef { Tag = "ability.nonexistent", Cooldown = DefFactory.CurveOf(1f) };
 		Assert.True(AbilityFactory.Validate(unregistered).Count >= 1, "tags are checked against the Forge registry");
+	}
+
+	public void TestAnEventTriggeredAbilityStartsOnItsEventWithThePayloadAndLevel()
+	{
+		ActorEntity actor = ActorFixture.BareActor(this, new StatBlock());
+		var probe = new EventProbeAbilityDef();
+		actor.Grant(probe, 4);
+		var victim = Adopt(new Node2D());
+		actor.Raise<Node>(GameplayTags.EventKill, victim);
+		Assert.Eq(probe.Payloads.Count, 1);
+		Assert.True(probe.Payloads[0] == victim, "the event payload reaches the behavior");
+		Assert.SequenceEq(probe.Levels, new[] { 4 });
+		actor.Raise<Node>(GameplayTags.EventKill, victim);
+		Assert.Eq(probe.Payloads.Count, 2, "every event starts it again");
+	}
+
+	public void TestAnEventTriggeredAbilityIgnoresOtherEventsAndStopsWhenRevoked()
+	{
+		ActorEntity actor = ActorFixture.BareActor(this, new StatBlock());
+		var probe = new EventProbeAbilityDef();
+		AbilityGrant grant = actor.Grant(probe, 1);
+		actor.Raise<Node>(GameplayTags.StateCasting, Adopt(new Node()));
+		Assert.Eq(probe.Payloads.Count, 0, "another tag");
+		actor.Revoke(grant);
+		actor.Raise<Node>(GameplayTags.EventKill, Adopt(new Node()));
+		Assert.Eq(probe.Payloads.Count, 0, "revoked");
+	}
+
+	public void TestAnUnregisteredTriggerTagIsAValidationError()
+	{
+		var probe = new EventProbeAbilityDef { TriggerEventTag = "event.nonexistent" };
+		Assert.Eq(AbilityFactory.Validate(probe).Count, 1);
+		Assert.NoErrors(AbilityFactory.Validate(new EventProbeAbilityDef()));
 	}
 }

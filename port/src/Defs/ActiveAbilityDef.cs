@@ -28,6 +28,13 @@ public abstract partial class ActiveAbilityDef : ForgeAbilityBehavior
 	[Export]
 	public bool AutoFire { get; set; }
 
+	/// <summary>
+	/// A gameplay event that starts the ability (for example "event.kill"); empty for abilities started by activation.
+	/// The behavior receives the event payload (a Node) through <c>IAbilityBehavior&lt;Node&gt;</c>.
+	/// </summary>
+	[Export]
+	public string TriggerEventTag { get; set; } = string.Empty;
+
 	public abstract IAbilityBehavior CreateBehavior();
 
 	public override IAbilityBehavior GetBehavior() => CreateBehavior();
