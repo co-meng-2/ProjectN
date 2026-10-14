@@ -2,7 +2,14 @@
 # Runs the headless test suite. Env: GODOT_BIN, FILTER (path substring), IMPORT=1 (run --import first).
 set -u
 cd "$(dirname "$0")/.."
-GODOT_BIN="${GODOT_BIN:-/d/CM/Godot/Godot_v4.7.2-stable_win64.exe}"
+GODOT_BIN="${GODOT_BIN:-/d/CM/Godot/Godot_v4.7.2-stable_mono_win64/Godot_v4.7.2-stable_mono_win64_console.exe}"
+if [ "${NO_BUILD:-0}" != "1" ]; then
+	if ! build_output="$(dotnet build VampireSurvivor.csproj -nologo -v:q 2>&1)"; then
+		echo "$build_output" | grep "error" | sort -u
+		echo "!! dotnet build failed"
+		exit 1
+	fi
+fi
 if [ "${IMPORT:-0}" = "1" ]; then
 	"$GODOT_BIN" --headless --path . --import >/dev/null 2>&1
 fi

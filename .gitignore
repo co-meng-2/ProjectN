@@ -9,10 +9,13 @@
 export_presets.cfg
 export_credentials.cfg
 
-# Mono / C# (unused, kept for safety)
+# Mono / C#
 .mono/
 data_*/
 mono_crash.*.json
+bin/
+obj/
+*.csproj.user
 
 # Plugins in addons/ are vendored (committed). godot_ai's self-update scratch dir ignores itself.
 
