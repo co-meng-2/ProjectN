@@ -1,0 +1,82 @@
+// Copyright © Gamesmiths Guild.
+
+using System.Collections.Generic;
+using Gamesmiths.Forge.Attributes;
+using Gamesmiths.Forge.Core;
+using Gamesmiths.Forge.Cues;
+using Gamesmiths.Forge.Effects;
+using Gamesmiths.Forge.Events;
+using Gamesmiths.Forge.Godot.Core;
+using Gamesmiths.Forge.Godot.Resources;
+using Gamesmiths.Forge.Statescript;
+using Godot;
+using Node = Godot.Node;
+
+namespace Gamesmiths.Forge.Godot.Nodes;
+
+[GlobalClass]
+[Icon("uid://cu6ncpuumjo20")]
+public partial class ForgeEntity : Node, IForgeEntity
+{
+	[Export]
+	public ForgeTagContainer BaseTags { get; set; } = new();
+
+	[Export]
+	public ForgeSharedVariableSet? SharedVariableDefinitions { get; set; }
+
+	public EntityAttributes Attributes { get; set; } = null!;
+
+	public EntityTags Tags { get; set; } = null!;
+
+	public EffectsManager EffectsManager { get; set; } = null!;
+
+	public CuesManager CuesManager { get; set; } = null!;
+
+	public EntityAbilities Abilities { get; set; } = null!;
+
+	public EventManager Events { get; set; } = null!;
+
+	public Variables SharedVariables { get; set; } = null!;
+
+	public override void _Ready()
+	{
+		base._Ready();
+
+		Tags = new(BaseTags.GetTagContainer());
+		CuesManager = ForgeManagers.Instance.CuesManager;
+		EffectsManager = new EffectsManager(this, CuesManager);
+		Abilities = new EntityAbilities(this);
+		Events = new EventManager();
+		SharedVariables = new Variables();
+
+		SharedVariableDefinitions?.PopulateVariables(SharedVariables);
+
+		List<AttributeSet> attributeSetList = [];
+
+		foreach (Node node in GetChildren())
+		{
+			if (node is ForgeAttributeSet attributeSetNode)
+			{
+				AttributeSet? attributeSet = attributeSetNode.GetAttributeSet();
+
+				if (attributeSet is not null)
+				{
+					attributeSetList.Add(attributeSet);
+				}
+			}
+		}
+
+		Attributes = new EntityAttributes([.. attributeSetList]);
+
+		var effectApplier = new EffectApplier(this);
+		effectApplier.ApplyEffects(this, this, this);
+	}
+
+	public override void _Process(double delta)
+	{
+		base._Process(delta);
+
+		EffectsManager.UpdateEffects(delta);
+		Abilities.UpdateAbilities(delta);
+	}
+}

@@ -1,0 +1,84 @@
+// Copyright © Gamesmiths Guild.
+
+using System.Diagnostics;
+using Gamesmiths.Forge.Core;
+using Gamesmiths.Forge.Godot.Core;
+using Godot;
+
+namespace Gamesmiths.Forge.Godot.Nodes;
+
+[GlobalClass]
+[Icon("uid://dskf1b0eecaxl")]
+public partial class EffectRayCast3D : RayCast3D
+{
+	private EffectApplier? _effectApplier;
+
+	private GodotObject? _lastFrameCollider;
+
+	[Export]
+	public Node? EffectOwner { get; set; }
+
+	[Export]
+	public Node? EffectSource { get; set; }
+
+	[Export]
+	public int EffectLevel { get; set; } = 1;
+
+	[Export]
+	public EffectTriggerMode TriggerMode { get; set; }
+
+	private IForgeEntity? OwnerEntity => EffectOwner as IForgeEntity;
+
+	private IForgeEntity? SourceEntity => EffectSource as IForgeEntity;
+
+	public override void _Ready()
+	{
+		if (EffectOwner is not null && EffectOwner is not IForgeEntity)
+		{
+			GD.PushError($"{nameof(EffectOwner)} must implement {nameof(IForgeEntity)}.");
+		}
+
+		base._Ready();
+
+		_effectApplier = new EffectApplier(this);
+	}
+
+	public override void _PhysicsProcess(double delta)
+	{
+		base._PhysicsProcess(delta);
+
+		Debug.Assert(_effectApplier is not null, $"{_effectApplier} should have been initialized on _Ready().");
+
+		GodotObject current = GetCollider();
+		bool hasCurrent = current is Node;
+		bool hadLast = _lastFrameCollider is Node;
+
+		// Enter: is colliding now, wasn't colliding before.
+		if (current is Node currentNode && !hadLast)
+		{
+			if (TriggerMode == EffectTriggerMode.OnStay)
+			{
+				_effectApplier.AddEffects(currentNode, OwnerEntity, SourceEntity, EffectLevel);
+			}
+			else if (TriggerMode == EffectTriggerMode.OnEnter)
+			{
+				_effectApplier.ApplyEffects(currentNode, OwnerEntity, SourceEntity, EffectLevel);
+			}
+		}
+
+		// Exit: Was colliding before, isn't colliding now.
+		if (!hasCurrent && _lastFrameCollider is Node lastNode)
+		{
+			if (TriggerMode == EffectTriggerMode.OnStay)
+			{
+				_effectApplier.RemoveEffects(lastNode);
+			}
+			else if (TriggerMode == EffectTriggerMode.OnExit)
+			{
+				_effectApplier.ApplyEffects(lastNode, OwnerEntity, SourceEntity, EffectLevel);
+			}
+		}
+
+		_lastFrameCollider = hasCurrent ? current : null;
+	}
+}
