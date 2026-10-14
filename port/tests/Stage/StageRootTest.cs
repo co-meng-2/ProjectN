@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Godot;
+using VampireSurvivor.Abilities;
+using VampireSurvivor.Tests.Abilities;
 using VampireSurvivor.Actors;
 using VampireSurvivor.Components;
 using VampireSurvivor.Core;
@@ -200,5 +202,99 @@ public class StageRootTest : TestCase
 		Assert.True(stage.RunState == first, "run state untouched by the rejected start");
 		stage.Clock.EmitSignal(StageClock.SignalName.Ended);
 		Assert.Eq(results.Count, 1);
+	}
+
+	/// <summary>A stage whose profile offers <paramref name="abilities"/>; quiet removes every enemy so nothing dies or drops.</summary>
+	private StageRoot ShopStage(AbilityDef[] abilities, int gold, int stone, bool quiet = true)
+	{
+		StageDef def = MakeDef(60f);
+		if (quiet)
+		{
+			def.TrickleEnemies.Clear();
+			def.Waves!.Entries.Clear();
+		}
+
+		def.StartGold = gold;
+		def.StartStone = stone;
+		PlayerProfile profile = DefFactory.Profile();
+		profile.SlotCount = 2;
+		foreach (AbilityDef ability in abilities)
+		{
+			profile.Abilities.Add(ability);
+		}
+
+		StageRoot stage = NewStage();
+		Assert.True(stage.Start(def, profile, 11));
+		return stage;
+	}
+
+	private static double MaxHealth(StageRoot stage) => stage.Player.Entity.Attributes[Stats.MaxHealth].DisplayValue;
+
+	public void TestStageBuildsTheLoadoutAndGradeServiceFromTheProfile()
+	{
+		StageRoot stage = ShopStage([DefFactory.VitalityAbility()], 200, 0);
+		Assert.Eq(stage.Loadout!.Size, 2);
+		Assert.Eq(stage.RunState!.Wallet.Gold, 200);
+		Assert.Eq(stage.GradeService!.PromoteCost(0)!.Value.Amount, 100);
+		Assert.Null(stage.GradeService.RerollCost(0));
+	}
+
+	public void TestBuyingPromotingAndRevealingThroughTheServiceChangesThePlayer()
+	{
+		AbilityDef vitality = DefFactory.VitalityAbility();
+		StageRoot stage = ShopStage([vitality], 1500, 20);
+		GradeService service = stage.GradeService!;
+		var wallet = stage.RunState!.Wallet;
+		Assert.Eq(service.Promote(0).Outcome, GradeOutcome.Ok);
+		Assert.Eq(wallet.Gold, 1400);
+		Assert.AlmostEq(MaxHealth(stage), 120.0);
+		for (int i = 0; i < 4; i++)
+		{
+			Assert.Eq(service.Promote(0).Outcome, GradeOutcome.Ok);
+		}
+
+		Assert.Eq(stage.Loadout!.Slot(0)!.Grade, Grade.Legendary);
+		Assert.Eq(wallet.Gold, 0);
+		Assert.AlmostEq(MaxHealth(stage), 260.0);
+		Assert.Eq(service.Reroll(0).Outcome, GradeOutcome.Ok);
+		Assert.Eq(wallet.Stone, 18);
+		Assert.AlmostEq(MaxHealth(stage), 260.0, 0.001, "reinstalled, not stacked");
+		Assert.Eq(service.Promote(0).Outcome, GradeOutcome.Ok);
+		Assert.Eq(stage.Loadout.Slot(0)!.Grade, Grade.Revealed);
+		Assert.True(stage.Loadout.Slot(0)!.Def == vitality);
+		Assert.Eq(wallet.Stone, 8);
+		Assert.AlmostEq(MaxHealth(stage), 340.0);
+		Assert.Eq(service.Promote(0).Outcome, GradeOutcome.NotApplicable);
+		Assert.Eq(wallet.Stone, 8);
+	}
+
+	public async Task TestABoughtAttackIsGrantedToThePlayerAndAutoFires()
+	{
+		BladeSweepDef sweep = BladeSweepTest.MakeSweep();
+		sweep.AutoFire = true;
+		StageRoot stage = ShopStage([DefFactory.Ability("sweep", active: sweep)], 100, 0);
+		Assert.Eq(stage.GradeService!.Promote(0).Outcome, GradeOutcome.Ok);
+		Node2D enemy = Adopt(new Node2D { GlobalPosition = stage.Player.GlobalPosition + new Vector2(20f, 0f) });
+		enemy.AddToGroup(Groups.Enemies);
+		await WaitSeconds(0.2);
+		Assert.True(
+			stage.Player.Entity.Tags.AllTags.HasTag(GameplayTags.Request(GameplayTags.SlotCooldowns[0])),
+			"the slot's attack fired on its own and is cooling down");
+	}
+
+	public async Task TestBountyPaysGoldWhenTheStageReportsAKill()
+	{
+		StageRoot stage = ShopStage([DefFactory.Ability("bounty", active: BountyTest.MakeBounty())], 100, 0, quiet: false);
+		Assert.Eq(stage.GradeService!.Promote(0).Outcome, GradeOutcome.Ok);
+		Assert.Eq(stage.RunState!.Wallet.Gold, 0);
+		await WaitSeconds(0.9);
+		List<Node> victims = Enemies();
+		Assert.True(victims.Count > 0);
+		foreach (Node victim in victims)
+		{
+			ActorFixture.Kill(this, ((Enemy)victim).Entity);
+		}
+
+		Assert.Eq(stage.RunState.Wallet.Gold, victims.Count, "1 gold per kill at Common; the drops are never collected");
 	}
 }
