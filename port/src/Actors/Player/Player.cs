@@ -48,6 +48,7 @@ public partial class Player : CharacterBody2D
 	public void Setup(PlayerProfile profile, TargetProvider targets, Node projectileLayer, Wallet wallet)
 	{
 		Entity.ApplyStats(profile.Stats!);
+		ApplySkillBonuses(profile);
 		Health.Bind(Entity);
 		Hurtbox.Bind(Entity, this);
 		Mover.Bind(this, Entity);
@@ -65,6 +66,25 @@ public partial class Player : CharacterBody2D
 		Health.Damaged += _ => Visual.FlashHit();
 		Health.Died += OnDied;
 		AddToGroup(Groups.Player);
+	}
+
+	/// <summary>
+	/// Skill-tree bonuses are permanent for the run (the handles are never removed). ApplyStats filled health to the
+	/// base max and a max-health bonus does not heal, so health is refilled to the modified max afterwards.
+	/// </summary>
+	private void ApplySkillBonuses(PlayerProfile profile)
+	{
+		if (profile.SkillBonuses.Count == 0)
+		{
+			return;
+		}
+
+		foreach (SkillBonus bonus in profile.SkillBonuses)
+		{
+			Entity.ApplyPassive(bonus.Passive, bonus.Level);
+		}
+
+		Entity.FillHealth();
 	}
 
 	public float GainMultiplier(CurrencyKind kind)

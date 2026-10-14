@@ -159,4 +159,35 @@ public class PlayerTest : TestCase
 		DamageEffects.Hit(player.Entity, victim, 10f);
 		Assert.AlmostEq(victim.Attributes[Stats.Health].DisplayValue, 80.0);
 	}
+
+	private static SkillBonus Bonus(StatId stat, PassiveOperation operation, int level, params float[] perLevel) =>
+		new(new PassiveDef { Stat = stat, Operation = operation, ByLevel = DefFactory.CurveOf(perLevel) }, level);
+
+	public void TestAMaxHealthBonusStartsThePlayerAtFullModifiedHealth()
+	{
+		PlayerProfile profile = DefFactory.Profile();
+		profile.SkillBonuses.Add(Bonus(StatId.MaxHealth, PassiveOperation.Flat, 2, 20f, 40f));
+		Player player = ActorFixture.Player(this, profile);
+		Assert.AlmostEq(player.Health.Maximum(), 140.0, 0.001, "base 100 + 40");
+		Assert.AlmostEq(player.Health.Current(), 140.0, 0.001, "starts full, not 100/140");
+	}
+
+	public void TestMoveSpeedAndAttackBonusesReachTheAttributes()
+	{
+		PlayerProfile profile = DefFactory.Profile();
+		profile.SkillBonuses.Add(Bonus(StatId.MoveSpeed, PassiveOperation.Flat, 1, 10f, 20f));
+		profile.SkillBonuses.Add(Bonus(StatId.Attack, PassiveOperation.Percent, 2, 0.1f, 0.2f));
+		Player player = ActorFixture.Player(this, profile);
+		Assert.AlmostEq(player.Entity.Attributes[Stats.MoveSpeed].DisplayValue, 110.0, 0.001);
+		Assert.AlmostEq(player.Entity.Attributes[Stats.Attack].DisplayValue, 1.2, 0.001);
+	}
+
+	public void TestAProfileWithoutBonusesKeepsItsBaseHealth()
+	{
+		PlayerProfile profile = DefFactory.Profile();
+		profile.Stats = new StatBlock { MaxHealth = 77f };
+		Player player = ActorFixture.Player(this, profile);
+		Assert.AlmostEq(player.Health.Maximum(), 77.0);
+		Assert.AlmostEq(player.Health.Current(), 77.0);
+	}
 }
