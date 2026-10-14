@@ -135,4 +135,22 @@ public static class ActorFixture
 
 		public System.Collections.Generic.List<string> Progress { get; } = [];
 	}
+
+	/// <summary>
+	/// A set-up boss from <paramref name="def"/> (its scene must be boss.tscn) at <paramref name="position"/>, chasing
+	/// <paramref name="player"/> and sharing the player's target provider and projectile layer. Its entity does not tick on
+	/// its own: tests advance patterns with <c>boss.Entity.Tick(dt)</c>. No brain is attached.
+	/// </summary>
+	public static BossActor Boss(
+		TestCase test, Player player, BossDef def, Vector2 position, System.Action<EnemyDef, Vector2>? summon = null)
+	{
+		BossActor boss = test.Adopt(def.Scene!.Instantiate<BossActor>());
+		boss.GlobalPosition = position;
+		boss.Setup(def, player, player.Context!.Targets, player.Context.ProjectileLayer, summon);
+		boss.Entity.SetPhysicsProcess(false);
+		return boss;
+	}
+
+	/// <summary>Activates a granted ability; true when it started.</summary>
+	public static bool Fire(AbilityGrant grant) => grant.Ability!.Activate(out Gamesmiths.Forge.Abilities.AbilityActivationFailures _);
 }
