@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SkillNodeDef" format=3]
+
+[ext_resource type="Script" path="res://src/defs/skill_node_def.gd" id="1_node"]
+
+[resource]
+script = ExtResource("1_node")
+id = &"extra_slot"
+display_name = "Extra Slot"
+description = "One more ability slot."
+requires = Array[StringName]([&"might"])
+max_level = 1
+costs = PackedInt32Array(100)
+slot_bonus = 1
