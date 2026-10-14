@@ -80,3 +80,20 @@ func test_stage_validates_its_optional_boss() -> void:
 	var patterns: Array[PackedScene] = [preload("res://tests/support/probe_ability.tscn")]
 	def.boss = DefFactory.boss(null, patterns)
 	assert_no_errors(def.validate(), "valid boss")
+
+
+func test_gem_reward_is_paid_on_clear_only() -> void:
+	var def := DefFactory.stage()
+	def.gem_reward = 7
+	assert_eq(def.gem_for(RunResult.Outcome.CLEARED), 7)
+	assert_eq(def.gem_for(RunResult.Outcome.FAILED), 0)
+
+
+func test_gem_reward_defaults_to_zero() -> void:
+	assert_eq(DefFactory.stage().gem_reward, 0)
+
+
+func test_negative_gem_reward_is_a_validation_error() -> void:
+	var def := DefFactory.stage()
+	def.gem_reward = -1
+	assert_eq(def.validate().size(), 1)

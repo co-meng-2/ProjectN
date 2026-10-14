@@ -197,3 +197,8 @@ func test_boss_patterns_carry_the_spec_numbers() -> void:
 	var slam := (load("res://src/boss/patterns/ground_slam_pattern.tscn") as PackedScene).instantiate() as GroundSlamPattern
 	assert_eq([slam.warning, slam.radius, slam.damage], [1.0, 90.0, 30.0])
 	slam.free()
+
+
+func test_stage_01_pays_gem() -> void:
+	var stage := load("res://data/stages/stage_01.tres") as StageDef
+	assert_true(stage.gem_reward > 0, "a cleared stage_01 must pay gem")

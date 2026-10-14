@@ -36,3 +36,4 @@ drop_multiplier = 10000.0
 grade_table = ExtResource("9_grades")
 events = ExtResource("10_events")
 boss = ExtResource("11_boss")
+gem_reward = 10

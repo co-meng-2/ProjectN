@@ -24,6 +24,8 @@ extends Resource
 @export var events: EventSchedule
 ## Optional end-of-stage boss (Phase 3); null = time up clears the stage.
 @export var boss: BossDef
+## Gem (the persistent currency) paid when the stage is cleared; a failed run pays nothing.
+@export var gem_reward: int = 0
 
 
 func validate() -> PackedStringArray:
@@ -51,6 +53,8 @@ func validate() -> PackedStringArray:
 		errors.append("StageDef '%s': start_gold and start_stone must be >= 0" % id)
 	if drop_multiplier <= 0.0:
 		errors.append("StageDef '%s': drop_multiplier must be > 0" % id)
+	if gem_reward < 0:
+		errors.append("StageDef '%s': gem_reward must be >= 0" % id)
 	if grade_table == null:
 		errors.append("StageDef '%s': grade_table is null" % id)
 	else:
@@ -65,3 +69,7 @@ func validate() -> PackedStringArray:
 	if boss != null:
 		errors.append_array(boss.validate())
 	return errors
+
+
+func gem_for(outcome: RunResult.Outcome) -> int:
+	return gem_reward if outcome == RunResult.Outcome.CLEARED else 0
