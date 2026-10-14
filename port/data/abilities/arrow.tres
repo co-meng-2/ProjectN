@@ -1,0 +1,37 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://port/src/Abilities/Attacks/VolleyDef.cs" id="1_volley"]
+[ext_resource type="PackedScene" path="res://port/src/Actors/Projectile/projectile.tscn" id="2_scene"]
+[ext_resource type="Resource" path="res://port/data/projectiles/arrow.tres" id="3_arrow"]
+
+[sub_resource type="Curve" id="Curve_cooldown"]
+min_domain = 1.0
+max_domain = 6.0
+max_value = 10.0
+_data = [Vector2(1, 0.7), 0.0, 0.0, 0, 0, Vector2(6, 0.7), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Curve" id="Curve_count"]
+min_domain = 1.0
+max_domain = 6.0
+max_value = 10.0
+_data = [Vector2(1, 1), 0.0, 0.0, 0, 0, Vector2(6, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Curve" id="Curve_damage"]
+min_domain = 1.0
+max_domain = 6.0
+max_value = 100.0
+_data = [Vector2(1, 12), 0.0, 0.0, 0, 0, Vector2(6, 12), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[resource]
+script = ExtResource("1_volley")
+Tag = "ability.arrow"
+Cooldown = SubResource("Curve_cooldown")
+AutoFire = true
+ProjectileScene = ExtResource("2_scene")
+Projectile = ExtResource("3_arrow")
+ArrowCount = SubResource("Curve_count")
+Damage = SubResource("Curve_damage")
+AttackRange = 260.0

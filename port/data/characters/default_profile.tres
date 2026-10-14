@@ -1,0 +1,21 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://port/src/Defs/PlayerProfile.cs" id="1_profile"]
+[ext_resource type="Script" path="res://port/src/Defs/StatBlock.cs" id="2_stats"]
+[ext_resource type="Resource" path="res://port/data/characters/soldier_visual.tres" id="3_visual"]
+[ext_resource type="Script" path="res://port/src/Defs/ActiveAbilityDef.cs" id="4_ability"]
+[ext_resource type="Resource" path="res://port/data/abilities/arrow.tres" id="5_arrow"]
+[ext_resource type="Resource" path="res://port/data/abilities/dash.tres" id="6_dash"]
+
+[sub_resource type="Resource" id="Resource_stats"]
+script = ExtResource("2_stats")
+MaxHealth = 100.0
+MoveSpeed = 140.0
+Attack = 1.0
+
+[resource]
+script = ExtResource("1_profile")
+Stats = SubResource("Resource_stats")
+Visual = ExtResource("3_visual")
+SlotCount = 6
+InnateAbilities = Array[ExtResource("4_ability")]([ExtResource("5_arrow"), ExtResource("6_dash")])

@@ -26,13 +26,13 @@ public class LayerRulesTest : TestCase
 	public void TestOnlyStageFileMayUseAbilitiesAndBoss()
 	{
 		const string source = "using VampireSurvivor.Abilities;\nusing VampireSurvivor.Boss;\n";
-		Assert.NoErrors(LayerRules.FindViolations("Stage/Stage.cs", source));
+		Assert.NoErrors(LayerRules.FindViolations("Stage/StageRoot.cs", source));
 		Assert.Eq(LayerRules.FindViolations("Stage/WaveDirector.cs", source).Count, 2);
 	}
 
 	public void TestStageNeverUsesEvents()
 	{
-		Assert.Eq(LayerRules.FindViolations("Stage/Stage.cs", "using VampireSurvivor.Events;\n").Count, 1);
+		Assert.Eq(LayerRules.FindViolations("Stage/StageRoot.cs", "using VampireSurvivor.Events;\n").Count, 1);
 	}
 
 	public void TestAppAndMetaMayUseEachOther()

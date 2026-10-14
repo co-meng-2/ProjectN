@@ -123,4 +123,13 @@ public class EnemyTest : TestCase
 		await WaitSeconds(0.5);
 		Assert.AlmostEq(building.Health.Current(), healthAtDeath);
 	}
+
+	public async Task TestEnemyWithoutATargetStandsStill()
+	{
+		Enemy enemy = Adopt(GD.Load<PackedScene>(EnemyScene).Instantiate<Enemy>());
+		enemy.GlobalPosition = new Vector2(40f, 0f);
+		enemy.Setup(MakeDef(), null, new RunRng(5));
+		await WaitSeconds(0.2);
+		Assert.AlmostEq(enemy.GlobalPosition.X, 40.0, 0.01, "no target: no movement and no exception");
+	}
 }

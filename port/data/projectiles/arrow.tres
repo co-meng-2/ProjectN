@@ -1,0 +1,13 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://port/src/Defs/ProjectileDef.cs" id="1_def"]
+[ext_resource type="Texture2D" path="res://assets/art/tinyrpg/arrow.png" id="2_tex"]
+
+[resource]
+script = ExtResource("1_def")
+Texture = ExtResource("2_tex")
+Speed = 420.0
+Lifetime = 0.7
+Pierce = 0
+HitRadius = 6.0
+Hits = 0

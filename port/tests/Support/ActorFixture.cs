@@ -3,6 +3,7 @@ using VampireSurvivor.Actors;
 using VampireSurvivor.Components;
 using VampireSurvivor.Core;
 using VampireSurvivor.Defs;
+using VampireSurvivor.Gas;
 
 namespace VampireSurvivor.Tests.Support;
 
@@ -72,5 +73,11 @@ public static class ActorFixture
 		player.Setup(profile ?? DefFactory.Profile(), targets, layer, wallet ?? new Wallet());
 		targets.Player = player;
 		return player;
+	}
+
+	/// <summary>Deals far more damage than any test actor has health, from a fresh bare attacker.</summary>
+	public static void Kill(TestCase test, ActorEntity victim)
+	{
+		DamageEffects.Hit(BareActor(test, new StatBlock()), victim, 1_000_000f);
 	}
 }
