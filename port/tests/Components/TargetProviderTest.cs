@@ -83,11 +83,13 @@ public class TargetProviderTest : TestCase
 	public void TestNonPositiveCountOrRangeYieldsNothing()
 	{
 		TargetProvider provider = MakeProvider();
-		MakeEnemy(new Vector2(10, 0));
-		Assert.Eq(provider.NearestEnemies(Vector2.Zero, 300f, 0).Count, 0);
+		// 3 px away: inside |range| for -5, so only the guard (not the arithmetic) keeps a negative range empty.
+		MakeEnemy(new Vector2(3, 0));
+		Assert.Eq(provider.NearestEnemies(Vector2.Zero, 300f, 0).Count, 0, "count 0 (-3 below is the one that needs the guard)");
 		Assert.Eq(provider.NearestEnemies(Vector2.Zero, 300f, -3).Count, 0);
-		Assert.Eq(provider.NearestEnemies(Vector2.Zero, 0f, 5).Count, 0, "a zero range reaches no one standing off-origin");
+		Assert.Eq(provider.NearestEnemies(Vector2.Zero, -5f, 5).Count, 0);
 		Assert.Null(provider.NearestEnemy(Vector2.Zero, -5f));
+		Assert.Eq(provider.NearestEnemies(Vector2.Zero, 0f, 5).Count, 0, "a zero range reaches no one standing off-origin");
 	}
 
 	public void TestNearestEnemiesSkipsDoomedNodes()
