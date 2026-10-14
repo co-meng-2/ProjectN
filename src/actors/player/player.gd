@@ -21,6 +21,7 @@ var ability_context: AbilityContext
 ## Call after the player has entered the tree.
 func setup(profile: PlayerProfile, targets: TargetProvider, projectile_layer: Node, wallet: Wallet) -> void:
 	asc.initialize_attribute_overrides(profile.stats.to_overrides())
+	_apply_skill_bonuses(profile.skill_bonuses)
 	health.bind(asc)
 	_hurtbox.bind(asc, self)
 	_mover.bind(self, asc)
@@ -35,6 +36,17 @@ func setup(profile: PlayerProfile, targets: TargetProvider, projectile_layer: No
 	health.damaged.connect(_on_damaged)
 	health.died.connect(_on_died)
 	add_to_group(Groups.PLAYER)
+
+
+## Permanent skill-tree effects, applied at their purchased level. Health starts full AFTER them: the stats override
+## above filled health to the base max, and an INFINITE max_health bonus does not heal.
+func _apply_skill_bonuses(bonuses: Array[SkillBonus]) -> void:
+	if bonuses.is_empty():
+		return
+	for bonus in bonuses:
+		asc.apply_gameplay_effect(bonus.effect, asc, float(bonus.level))
+	var full_health: Dictionary[String, float] = {"health": asc.get_attribute("max_health").current_value}
+	asc.initialize_attribute_overrides(full_health)
 
 
 func limit_camera(bounds: Rect2) -> void:

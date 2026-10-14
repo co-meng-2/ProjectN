@@ -29,3 +29,22 @@ func test_profile_collects_nested_ability_errors() -> void:
 	broken.icon = null
 	profile.abilities.append(broken)
 	assert_eq(profile.validate().size(), 1)
+
+
+func test_valid_skill_bonuses_have_no_errors() -> void:
+	var profile := DefFactory.profile()
+	profile.skill_bonuses.append(SkillBonus.new(DefFactory.passive_effect("max_health", GameplayEffectModifier.Operation.ADD, PackedFloat32Array([10.0])), 1))
+	assert_no_errors(profile.validate(), "one bonus")
+
+
+func test_a_null_or_effectless_skill_bonus_is_an_error() -> void:
+	var profile := DefFactory.profile()
+	profile.skill_bonuses.append(null)
+	profile.skill_bonuses.append(SkillBonus.new(null, 1))
+	assert_eq(profile.validate().size(), 2)
+
+
+func test_a_skill_bonus_level_below_one_is_an_error() -> void:
+	var profile := DefFactory.profile()
+	profile.skill_bonuses.append(SkillBonus.new(DefFactory.passive_effect("max_health", GameplayEffectModifier.Operation.ADD, PackedFloat32Array([10.0])), 0))
+	assert_eq(profile.validate().size(), 1)

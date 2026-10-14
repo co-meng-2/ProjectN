@@ -211,3 +211,35 @@ func test_abilities_granted_after_death_do_not_process() -> void:
 	await next_physics_frame()
 	await next_physics_frame()
 	assert_eq(probe.physics_ticks, 0, "never ticked")
+
+
+func _bonus(attribute: String, operation: GameplayEffectModifier.Operation, per_level: PackedFloat32Array, level: int) -> SkillBonus:
+	return SkillBonus.new(DefFactory.passive_effect(attribute, operation, per_level), level)
+
+
+func test_a_max_health_bonus_starts_the_player_at_full_modified_health() -> void:
+	var profile := DefFactory.profile()
+	profile.skill_bonuses.append(_bonus("max_health", GameplayEffectModifier.Operation.ADD, PackedFloat32Array([20.0, 40.0]), 2))
+	var player := adopt(PLAYER_SCENE.instantiate()) as Player
+	player.setup(profile, adopt(TargetProvider.new()) as TargetProvider, adopt(Node2D.new()), Wallet.new())
+	assert_almost_eq(player.health.maximum(), 140.0, 0.001, "base 100 + 40")
+	assert_almost_eq(player.health.current(), 140.0, 0.001, "starts full, not 100/140")
+
+
+func test_move_speed_and_attack_bonuses_reach_the_attributes() -> void:
+	var profile := DefFactory.profile()
+	profile.skill_bonuses.append(_bonus("move_speed", GameplayEffectModifier.Operation.ADD, PackedFloat32Array([10.0, 20.0]), 1))
+	profile.skill_bonuses.append(_bonus("attack", GameplayEffectModifier.Operation.PERCENT_ADD, PackedFloat32Array([0.1, 0.2]), 2))
+	var player := adopt(PLAYER_SCENE.instantiate()) as Player
+	player.setup(profile, adopt(TargetProvider.new()) as TargetProvider, adopt(Node2D.new()), Wallet.new())
+	assert_almost_eq(_asc(player).get_attribute("move_speed").current_value, 110.0, 0.001)
+	assert_almost_eq(_asc(player).get_attribute("attack").current_value, 1.2, 0.001)
+
+
+func test_a_profile_without_bonuses_keeps_its_base_health() -> void:
+	var profile := DefFactory.profile()
+	profile.stats.max_health = 77.0
+	var player := adopt(PLAYER_SCENE.instantiate()) as Player
+	player.setup(profile, adopt(TargetProvider.new()) as TargetProvider, adopt(Node2D.new()), Wallet.new())
+	assert_almost_eq(player.health.maximum(), 77.0)
+	assert_almost_eq(player.health.current(), 77.0)

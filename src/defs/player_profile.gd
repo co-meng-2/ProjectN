@@ -8,6 +8,8 @@ extends Resource
 @export var slot_count: int = 6
 ## The catalog the grade pools are built from.
 @export var abilities: Array[AbilityDef] = []
+## Permanent skill-tree bonuses, set by ProfileBuilder (not authored in data). Player.setup applies them.
+var skill_bonuses: Array[SkillBonus] = []
 
 
 func validate() -> PackedStringArray:
@@ -31,4 +33,9 @@ func validate() -> PackedStringArray:
 			errors.append("PlayerProfile: duplicate ability id '%s'" % ability.id)
 		seen[ability.id] = true
 		errors.append_array(ability.validate())
+	for bonus in skill_bonuses:
+		if bonus == null or bonus.effect == null:
+			errors.append("PlayerProfile: skill bonus without an effect")
+		elif bonus.level < 1:
+			errors.append("PlayerProfile: skill bonus level must be >= 1")
 	return errors
