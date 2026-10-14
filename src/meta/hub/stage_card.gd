@@ -23,6 +23,10 @@ func setup(index: int, stage_name: String, status: StageProgress.Status) -> void
 	_play_button.disabled = status == StageProgress.Status.LOCKED
 
 
+func focus_play() -> void:
+	_play_button.grab_focus()
+
+
 func _status_text(status: StageProgress.Status) -> String:
 	match status:
 		StageProgress.Status.LOCKED:

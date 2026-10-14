@@ -25,18 +25,26 @@ func _ready() -> void:
 	if router == null:
 		router = SceneRouter
 	_back_button.pressed.connect(_on_back_pressed)
-	_back_button.grab_focus()
 	var errors := catalog.validate()
 	if not errors.is_empty():
 		push_error("Hub: unusable stage catalog: %s" % ", ".join(errors))
 		_empty_label.visible = true
+		_back_button.grab_focus()
 		return
 	_progress = StageProgress.new(catalog, save_service.data)
+	var focus_card: StageCard = null
 	for index in catalog.stages.size():
 		var card := STAGE_CARD_SCENE.instantiate() as StageCard
 		_stage_list.add_child(card)
-		card.setup(index, catalog.stages[index].display_name, _progress.status(index))
+		var status := _progress.status(index)
+		card.setup(index, catalog.stages[index].display_name, status)
 		card.play_pressed.connect(_on_play_pressed)
+		if focus_card == null and status == StageProgress.Status.AVAILABLE:
+			focus_card = card
+	# Enter should play the next stage; with everything cleared, the first one.
+	if focus_card == null:
+		focus_card = _stage_list.get_child(0) as StageCard
+	focus_card.focus_play()
 
 
 func _on_play_pressed(index: int) -> void:

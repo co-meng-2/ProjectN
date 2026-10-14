@@ -122,3 +122,32 @@ func test_the_shipped_catalog_is_the_default() -> void:
 	hub.router = adopt(Probe.new())
 	adopt(hub)
 	assert_eq(hub.get_node("%StageList").get_child_count(), 2)
+
+
+func _focus_owner(hub: Control) -> Control:
+	return hub.get_viewport().gui_get_focus_owner()
+
+
+func test_focus_starts_on_the_first_stage_so_enter_plays_it() -> void:
+	var hub := _hub(_catalog(2), _service(), adopt(Probe.new()))
+	assert_true(_focus_owner(hub) == _play_button(hub, 0))
+
+
+func test_focus_moves_to_the_next_available_stage_after_a_clear() -> void:
+	var service := _service()
+	service.record_clear(&"s1")
+	var hub := _hub(_catalog(3), service, adopt(Probe.new()))
+	assert_true(_focus_owner(hub) == _play_button(hub, 1))
+
+
+func test_focus_falls_back_to_the_first_stage_when_everything_is_cleared() -> void:
+	var service := _service()
+	service.record_clear(&"s1")
+	service.record_clear(&"s2")
+	var hub := _hub(_catalog(2), service, adopt(Probe.new()))
+	assert_true(_focus_owner(hub) == _play_button(hub, 0))
+
+
+func test_focus_is_on_back_when_there_are_no_stages() -> void:
+	var hub := _hub(StageCatalog.new(), _service(), adopt(Probe.new()))
+	assert_true(_focus_owner(hub) == hub.get_node("%BackButton"))
