@@ -12,10 +12,22 @@ Spec: `docs/superpowers/specs/2026-10-14-csharp-forge-port-design.md` (binding).
 | 1 | Forge fit gate (attributes, damage, passives, abilities, cleanup) — **GO** | same plan; report `notes/2026-10-14-slice1-forge-gate.md` | done |
 | 2a | Defs + Components | `plans/2026-10-14-csharp-port-slice-2a-defs-components.md` | done |
 | 2b | Actors (Building, Projectile, Pickup, Enemy, Player) + Volley/Dash + AutoCaster | `plans/2026-10-14-csharp-port-slice-2b-actors.md` | done |
-| 2c | Stage + HUD + dev stage scene + first `port/data` `.tres` + 100-enemy FPS check | **no plan yet** | **next** |
-| 3-5 | shop/abilities, events + boss, meta + cutover | not planned | later |
+| 2c | Stage (`StageRoot`) + HUD + dev stage scene + first `port/data` `.tres` + swarm benchmark | `plans/2026-10-14-csharp-port-slice-2c-stage-hud.md` | done |
+| 3 | shop/abilities (`Loadout`, `GradeService`, `AbilityInstaller`, `AbilityBar`) | not planned | **next** |
+| 4-5 | events + boss, meta + cutover | not planned | later |
 
-Test totals at the end of 2b: GDScript 648, C# 215 (`tools/run_tests.sh`).
+Test totals at the end of 2c: GDScript 648, C# 289 (`tools/run_tests.sh`).
+
+Play the C# port: `"$GODOT_BIN" --path . res://port/src/App/dev_stage.tscn` (stage_01 with HUD; R restarts after the result). The project's main scene is still the GDScript game.
+
+Swarm benchmark (`"$GODOT_BIN" --path . res://port/tools/swarm_bench.tscn`, add `--headless` for the physics cost only), 2026-10-14 on the owner's machine:
+
+| Enemies | physics ms (headless / windowed) | process ms | windowed FPS |
+|---|---|---|---|
+| 100 | 4.93 / 4.41 | 1.0-1.9 | 2069 (vsync off) |
+| 300 | 17.63 / 18.91 | 1.6-2.7 | 872 (vsync off) |
+
+100 enemies fit easily (GDScript Phase 1: 145 FPS). 300 enemies exceed the 16.6 ms budget of a 60 Hz physics step, so the full wave load will slow the game; mitigation (pooling via `EnemyFactory`, fewer per-entity Forge ticks) belongs to a later slice.
 
 ## How we work (so a new session continues the same way)
 
