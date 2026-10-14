@@ -33,6 +33,12 @@ public static class DefFactory
 		Stats = new StatBlock(),
 	};
 
+	public static PlayerProfile Profile() => new()
+	{
+		Stats = new StatBlock(),
+		Visual = Visual(),
+	};
+
 	/// <summary>A curve with points at x = 1..n.</summary>
 	public static Curve CurveOf(params float[] ys)
 	{

@@ -1,4 +1,5 @@
 using Godot;
+using VampireSurvivor.Actors;
 using VampireSurvivor.Components;
 using VampireSurvivor.Core;
 using VampireSurvivor.Defs;
@@ -60,5 +61,16 @@ public static class ActorFixture
 			actor, test.Adopt(new Mover()), test.Adopt(new TargetProvider()), test.Adopt(new Node2D()), new Wallet());
 		entity.Context = context;
 		return context;
+	}
+
+	/// <summary>A set-up Player (real scene) in the test tree with a fresh TargetProvider and projectile layer (see <c>Context</c>).</summary>
+	public static Player Player(TestCase test, PlayerProfile? profile = null, Wallet? wallet = null)
+	{
+		var layer = test.Adopt(new Node2D());
+		var targets = test.Adopt(new TargetProvider());
+		var player = test.Adopt(GD.Load<PackedScene>("res://port/src/Actors/Player/player.tscn").Instantiate<Player>());
+		player.Setup(profile ?? DefFactory.Profile(), targets, layer, wallet ?? new Wallet());
+		targets.Player = player;
+		return player;
 	}
 }

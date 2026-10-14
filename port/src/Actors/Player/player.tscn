@@ -1,0 +1,72 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://port/src/Actors/Player/Player.cs" id="1_player"]
+[ext_resource type="PackedScene" path="res://port/src/Components/actor_entity.tscn" id="2_entity"]
+[ext_resource type="Script" path="res://port/src/Components/Health.cs" id="3_health"]
+[ext_resource type="Script" path="res://port/src/Components/Hurtbox.cs" id="4_hurtbox"]
+[ext_resource type="Script" path="res://port/src/Components/Mover.cs" id="5_mover"]
+[ext_resource type="Script" path="res://port/src/Components/ActorVisual.cs" id="6_visual"]
+[ext_resource type="Script" path="res://port/src/Actors/Pickup/LootCollector.cs" id="7_collector"]
+[ext_resource type="Script" path="res://port/src/Components/AutoCaster.cs" id="8_caster"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
+radius = 8.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_hurt"]
+radius = 10.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_magnet"]
+radius = 70.0
+
+[node name="Player" type="CharacterBody2D" node_paths=PackedStringArray("Entity", "Health", "Hurtbox", "Mover", "Visual", "Collector", "Camera", "AutoCaster")]
+collision_layer = 2
+collision_mask = 1
+motion_mode = 1
+script = ExtResource("1_player")
+Entity = NodePath("ActorEntity")
+Health = NodePath("Health")
+Hurtbox = NodePath("Hurtbox")
+Mover = NodePath("Mover")
+Visual = NodePath("Visual")
+Collector = NodePath("Collector")
+Camera = NodePath("Camera2D")
+AutoCaster = NodePath("AutoCaster")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_body")
+
+[node name="ActorEntity" parent="." instance=ExtResource("2_entity")]
+
+[node name="Health" type="Node" parent="."]
+script = ExtResource("3_health")
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 8
+collision_mask = 0
+monitoring = false
+script = ExtResource("4_hurtbox")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("CircleShape2D_hurt")
+
+[node name="Mover" type="Node" parent="."]
+script = ExtResource("5_mover")
+
+[node name="Visual" type="AnimatedSprite2D" parent="."]
+script = ExtResource("6_visual")
+
+[node name="Collector" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 32
+monitorable = false
+script = ExtResource("7_collector")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Collector"]
+shape = SubResource("CircleShape2D_magnet")
+
+[node name="AutoCaster" type="Node" parent="."]
+script = ExtResource("8_caster")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+zoom = Vector2(2, 2)
+position_smoothing_enabled = true
