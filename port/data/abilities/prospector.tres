@@ -1,0 +1,27 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://port/src/Defs/AbilityDef.cs" id="1_def"]
+[ext_resource type="Texture2D" path="res://assets/art/icons/honey_pot.png" id="2_icon"]
+[ext_resource type="Script" path="res://port/src/Defs/PassiveDef.cs" id="4_passive"]
+
+[sub_resource type="Curve" id="Curve_levels"]
+min_domain = 1.0
+max_domain = 6.0
+max_value = 3.0
+_data = [Vector2(1, 0.25), 0.0, 0.0, 0, 0, Vector2(2, 0.5), 0.0, 0.0, 0, 0, Vector2(3, 0.8), 0.0, 0.0, 0, 0, Vector2(4, 1.2), 0.0, 0.0, 0, 0, Vector2(5, 1.7), 0.0, 0.0, 0, 0, Vector2(6, 2.5), 0.0, 0.0, 0, 0]
+point_count = 6
+
+[sub_resource type="Resource" id="Passive"]
+script = ExtResource("4_passive")
+Stat = 3
+Operation = 0
+ByLevel = SubResource("Curve_levels")
+
+[resource]
+script = ExtResource("1_def")
+Id = &"prospector"
+DisplayName = "Prospector"
+Description = "Collected gold is worth more."
+Icon = ExtResource("2_icon")
+MinGrade = 1
+Passive = SubResource("Passive")

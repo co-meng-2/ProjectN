@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
+using VampireSurvivor.Abilities;
 using VampireSurvivor.Actors;
 using VampireSurvivor.Components;
 using VampireSurvivor.Defs;
@@ -19,6 +21,7 @@ public partial class StageRoot : Node2D
 	private static readonly Vector2 PlayerStart = new(0f, 150f);
 
 	private readonly StageFlow _flow = new();
+	private readonly AbilityInstaller _installer = new();
 
 	public event Action<RunResult>? Finished;
 
@@ -65,6 +68,12 @@ public partial class StageRoot : Node2D
 
 	public StageState FlowState => _flow.State;
 
+	/// <summary>The ability slots; the HUD binds to them through whoever presents the stage.</summary>
+	public Loadout? Loadout { get; private set; }
+
+	/// <summary>The shop rules over the slots, the run's wallet and rng.</summary>
+	public GradeService? GradeService { get; private set; }
+
 	/// <summary>Returns false, after logging every problem, when a def is invalid; nothing is started then.</summary>
 	public bool Start(StageDef def, PlayerProfile profile, long runSeed = 0)
 	{
@@ -76,6 +85,12 @@ public partial class StageRoot : Node2D
 
 		List<string> errors = def.Validate();
 		errors.AddRange(profile.Validate());
+
+		// Defs cannot see the Forge tag registry (layer order), so the registry checks happen here, before any purchase.
+		foreach (ActiveAbilityDef active in profile.InnateAbilities.Concat(profile.Abilities.Select(a => a?.Active)).OfType<ActiveAbilityDef>())
+		{
+			errors.AddRange(AbilityFactory.Validate(active));
+		}
 		if (errors.Count > 0)
 		{
 			foreach (string error in errors)
@@ -100,6 +115,11 @@ public partial class StageRoot : Node2D
 		Spawner.Bind(def, Clock, Factory, Building, RunState.Rng, Arena.Bounds);
 		Waves.Bind(def, Clock, Factory, Building, RunState.Rng, Arena.Bounds);
 		Loot.Bind(Factory, PickupLayer, Player, RunState.Wallet, def.DropMultiplier);
+
+		// The shop: pure rules over the run's wallet and rng; the installer mirrors the slots onto the player.
+		Loadout = new Loadout(profile.SlotCount);
+		GradeService = new GradeService(Loadout, new AbilityPool(profile.Abilities), def.GradeTable!, RunState.Wallet, RunState.Rng);
+		_installer.Bind(Loadout, Player);
 		Wire();
 		_flow.TransitionTo(StageState.Running);
 		Clock.Start(def.Duration);

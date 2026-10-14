@@ -34,6 +34,15 @@ public class StageDefTest : TestCase
 		Assert.Eq(def.Validate().Count, 1, string.Join("; ", def.Validate()));
 	}
 
+	public void TestStageRequiresAValidGradeTable()
+	{
+		StageDef def = DefFactory.Stage();
+		def.GradeTable = null;
+		Assert.Eq(def.Validate().Count, 1, "missing");
+		def.GradeTable = new GradeTable();
+		Assert.Eq(def.Validate().Count, 1, "nested: wrong promote_gold size");
+	}
+
 	public void TestStageRequiresASaneEconomy()
 	{
 		StageDef def = DefFactory.Stage();

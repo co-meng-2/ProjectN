@@ -123,6 +123,8 @@ Slice 2b notes: actors are Godot nodes that own an `ActorEntity` child and are w
 
 Slice 2c notes: the composition root class is `StageRoot` (scene `stage.tscn`): a class `Stage` inside namespace `VampireSurvivor.Stage` cannot be named from the other `VampireSurvivor.*` namespaces (the name resolves to the namespace, CS0118), and the same applies to any class named like its top-level folder. `StageState` and `RunOutcome` are top-level enums; `RunResult` and `StageRoot.Finished` are plain C# (not Variant). `ActorEntity.Raise<T>(tag, payload)` wraps Forge `EventData<T>` and `EventManager.Raise(in ...)`; `StageRoot` raises `event.kill` with the enemy on every death. `StageDef` gains the grade table (slice 3), events and boss (slice 4) and gem reward (slice 5) later; the HUD gains the ability bar, event banner, arrows and boss bar with those slices. `App/DevStage` (`dev_stage.tscn`) stands in for `Main` until slice 5. Hand-written `.tres` files load C#-typed arrays written as `Array[ExtResource("<script>")]([...])`. Swarm benchmark (`port/tools/swarm_bench.tscn`): 100 enemies cost ~4.5 ms of physics per step, 300 enemies ~18 ms, which exceeds a 60 Hz step; mitigation is deferred.
 
+Slice 3 notes: the shop catalog entry is `Defs/AbilityDef { Passive, Active }` and `PlayerProfile.Abilities` lists it; `StageDef.GradeTable` is required. Two slots holding the same attack stack (GDScript parity): Forge blocks by cooldown tag, so the installer grants each slot's attack with the slot's own tag from `GameplayTags.SlotCooldowns` (`cooldown.slot.a`..`j`, so `PlayerProfile.MaxSlots = 10`); `AbilityGrant.CooldownTag` keys `ActorEntity`'s grant books. The installer applies a new passive before removing the old one (no stat dip) but revokes an old attack before granting the new one (a promoted/rerolled attack starts with a fresh cooldown). Event-triggered abilities use `ActiveAbilityDef.TriggerEventTag` -> `AbilityTriggerData.ForEvent<Node>`; Bounty is the first. `Components/AreaStrike` is the single area-hit path (Blade Sweep now, meteors and boss patterns in slice 4); the GDScript `MeleeStrike` subclass is gone. `AutoCaster` churn when nothing is in range was left as is (few player grants; a miss commits nothing). `App/DevStage` routes the HUD bar's requests to `StageRoot.GradeService` only while no result is shown.
+
 Cues are not used (FX stays deferred); `ForgeCueHandler` is where they would go.
 
 ## 5. Data and content pipeline
@@ -199,16 +201,16 @@ Every slice ports its layer's tests with it.
 | `Core/` | plain C# (`sealed class`, `record struct`, C# `event`) - "it does not have to be a Node" |
 | `Defs/` | `[GlobalClass] partial class : Resource` + `[Export]`; data that selects code (`ActiveAbilityDef` polymorphism); `Validate()` catches bad data at start |
 | `Gas/` | a third-party adapter layer: fixed-point stats, `CustomExecution`, building data objects with builders, a constants file that generates a config file |
-| `Components/` | node composition; `Bind` injection; a seam that subclasses a plugin node; `_Process` vs `_PhysicsProcess` and test-driven `Tick` |
+| `Components/` | node composition; `Bind` injection; a seam that subclasses a plugin node; `_Process` vs `_PhysicsProcess` and test-driven `Tick`; `AreaStrike` as the one area-hit path (`resource_local_to_scene` shapes, a `Lifetime` that frees its owner) |
 | `Actors/` | scenes as component assemblies; `[Export] Node` references; `CallDeferred` inside physics callbacks |
-| `Stage/` | composition root and explicit wiring; `[Signal]` delegates and `+=` |
-| `Abilities/` | model (`Loadout`), rules (`GradeService`), mirror (`AbilityInstaller`), behaviour (`IAbilityBehavior`); lifetime by handles |
+| `Stage/` | composition root and explicit wiring; `[Signal]` delegates and `+=`; why the root is `StageRoot` (a class named like its namespace cannot be referenced from other namespaces, CS0118); `RemoveChild` before `QueueFree` so a discarded run leaves its groups at once; `Callable.From(...).CallDeferred()` for work that must not run inside a physics callback |
+| `Abilities/` | model (`Loadout`), rules (`GradeService`), mirror (`AbilityInstaller`), behaviour (`IAbilityBehavior`); lifetime by handles; Forge blocks by tag, so per-slot cooldown tags make duplicate slots stack; order matters when swapping (passive: add new then remove old, attack: revoke old then grant new); event-triggered abilities (`IAbilityBehavior<Node>`, `AbilityTriggerData.ForEvent`) |
 | `Boss/`, `Events/` | control logic is plain code, behaviour is an ability, placed things are actors |
-| `Ui/` | views read models through `Bind` and only emit request signals |
-| `App/`, `Meta/` | sparing autoloads, `System.Text.Json`, `user://`, migrations |
+| `Ui/` | views read models through `Bind` and only emit request signals; Godot signals disconnect themselves when the receiver is freed, plain C# events (`Wallet.Changed`) do not, so views unsubscribe in `_ExitTree` (tests prove it by freeing the view and touching the model) |
+| `App/`, `Meta/` | sparing autoloads, `System.Text.Json`, `user://`, migrations; the app (not the HUD) decides what a request does (`DevStage` routes the ability bar to the shop only while no result is shown) |
 | `tests/` | reflection runner, `async Task` tests with `ToSignal`, architecture tests |
 
-Suggested reading order: `Core/Wallet` -> `Defs/StatBlock`, `AbilityDef` -> `Gas/Attributes/VitalsAttributes`, `DamageEffects` -> `Components/ActorEntity`, `Health` -> `Actors/Enemy` -> `Stage/Stage.Wire` -> `Abilities/AbilityInstaller`, `Attacks/VolleyBehavior` -> `Boss/BossBrain` -> `Ui/Hud` -> `App/Main` -> `tests/TestRunner`.
+Suggested reading order: `Core/Wallet` -> `Defs/StatBlock`, `AbilityDef` -> `Gas/Attributes/VitalsAttributes`, `DamageEffects` -> `Components/ActorEntity`, `Health` -> `Actors/Enemy` -> `Stage/StageRoot.Start` and `Wire` -> `Abilities/GradeService`, `AbilityInstaller`, `Attacks/VolleyBehavior`, `BountyBehavior` -> `Boss/BossBrain` -> `Ui/Hud`, `AbilityBar` -> `App/DevStage` (later `App/Main`) -> `tests/TestRunner`.
 
 ## 10. Risks
 

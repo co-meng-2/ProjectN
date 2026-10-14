@@ -4,4 +4,4 @@
 
 [resource]
 script = ExtResource("1_x0pne")
-RegisteredTags = Array[String](["ability", "ability.arrow", "ability.boss", "ability.boss.burst", "ability.boss.charge", "ability.boss.slam", "ability.boss.summon", "ability.bounty", "ability.dash", "ability.sweep", "ability.volley", "ability.probe", "cooldown", "cooldown.arrow", "cooldown.dash", "cooldown.volley", "cooldown.sweep", "cooldown.probe", "damage", "damage.amount", "event", "event.kill", "state", "state.casting", "state.invulnerable"])
+RegisteredTags = Array[String](["ability", "ability.arrow", "ability.boss", "ability.boss.burst", "ability.boss.charge", "ability.boss.slam", "ability.boss.summon", "ability.bounty", "ability.dash", "ability.sweep", "ability.volley", "ability.probe", "cooldown", "cooldown.arrow", "cooldown.dash", "cooldown.volley", "cooldown.sweep", "cooldown.probe", "damage", "damage.amount", "event", "event.kill", "state", "state.casting", "state.invulnerable", "cooldown.slot", "cooldown.slot.a", "cooldown.slot.b", "cooldown.slot.c", "cooldown.slot.d", "cooldown.slot.e", "cooldown.slot.f", "cooldown.slot.g", "cooldown.slot.h", "cooldown.slot.i", "cooldown.slot.j"])

@@ -1,0 +1,50 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://port/src/Defs/AbilityDef.cs" id="1_def"]
+[ext_resource type="Texture2D" path="res://assets/art/icons/prismatic_knives_green.png" id="2_icon"]
+[ext_resource type="Texture2D" path="res://assets/art/icons/arcane_knives_purple.png" id="3_revealed"]
+[ext_resource type="Script" path="res://port/src/Abilities/Attacks/VolleyDef.cs" id="4_volley"]
+[ext_resource type="PackedScene" path="res://port/src/Actors/Projectile/projectile.tscn" id="5_scene"]
+[ext_resource type="Resource" path="res://port/data/projectiles/arrow.tres" id="6_arrow"]
+
+[sub_resource type="Curve" id="Curve_cooldown"]
+min_domain = 1.0
+max_domain = 6.0
+max_value = 10.0
+_data = [Vector2(1, 2.4), 0.0, 0.0, 0, 0, Vector2(2, 2.1), 0.0, 0.0, 0, 0, Vector2(3, 1.8), 0.0, 0.0, 0, 0, Vector2(4, 1.5), 0.0, 0.0, 0, 0, Vector2(5, 1.2), 0.0, 0.0, 0, 0, Vector2(6, 0.9), 0.0, 0.0, 0, 0]
+point_count = 6
+
+[sub_resource type="Curve" id="Curve_count"]
+min_domain = 1.0
+max_domain = 6.0
+max_value = 10.0
+_data = [Vector2(1, 2), 0.0, 0.0, 0, 0, Vector2(2, 3), 0.0, 0.0, 0, 0, Vector2(3, 4), 0.0, 0.0, 0, 0, Vector2(4, 5), 0.0, 0.0, 0, 0, Vector2(5, 6), 0.0, 0.0, 0, 0, Vector2(6, 8), 0.0, 0.0, 0, 0]
+point_count = 6
+
+[sub_resource type="Curve" id="Curve_damage"]
+min_domain = 1.0
+max_domain = 6.0
+max_value = 100.0
+_data = [Vector2(1, 8), 0.0, 0.0, 0, 0, Vector2(2, 10), 0.0, 0.0, 0, 0, Vector2(3, 13), 0.0, 0.0, 0, 0, Vector2(4, 17), 0.0, 0.0, 0, 0, Vector2(5, 22), 0.0, 0.0, 0, 0, Vector2(6, 30), 0.0, 0.0, 0, 0]
+point_count = 6
+
+[sub_resource type="Resource" id="Active"]
+script = ExtResource("4_volley")
+Tag = "ability.volley"
+Cooldown = SubResource("Curve_cooldown")
+AutoFire = true
+ProjectileScene = ExtResource("5_scene")
+Projectile = ExtResource("6_arrow")
+ArrowCount = SubResource("Curve_count")
+Damage = SubResource("Curve_damage")
+AttackRange = 300.0
+
+[resource]
+script = ExtResource("1_def")
+Id = &"volley"
+DisplayName = "Volley"
+Description = "Periodically looses extra arrows at the nearest enemies."
+Icon = ExtResource("2_icon")
+RevealedIcon = ExtResource("3_revealed")
+MinGrade = 1
+Active = SubResource("Active")

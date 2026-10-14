@@ -38,12 +38,23 @@ public static class GameplayTags
 	public const string StateCasting = "state.casting";
 	public const string StateInvulnerable = "state.invulnerable";
 
+	/// <summary>
+	/// One cooldown tag per HUD slot ("cooldown.slot.a" ...), so two slots holding the same attack cool down on their own
+	/// (Forge blocks an ability while its owner carries the cooldown tag). Count = PlayerProfile.MaxSlots.
+	/// </summary>
+	public static readonly string[] SlotCooldowns =
+	[
+		"cooldown.slot.a", "cooldown.slot.b", "cooldown.slot.c", "cooldown.slot.d", "cooldown.slot.e",
+		"cooldown.slot.f", "cooldown.slot.g", "cooldown.slot.h", "cooldown.slot.i", "cooldown.slot.j",
+	];
+
 	public static readonly string[] All =
 	[
 		AbilityArrow, AbilityBossBurst, AbilityBossCharge, AbilityBossSlam, AbilityBossSummon, AbilityBounty,
 		AbilityDash, AbilitySweep, AbilityVolley, AbilityProbe,
 		CooldownArrow, CooldownDash, CooldownVolley, CooldownSweep, CooldownProbe,
 		DamageAmount, EventKill, StateCasting, StateInvulnerable,
+		.. SlotCooldowns,
 	];
 
 	/// <summary>Every tag plus all of its dotted prefixes, each once ("a.b.c" -> a, a.b, a.b.c).</summary>

@@ -41,7 +41,30 @@ public static class DefFactory
 		BuildingTexture = Texture(64, 64),
 		BuildingStats = new StatBlock(),
 		Waves = new WaveSchedule(),
+		GradeTable = GradeTable(),
 	};
+
+	public static GradeTable GradeTable() => new()
+	{
+		PromoteGold = [100, 150, 250, 400, 600],
+		RevealStone = 10,
+		RerollStone = 2,
+	};
+
+	/// <summary>A valid shop entry; give it a passive and/or an active ability.</summary>
+	public static AbilityDef Ability(
+		string id, PassiveDef? passive = null, ActiveAbilityDef? active = null, Grade minGrade = Grade.Common) => new()
+	{
+		Id = id,
+		DisplayName = id,
+		Icon = Texture(16, 16),
+		MinGrade = minGrade,
+		Passive = passive,
+		Active = active,
+	};
+
+	/// <summary>Max health +20/40/70/110/160/240 over the six grade levels.</summary>
+	public static AbilityDef VitalityAbility() => Ability("vitality", Vitality());
 
 	public static PlayerProfile Profile() => new()
 	{

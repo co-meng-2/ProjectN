@@ -22,7 +22,7 @@ namespace VampireSurvivor.Components;
 [GlobalClass]
 public partial class ActorEntity : ForgeEntity
 {
-	/// <summary>Live grants and the cooldown effects they may have started, per ability tag.</summary>
+	/// <summary>Live grants and the cooldown effects they may have started, per cooldown tag.</summary>
 	private readonly Dictionary<string, GrantBook> _books = [];
 
 	public override void _Ready()
@@ -102,9 +102,11 @@ public partial class ActorEntity : ForgeEntity
 	/// Grants an ability for as long as the returned grant lives. Forge 0.4.0 cannot revoke a permanent grant, so the
 	/// grant is carried by an INFINITE effect: removing the effect (see <see cref="Revoke"/>) removes the ability.
 	/// </summary>
-	public AbilityGrant Grant(ActiveAbilityDef def, int level)
+	/// <param name="cooldownTag">A slot's own cooldown tag (GameplayTags.SlotCooldowns); null uses "cooldown." + the tag tail.</param>
+	public AbilityGrant Grant(ActiveAbilityDef def, int level, string? cooldownTag = null)
 	{
-		AbilityData data = AbilityFactory.Build(def);
+		string effectiveCooldown = cooldownTag ?? (def.Cooldown is null ? def.Tag : GameplayTags.CooldownFor(def.Tag));
+		AbilityData data = AbilityFactory.Build(def, effectiveCooldown);
 		var config = new GrantAbilityConfig(
 			data,
 			new ScalableInt(level),
@@ -116,19 +118,20 @@ public partial class ActorEntity : ForgeEntity
 			effectComponents: [new GrantAbilityEffectComponent([config])]);
 		ActiveEffectHandle effect = EffectsManager.ApplyEffect(new Effect(effectData, new EffectOwnership(this, this)))!;
 		Abilities.TryGetAbility(data, out AbilityHandle? ability);
-		if (!_books.TryGetValue(def.Tag, out GrantBook? book))
+		if (!_books.TryGetValue(effectiveCooldown, out GrantBook? book))
 		{
-			_books[def.Tag] = book = new GrantBook();
+			_books[effectiveCooldown] = book = new GrantBook();
 		}
 
 		book.Live++;
 		book.Cooldowns.AddRange(data.CooldownEffects ?? []);
-		return new AbilityGrant(effect, ability, data);
+		return new AbilityGrant(effect, ability, data, effectiveCooldown);
 	}
 
 	/// <summary>
-	/// Ends one grant (running instances are cancelled). The cooldown belongs to the ability tag, not to a grant, so it is
-	/// cleared only when the last grant of that tag is revoked; a later re-grant then starts fresh.
+	/// Ends one grant (running instances are cancelled). A cooldown belongs to its cooldown tag, not to a grant, so it is
+	/// cleared only when the last grant using that tag is revoked; a later re-grant then starts fresh. Slot grants have a
+	/// tag of their own, so revoking a slot always clears its cooldown.
 	/// </summary>
 	public void Revoke(AbilityGrant? grant)
 	{
@@ -138,7 +141,7 @@ public partial class ActorEntity : ForgeEntity
 		}
 
 		EffectsManager.RemoveEffect(grant.Effect, forceRemoval: true);
-		string tag = grant.Data.Name;
+		string tag = grant.CooldownTag;
 		if (!_books.TryGetValue(tag, out GrantBook? book) || --book.Live > 0)
 		{
 			return;

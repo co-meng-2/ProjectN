@@ -23,6 +23,23 @@ public class PlayerProfileTest : TestCase
 		Assert.Eq(profile.Validate().Count, 1);
 	}
 
+	public void TestSlotCountAboveTheMaximumIsReported()
+	{
+		PlayerProfile profile = DefFactory.Profile();
+		profile.SlotCount = PlayerProfile.MaxSlots + 1;
+		Assert.Eq(profile.Validate().Count, 1);
+		profile.SlotCount = PlayerProfile.MaxSlots;
+		Assert.NoErrors(profile.Validate());
+	}
+
+	public void TestNullAndInvalidCatalogAbilitiesAreReported()
+	{
+		PlayerProfile profile = DefFactory.Profile();
+		profile.Abilities.Add(null!);
+		profile.Abilities.Add(new AbilityDef());
+		Assert.Eq(profile.Validate().Count, 5, "one null + four from the empty def");
+	}
+
 	public void TestNullAndInvalidInnateAbilitiesAreReported()
 	{
 		PlayerProfile profile = DefFactory.Profile();
