@@ -1,5 +1,6 @@
 using Godot;
 using VampireSurvivor.Components;
+using VampireSurvivor.Core;
 using VampireSurvivor.Defs;
 
 namespace VampireSurvivor.Tests.Support;
@@ -24,5 +25,30 @@ public static class ActorFixture
 		}
 
 		return entity;
+	}
+
+	/// <summary>
+	/// An entity with a circle hurtbox (radius 12) under a Node2D at <paramref name="position"/>, so projectiles and sweeps can
+	/// damage it. Read its health through <c>Entity.Attributes[Stats.Health]</c>.
+	/// </summary>
+	public static (ActorEntity Entity, Hurtbox Hurtbox) HurtTarget(
+		TestCase test,
+		Vector2 position,
+		int layer = PhysicsLayers.EnemyHurt,
+		float maxHealth = 100f,
+		bool inEnemyGroup = false)
+	{
+		ActorEntity entity = BareActor(test, new StatBlock { MaxHealth = maxHealth });
+		Node2D holder = test.Adopt(new Node2D { Position = position });
+		if (inEnemyGroup)
+		{
+			holder.AddToGroup(Groups.Enemies);
+		}
+
+		var hurtbox = new Hurtbox { CollisionLayer = (uint)layer, CollisionMask = 0, Monitoring = false };
+		hurtbox.AddChild(new CollisionShape2D { Shape = new CircleShape2D { Radius = 12f } });
+		holder.AddChild(hurtbox);
+		hurtbox.Bind(entity, holder);
+		return (entity, hurtbox);
 	}
 }
