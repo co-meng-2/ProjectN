@@ -117,6 +117,8 @@ Layer order is unchanged: `Core -> Defs -> Gas -> Components -> Actors -> Stage 
 
 Naming as built: `Wallet.Kind` became the top-level `CurrencyKind`; `Grade` helpers are extension methods (`Tint()` instead of `Color()`); `Stats.TryGet` wraps the public `AttributeCaptureDefinition.TryGetAttribute` because `ContainsAttribute` is internal in 0.4.0.
 
+Slice 2a notes: there is no `EffectApplier` in C# (`ContactDamage` calls `DamageEffects.Hit` and checks that the target entity is still alive); `EnemyDef.contact_effect` and `ProjectileDef.hit_effect` were dropped for the same reason; `ProjectileDef` uses `ProjectileTeam` and `EnemyDef` uses `TargetPolicy` as top-level enums; none of the Defs or Components is `[GlobalClass]` while the GDScript tree exists (they all share names with GDScript `class_name`s). `StageDef`, `PlayerProfile`, `GradeTable`, `EventSchedule` and `BossDef` come with slices 2c-4 because they reference types that do not exist yet.
+
 Cues are not used (FX stays deferred); `ForgeCueHandler` is where they would go.
 
 ## 5. Data and content pipeline
