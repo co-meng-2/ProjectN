@@ -81,7 +81,7 @@ public class DataFilesTest : TestCase
 	public void TestTheShippedStageStartsWithTheDefaultProfile()
 	{
 		StageRoot stage = Adopt(GD.Load<PackedScene>("res://port/src/Stage/stage.tscn").Instantiate<StageRoot>());
-		Assert.True(stage.Start(GD.Load<StageDef>(Stage01), GD.Load<PlayerProfile>(Profile)), "the exact call DevStage makes");
+		Assert.True(stage.Start(GD.Load<StageDef>(Stage01), GD.Load<PlayerProfile>(Profile)), "what Main does without purchases");
 	}
 
 	private static readonly (string File, string Stat, float Level1, float Level6)[] Passives =

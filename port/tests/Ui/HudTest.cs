@@ -58,12 +58,14 @@ public class HudTest : TestCase
 	public void TestShowResultDisplaysOutcomeAndTotals()
 	{
 		Rig rig = MakeRig();
-		rig.Hud.ShowResult(new RunResult { Outcome = RunOutcome.Cleared, Kills = 3, Gold = 40 });
+		rig.Hud.ShowResult(new RunResult { Outcome = RunOutcome.Cleared, Kills = 3, Gold = 40, Gem = 4 });
 		Label label = rig.Hud.ResultLabel;
 		Assert.True(label.Visible);
 		Assert.True(label.Text.Contains("STAGE CLEARED"), label.Text);
 		Assert.True(label.Text.Contains("Kills 3"), label.Text);
 		Assert.True(label.Text.Contains("Gold 40"), label.Text);
+		Assert.True(label.Text.Contains("Gem 4"), label.Text);
+		Assert.True(label.Text.Contains("Enter: continue"), label.Text);
 		Assert.True(label.Text.Contains("R: restart"), label.Text);
 		rig.Hud.ShowResult(new RunResult { Outcome = RunOutcome.Failed });
 		Assert.True(label.Text.Contains("GAME OVER"), label.Text);

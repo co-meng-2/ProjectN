@@ -7,8 +7,8 @@ using VampireSurvivor.Stage;
 namespace VampireSurvivor.Ui;
 
 /// <summary>
-/// Read-only view of the stage. It binds to models and never mutates them; whoever owns the stage (DevStage now, Main in
-/// slice 5) binds it, because the stage layer must not know the HUD.
+/// Read-only view of the stage. It binds to models and never mutates them; whoever owns the stage (App/Main) binds it,
+/// because the stage layer must not know the HUD.
 /// </summary>
 public partial class Hud : CanvasLayer
 {
@@ -89,7 +89,7 @@ public partial class Hud : CanvasLayer
 	public void ShowResult(RunResult result)
 	{
 		string title = result.Outcome == RunOutcome.Cleared ? "STAGE CLEARED" : "GAME OVER";
-		ResultLabel.Text = $"{title}\nKills {result.Kills}   Gold {result.Gold}   Stone {result.Stone}\nR: restart";
+		ResultLabel.Text = $"{title}\nKills {result.Kills}   Gold {result.Gold}   Stone {result.Stone}   Gem {result.Gem}\nEnter: continue   R: restart";
 		ResultLabel.Visible = true;
 	}
 
