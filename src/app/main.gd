@@ -1,12 +1,14 @@
 extends Node
-## The stage screen: runs a stage with its HUD, routes HUD requests to the stage, pays the run's gem into the
-## save, and leaves for the main menu on request. Reached through SceneRouter (params: the StageDef).
+## The stage screen: runs a stage with its HUD (and the profile built from the purchased skills), routes HUD requests
+## to the stage, pays the run's gem into the save, and leaves for the hub on request. Reached through SceneRouter
+## (params: the StageDef).
 
 const STAGE_SCENE: PackedScene = preload("res://src/stage/stage.tscn")
 const HUD_SCENE: PackedScene = preload("res://src/ui/hud/hud.tscn")
 ## Used when the scene runs standalone (F6) with no params.
 const DEFAULT_STAGE_DEF: StageDef = preload("res://data/stages/stage_01.tres")
-const PROFILE: PlayerProfile = preload("res://data/characters/default_profile.tres")
+const BASE_PROFILE: PlayerProfile = preload("res://data/characters/default_profile.tres")
+const SKILL_TREE: SkillTreeDef = preload("res://data/skill_tree/skill_tree.tres")
 
 const BUILDING_BAR_OFFSET := Vector2(0, -60)
 
@@ -14,6 +16,7 @@ const BUILDING_BAR_OFFSET := Vector2(0, -60)
 var save_service: Node
 var router: Node
 var stage_def: StageDef
+var skill_tree: SkillTreeDef
 
 var _stage: Stage
 var _hud: Hud
@@ -28,6 +31,8 @@ func _ready() -> void:
 		router = SceneRouter
 	if stage_def == null:
 		stage_def = router.take_params().get(SceneRouter.PARAM_STAGE_DEF, DEFAULT_STAGE_DEF) as StageDef
+	if skill_tree == null:
+		skill_tree = SKILL_TREE
 	_start_run()
 
 
@@ -49,7 +54,7 @@ func _start_run() -> void:
 	add_child(_stage)
 	add_child(_building_bar)
 	add_child(_hud)
-	if not _stage.start(stage_def, PROFILE):
+	if not _stage.start(stage_def, _run_profile()):
 		get_tree().quit(1)
 		return
 	_hud.bind(_stage.player.health, _stage.building.health, _stage.run_state.wallet, _stage.clock, _stage.waves.timeline, _stage.events.event_times())
@@ -63,6 +68,15 @@ func _start_run() -> void:
 	_hud.ability_bar.reroll_requested.connect(_on_reroll_requested)
 	_building_bar.bind(_stage.building.health, _stage.building, BUILDING_BAR_OFFSET)
 	_stage.finished.connect(_on_finished)
+
+
+## Base profile plus the purchased skill levels. A broken skill tree must not stop a run: fall back to the base profile.
+func _run_profile() -> PlayerProfile:
+	var errors := skill_tree.validate()
+	if not errors.is_empty():
+		push_error("Main: unusable skill tree, starting with the base profile: %s" % ", ".join(errors))
+		return BASE_PROFILE
+	return ProfileBuilder.build(BASE_PROFILE, skill_tree, save_service.data.skill_levels)
 
 
 func _discard_run() -> void:

@@ -132,3 +132,30 @@ func test_finishing_twice_records_the_clear_once() -> void:
 	main._stage.finished.emit(_result(RunResult.Outcome.CLEARED))
 	main._stage.finished.emit(_result(RunResult.Outcome.CLEARED))
 	assert_eq(service.data.cleared_stages.size(), 1)
+
+
+func test_bought_skill_levels_shape_the_profile_the_stage_starts_with() -> void:
+	var service := _service()
+	service.data.set_level(&"vitality", 2)
+	service.data.set_level(&"extra_slot", 1)
+	var main := _main(service)
+	assert_almost_eq(main._stage.player.health.maximum(), 120.0, 0.001, "base 100 + vitality level 2 (+20)")
+	assert_almost_eq(main._stage.player.health.current(), 120.0, 0.001, "starts at full modified health")
+	assert_eq(main._stage.loadout.size(), 7, "6 base slots + extra slot")
+
+
+func test_without_purchases_the_run_uses_the_base_profile() -> void:
+	var main := _main(_service())
+	assert_almost_eq(main._stage.player.health.maximum(), 100.0, 0.001)
+	assert_eq(main._stage.loadout.size(), 6)
+
+
+func test_an_invalid_skill_tree_falls_back_to_the_base_profile() -> void:
+	var service := _service()
+	service.data.set_level(&"vitality", 3)
+	var main := MAIN_SCENE.instantiate()
+	main.save_service = service
+	main.skill_tree = SkillTreeDef.new()
+	adopt(main)
+	assert_almost_eq(main._stage.player.health.maximum(), 100.0, 0.001, "no bonuses from a broken tree")
+	assert_eq(main._stage.loadout.size(), 6)

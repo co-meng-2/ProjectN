@@ -68,8 +68,14 @@ Design: `docs/superpowers/specs/2026-10-13-vampire-survivor-base-design.md`. Pla
   order is unlock order) and sends `go(STAGE, {PARAM_STAGE_DEF: stage})`. Unlock is derived (`StageProgress`: first stage
   open, otherwise the previous stage must be in `SaveData.cleared_stages`; a cleared stage stays playable) - never store an
   unlocked list. `Main` calls `SaveService.record_clear(stage_def.id)` for a CLEARED run next to the gem credit and saves
-  once; Enter on the result screen returns to the hub. Save schema is v2; ids in `cleared_stages` that are not in the
-  catalog are kept, not dropped.
+  once; Enter on the result screen returns to the hub. Ids in `cleared_stages` that are not in the catalog are kept, not dropped.
+- Phase 4c skill tree: `SkillTreeDef` (`data/skill_tree/skill_tree.tres`, ordered `SkillNodeDef`s; a node may only require nodes
+  listed before it) is spent from the hub's Skill Tree screen (`SkillTreeProgress.buy` is all-or-nothing). Only
+  `SaveData.skill_levels` is saved (save schema is v3); availability is derived. `ProfileBuilder.build(base, tree, levels)` (pure)
+  derives the run's `PlayerProfile`: each bought effect node becomes a `SkillBonus` (INFINITE GAS effect applied at the purchased
+  level, authored like an ability passive and validated by `PassiveEffectCheck`), and `slot_bonus` raises `slot_count` (not a GAS
+  attribute). `Player.setup` applies the bonuses and then refills health to the modified max. `Main` falls back to the base
+  profile if the tree fails `validate()`. Saved levels above `max_level` / unknown ids are kept in the save and clamped/ignored at build.
 
 ## Adding an enemy (data only)
 1. Duplicate `data/enemies/orc.tres`; change `id`, stats, tint/scale, contact values, `target_policy`.
@@ -111,6 +117,13 @@ Design: `docs/superpowers/specs/2026-10-13-vampire-survivor-base-design.md`. Pla
    `gem_reward`, and point `waves`/`events`/`boss` at new or shared `.tres` files. `StageDef.validate()` must pass.
 2. Append it to `data/stages/stage_catalog.tres` (`stages` order = unlock order) and add the file to `DATA_FILES` in
    `tests/data/test_game_data.gd`; update the catalog order assertion in the same file.
+
+## Adding a skill node (data only)
+1. Duplicate `data/skill_tree/vitality.tres` (stat effect) or `extra_slot.tres` (slot bonus). Set `id`, names, `max_level`, `costs`
+   (one gem cost per level), `requires` (ids of nodes listed EARLIER in the tree). An effect is an INFINITE `GameplayEffect` whose
+   modifier uses `scaling_curve` over the purchased level 1..`max_level` with `magnitude = 1.0` (0 zeroes every level; `validate()` catches it).
+2. Append it to `data/skill_tree/skill_tree.tres` in dependency order and add the file to `DATA_FILES` in `tests/data/test_game_data.gd`;
+   extend `tests/data/test_skill_tree_data.gd` with its expected effect values.
 
 ## Running the game
 - Main scene: `src/app/logo.tscn` (logo -> main menu -> `src/app/main.tscn` as the stage screen). `application/run/main_scene`
