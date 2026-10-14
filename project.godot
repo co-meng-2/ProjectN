@@ -18,6 +18,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 GameplayCueManager="*uid://bh6ixabs0w700"
+SceneRouter="*res://src/app/scene_router.gd"
 SaveService="*res://src/meta/save_service.gd"
 _mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
