@@ -1,4 +1,5 @@
 using Godot;
+using VampireSurvivor.Core;
 using VampireSurvivor.Defs;
 
 namespace VampireSurvivor.Tests.Support;
@@ -6,6 +7,24 @@ namespace VampireSurvivor.Tests.Support;
 /// <summary>Small, valid definitions for tests (the real ones are .tres files).</summary>
 public static class DefFactory
 {
+	public static Texture2D Texture(int width = 60, int height = 10)
+	{
+		return ImageTexture.CreateFromImage(Image.CreateEmpty(width, height, false, Image.Format.Rgba8));
+	}
+
+	public static VisualDef Visual()
+	{
+		var strip = new AnimationStrip
+		{
+			Animation = AnimNames.Idle,
+			Texture = Texture(60, 10),
+			FrameCount = 6,
+		};
+		var def = new VisualDef();
+		def.Strips.Add(strip);
+		return def;
+	}
+
 	/// <summary>A curve with points at x = 1..n.</summary>
 	public static Curve CurveOf(params float[] ys)
 	{
