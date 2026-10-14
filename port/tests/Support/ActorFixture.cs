@@ -51,4 +51,14 @@ public static class ActorFixture
 		hurtbox.Bind(entity, holder);
 		return (entity, hurtbox);
 	}
+
+	/// <summary>An ability context for <paramref name="entity"/>: an actor node at <paramref name="at"/>, plus the helpers abilities need.</summary>
+	public static AbilityContext Context(TestCase test, ActorEntity entity, Vector2 at)
+	{
+		var actor = test.Adopt(new Node2D { Position = at });
+		var context = new AbilityContext(
+			actor, test.Adopt(new Mover()), test.Adopt(new TargetProvider()), test.Adopt(new Node2D()), new Wallet());
+		entity.Context = context;
+		return context;
+	}
 }
