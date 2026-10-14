@@ -1,0 +1,79 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://port/src/Actors/Enemy/Enemy.cs" id="1_enemy"]
+[ext_resource type="PackedScene" path="res://port/src/Components/actor_entity.tscn" id="2_entity"]
+[ext_resource type="Script" path="res://port/src/Components/Health.cs" id="3_health"]
+[ext_resource type="Script" path="res://port/src/Components/Hurtbox.cs" id="4_hurtbox"]
+[ext_resource type="Script" path="res://port/src/Components/Hitbox.cs" id="5_hitbox"]
+[ext_resource type="Script" path="res://port/src/Components/ContactDamage.cs" id="6_contact"]
+[ext_resource type="Script" path="res://port/src/Components/Mover.cs" id="7_mover"]
+[ext_resource type="Script" path="res://port/src/Components/ActorVisual.cs" id="8_visual"]
+[ext_resource type="Script" path="res://port/src/Components/LootDropper.cs" id="9_dropper"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
+resource_local_to_scene = true
+radius = 10.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_hurt"]
+resource_local_to_scene = true
+radius = 12.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_contact"]
+resource_local_to_scene = true
+radius = 14.0
+
+[node name="Enemy" type="CharacterBody2D" node_paths=PackedStringArray("Entity", "Health", "Hurtbox", "ContactHitbox", "ContactDamage", "Mover", "Visual", "LootDropper", "BodyShape", "HurtShape", "ContactShape")]
+collision_layer = 4
+collision_mask = 1
+motion_mode = 1
+script = ExtResource("1_enemy")
+Entity = NodePath("ActorEntity")
+Health = NodePath("Health")
+Hurtbox = NodePath("Hurtbox")
+ContactHitbox = NodePath("ContactHitbox")
+ContactDamage = NodePath("ContactDamage")
+Mover = NodePath("Mover")
+Visual = NodePath("Visual")
+LootDropper = NodePath("LootDropper")
+BodyShape = NodePath("CollisionShape2D")
+HurtShape = NodePath("Hurtbox/CollisionShape2D")
+ContactShape = NodePath("ContactHitbox/CollisionShape2D")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_body")
+
+[node name="ActorEntity" parent="." instance=ExtResource("2_entity")]
+
+[node name="Health" type="Node" parent="."]
+script = ExtResource("3_health")
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 16
+collision_mask = 0
+monitoring = false
+script = ExtResource("4_hurtbox")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("CircleShape2D_hurt")
+
+[node name="ContactHitbox" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 8
+monitorable = false
+script = ExtResource("5_hitbox")
+OncePerTarget = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ContactHitbox"]
+shape = SubResource("CircleShape2D_contact")
+
+[node name="ContactDamage" type="Node" parent="."]
+script = ExtResource("6_contact")
+
+[node name="Mover" type="Node" parent="."]
+script = ExtResource("7_mover")
+
+[node name="Visual" type="AnimatedSprite2D" parent="."]
+script = ExtResource("8_visual")
+
+[node name="LootDropper" type="Node" parent="."]
+script = ExtResource("9_dropper")
