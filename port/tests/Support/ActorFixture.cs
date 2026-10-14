@@ -4,6 +4,7 @@ using VampireSurvivor.Components;
 using VampireSurvivor.Core;
 using VampireSurvivor.Defs;
 using VampireSurvivor.Gas;
+using VampireSurvivor.Stage;
 
 namespace VampireSurvivor.Tests.Support;
 
@@ -95,5 +96,43 @@ public static class ActorFixture
 		}
 
 		return found;
+	}
+
+	/// <summary>
+	/// An event context with a fresh layer, factory and target provider: the building at <paramref name="buildingAt"/>,
+	/// the player (or a stand-in 150 px below the building), arena (-1200, -800, 2400, 1600), spawn radius 300, rng seed 7.
+	/// </summary>
+	public static EventContext ContextFor(TestCase test, EventDef def, Node2D? player = null, Vector2 buildingAt = default)
+	{
+		Node2D layer = test.Adopt(new Node2D());
+		Node2D enemies = test.Adopt(new Node2D());
+		TargetProvider targets = test.Adopt(new TargetProvider());
+		Node2D building = test.Adopt(new Node2D { Position = buildingAt });
+		player ??= test.Adopt(new Node2D { Position = buildingAt + new Vector2(0f, 150f) });
+		targets.Building = building;
+		targets.Player = player;
+		var rng = new RunRng(7);
+		EnemyFactory factory = test.Adopt(new EnemyFactory());
+		factory.Bind(enemies, targets, rng);
+		return new EventContext(layer, factory, targets, player, building, rng, new Rect2(-1200f, -800f, 2400f, 1600f), 300f, def);
+	}
+
+	/// <summary>Records an event's signals in emission order. Call before <c>Begin</c>: it may report progress immediately.</summary>
+	public static EventRecord WatchEvent(StageEvent stageEvent)
+	{
+		var record = new EventRecord();
+		stageEvent.Succeeded += () => record.Succeeded++;
+		stageEvent.Failed += () => record.Failed++;
+		stageEvent.ProgressChanged += record.Progress.Add;
+		return record;
+	}
+
+	public sealed class EventRecord
+	{
+		public int Succeeded { get; set; }
+
+		public int Failed { get; set; }
+
+		public System.Collections.Generic.List<string> Progress { get; } = [];
 	}
 }
