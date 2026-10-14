@@ -80,4 +80,20 @@ public static class ActorFixture
 	{
 		DamageEffects.Hit(BareActor(test, new StatBlock()), victim, 1_000_000f);
 	}
+
+	/// <summary>Children of <paramref name="parent"/> of type <typeparamref name="T"/> that are not queued for deletion.</summary>
+	public static System.Collections.Generic.List<T> LiveChildren<T>(Node parent)
+		where T : Node
+	{
+		var found = new System.Collections.Generic.List<T>();
+		foreach (Node child in parent.GetChildren())
+		{
+			if (child is T typed && !child.IsQueuedForDeletion())
+			{
+				found.Add(typed);
+			}
+		}
+
+		return found;
+	}
 }
