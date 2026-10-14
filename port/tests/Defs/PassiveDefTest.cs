@@ -41,4 +41,11 @@ public class PassiveDefTest : TestCase
 		var def = new PassiveDef { Stat = StatId.Attack, Operation = PassiveOperation.Percent, ByLevel = DefFactory.CurveOf(0f, 0f, 0f, 0f, 0f, 0f) };
 		Assert.True(def.Validate().Count >= 1);
 	}
+
+	public void TestALevelCountOtherThanSixValidates()
+	{
+		var def = new PassiveDef { Stat = StatId.MaxHealth, Operation = PassiveOperation.Flat, ByLevel = DefFactory.CurveOf(10f, 20f, 35f) };
+		Assert.NoErrors(def.Validate(3), "three purchasable levels");
+		Assert.True(def.Validate().Count >= 1, "abilities still need six grades");
+	}
 }

@@ -4,7 +4,8 @@ using Godot;
 namespace VampireSurvivor.Defs;
 
 /// <summary>
-/// The player's starting stats, look and abilities for a run, and the shop catalog. The skill-tree bonuses come with slice 5.
+/// The player's starting stats, look and abilities for a run, the shop catalog, and the skill-tree bonuses bought
+/// outside the run (filled in by ProfileBuilder, never saved in the .tres).
 /// </summary>
 public partial class PlayerProfile : Resource
 {
@@ -28,6 +29,9 @@ public partial class PlayerProfile : Resource
 	/// <summary>What the shop can roll into the slots.</summary>
 	[Export]
 	public Godot.Collections.Array<AbilityDef> Abilities { get; set; } = [];
+
+	/// <summary>Permanent bonuses from the skill tree, applied by Player.Setup.</summary>
+	public List<SkillBonus> SkillBonuses { get; set; } = [];
 
 	public List<string> Validate()
 	{
@@ -77,6 +81,23 @@ public partial class PlayerProfile : Resource
 			{
 				errors.AddRange(ability.Validate());
 			}
+		}
+
+		foreach (SkillBonus? bonus in SkillBonuses)
+		{
+			if (bonus?.Passive is null)
+			{
+				errors.Add("PlayerProfile: skill bonus without a passive");
+				continue;
+			}
+
+			int levels = bonus.Passive.ByLevel?.PointCount ?? 0;
+			if (bonus.Level < 1 || bonus.Level > levels)
+			{
+				errors.Add($"PlayerProfile: skill bonus level {bonus.Level} is outside 1..{levels}");
+			}
+
+			errors.AddRange(bonus.Passive.Validate(levels));
 		}
 
 		return errors;

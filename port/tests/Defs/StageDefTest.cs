@@ -85,4 +85,21 @@ public class StageDefTest : TestCase
 		def.TrickleCap = -1;
 		Assert.Eq(def.Validate().Count, 3, string.Join("; ", def.Validate()));
 	}
+
+	public void TestGemRewardIsPaidOnClearOnly()
+	{
+		StageDef def = DefFactory.Stage();
+		def.GemReward = 7;
+		Assert.Eq(def.GemFor(RunOutcome.Cleared), 7);
+		Assert.Eq(def.GemFor(RunOutcome.Failed), 0);
+	}
+
+	public void TestGemRewardDefaultsToZero() => Assert.Eq(DefFactory.Stage().GemReward, 0);
+
+	public void TestNegativeGemRewardIsAValidationError()
+	{
+		StageDef def = DefFactory.Stage();
+		def.GemReward = -1;
+		Assert.Eq(def.Validate().Count, 1);
+	}
 }

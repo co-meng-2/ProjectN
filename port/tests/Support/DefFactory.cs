@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using VampireSurvivor.Core;
 using VampireSurvivor.Defs;
@@ -170,6 +171,54 @@ public static class DefFactory
 		Operation = PassiveOperation.Flat,
 		ByLevel = CurveOf(20f, 40f, 70f, 110f, 160f, 240f),
 	};
+
+	/// <summary>A skill node with a max-health passive over <paramref name="maxLevel"/> levels (10 per level).</summary>
+	public static SkillNodeDef SkillNode(string id, string[]? requires = null, int maxLevel = 2, int[]? costs = null)
+	{
+		var node = new SkillNodeDef
+		{
+			Id = id,
+			DisplayName = id.Capitalize(),
+			MaxLevel = maxLevel,
+			Costs = costs ?? [10, 20],
+			Passive = new PassiveDef
+			{
+				Stat = StatId.MaxHealth,
+				Operation = PassiveOperation.Flat,
+				ByLevel = CurveOf(System.Linq.Enumerable.Range(1, System.Math.Max(maxLevel, 1)).Select(level => level * 10f).ToArray()),
+			},
+		};
+		foreach (string required in requires ?? [])
+		{
+			node.Requires.Add(required);
+		}
+
+		return node;
+	}
+
+	public static SkillTreeDef Tree(params SkillNodeDef?[] nodes)
+	{
+		var tree = new SkillTreeDef();
+		foreach (SkillNodeDef? node in nodes)
+		{
+			tree.Nodes.Add(node!);
+		}
+
+		return tree;
+	}
+
+	public static StageCatalog Catalog(params string[] ids)
+	{
+		var catalog = new StageCatalog();
+		foreach (string id in ids)
+		{
+			StageDef stage = Stage();
+			stage.Id = id;
+			catalog.Stages.Add(stage);
+		}
+
+		return catalog;
+	}
 
 	/// <summary>
 	/// A private copy of a shipped resource, loaded past the cache so a test can change it. Used instead of

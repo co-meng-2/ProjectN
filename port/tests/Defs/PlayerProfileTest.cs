@@ -47,4 +47,27 @@ public class PlayerProfileTest : TestCase
 		profile.InnateAbilities.Add(new ProbeAbilityDef { Tag = string.Empty });
 		Assert.Eq(profile.Validate().Count, 2);
 	}
+
+	public void TestValidSkillBonusesHaveNoErrors()
+	{
+		PlayerProfile profile = DefFactory.Profile();
+		profile.SkillBonuses.Add(new SkillBonus(DefFactory.SkillNode("a").Passive!, 2));
+		Assert.NoErrors(profile.Validate(), "one bonus at the curve's last level");
+	}
+
+	public void TestANullOrPassivelessSkillBonusIsAnError()
+	{
+		PlayerProfile profile = DefFactory.Profile();
+		profile.SkillBonuses.Add(null!);
+		profile.SkillBonuses.Add(new SkillBonus(null!, 1));
+		Assert.Eq(profile.Validate().Count, 2);
+	}
+
+	public void TestASkillBonusLevelOutsideItsCurveIsAnError()
+	{
+		PlayerProfile profile = DefFactory.Profile();
+		profile.SkillBonuses.Add(new SkillBonus(DefFactory.SkillNode("a").Passive!, 0));
+		profile.SkillBonuses.Add(new SkillBonus(DefFactory.SkillNode("b").Passive!, 3));
+		Assert.Eq(profile.Validate().Count, 2, "below 1 and above the two-point curve");
+	}
 }

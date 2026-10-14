@@ -70,6 +70,12 @@ public partial class StageDef : Resource
 	[Export]
 	public BossDef? Boss { get; set; }
 
+	/// <summary>Gem paid into the save when the stage is cleared (the only persistent currency).</summary>
+	[Export]
+	public int GemReward { get; set; }
+
+	public int GemFor(RunOutcome outcome) => outcome == RunOutcome.Cleared ? GemReward : 0;
+
 	public List<string> Validate()
 	{
 		var errors = new List<string>();
@@ -123,6 +129,11 @@ public partial class StageDef : Resource
 		if (StartGold < 0 || StartStone < 0)
 		{
 			errors.Add($"StageDef '{id}': start_gold and start_stone must be >= 0");
+		}
+
+		if (GemReward < 0)
+		{
+			errors.Add($"StageDef '{id}': gem_reward must be >= 0");
 		}
 
 		if (DropMultiplier <= 0f)

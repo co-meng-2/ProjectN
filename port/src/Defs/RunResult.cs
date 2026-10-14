@@ -18,4 +18,7 @@ public sealed class RunResult
 	public int Gold { get; init; }
 
 	public int Stone { get; init; }
+
+	/// <summary>Set by the stage screen from <see cref="StageDef.GemFor"/>.</summary>
+	public int Gem { get; set; }
 }

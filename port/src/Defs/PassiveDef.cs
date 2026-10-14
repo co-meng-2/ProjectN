@@ -18,11 +18,12 @@ public partial class PassiveDef : Resource
 	[Export]
 	public PassiveOperation Operation { get; set; }
 
-	/// <summary>Six points at x = 1..6; y is the display-unit amount (Flat) or fraction (Percent).</summary>
+	/// <summary>One point per level at x = 1..n (six grades for abilities); y is the display-unit amount (Flat) or fraction (Percent).</summary>
 	[Export]
 	public Curve? ByLevel { get; set; }
 
-	public List<string> Validate()
+	/// <summary><paramref name="levelCount"/> is 6 for abilities (grades) and the node's max level for skills.</summary>
+	public List<string> Validate(int levelCount = LevelCount)
 	{
 		var errors = new List<string>();
 		if (ByLevel is null)
@@ -31,14 +32,14 @@ public partial class PassiveDef : Resource
 			return errors;
 		}
 
-		if (ByLevel.PointCount != LevelCount)
+		if (ByLevel.PointCount != levelCount)
 		{
-			errors.Add($"PassiveDef {Stat}: ByLevel needs {LevelCount} points, has {ByLevel.PointCount}");
+			errors.Add($"PassiveDef {Stat}: ByLevel needs {levelCount} points, has {ByLevel.PointCount}");
 			return errors;
 		}
 
 		bool anyNonZero = false;
-		for (int i = 0; i < LevelCount; i++)
+		for (int i = 0; i < levelCount; i++)
 		{
 			if (!Mathf.IsEqualApprox(ByLevel.GetPointPosition(i).X, i + 1))
 			{
