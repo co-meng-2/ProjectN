@@ -84,14 +84,33 @@ public class AbilityGrantTest : TestCase
 		Assert.Eq(actor.Abilities.GrantedAbilities.Count, 0);
 	}
 
-	public void TestSameDefGrantedTwiceYieldsTwoIndependentGrants()
+	public void TestSameDefGrantedTwiceYieldsTwoGrantsWithTheirOwnLevel()
 	{
 		ActorEntity actor = ActorFixture.BareActor(this, new StatBlock());
 		ProbeAbilityDef probe = MakeProbe(1f, 1f, 1f, 1f, 1f, 1f);
 		AbilityGrant first = actor.Grant(probe, 1);
-		AbilityGrant second = actor.Grant(probe, 2);
+		AbilityGrant second = actor.Grant(probe, 4);
+		Assert.True(first.Ability != second.Ability, "two grants, two ability handles");
+		Assert.Eq(first.Ability!.Level, 1);
+		Assert.Eq(second.Ability!.Level, 4);
 		actor.Revoke(first);
-		Assert.True(second.Ability!.IsValid, "revoking one grant leaves the other");
+		Assert.False(first.Ability.IsValid, "the first grant is gone");
+		Assert.True(second.Ability.IsValid, "revoking one grant leaves the other");
+		Assert.Eq(second.Ability.Level, 4);
+	}
+
+	public void TestRevokingOneOfTwoGrantsKeepsTheSharedCooldownRunning()
+	{
+		ActorEntity actor = ActorFixture.BareActor(this, new StatBlock());
+		ProbeAbilityDef probe = MakeProbe(5f, 5f, 5f, 5f, 5f, 5f);
+		AbilityGrant first = actor.Grant(probe, 1);
+		AbilityGrant second = actor.Grant(probe, 1);
+		Assert.True(Fire(second));
+		actor.Revoke(first);
+		Assert.False(Fire(second), "the cooldown the owner is under survives revoking the other grant");
+		actor.Revoke(second);
+		AbilityGrant again = actor.Grant(probe, 1);
+		Assert.True(Fire(again), "once the last grant is revoked the cooldown is cleared");
 	}
 
 	public void TestActiveAbilityDefValidateReportsMissingTagAndBadCooldown()

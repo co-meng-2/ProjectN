@@ -25,7 +25,8 @@ public class PassiveDefTest : TestCase
 
 	public void TestPointsNotAtLevelsOneToSixAreReported()
 	{
-		var curve = new Godot.Curve();
+		// The domain must cover x = 2..7, otherwise Godot clamps the points back into [0, 1] and the test proves nothing.
+		var curve = new Godot.Curve { MinDomain = 0f, MaxDomain = 10f };
 		for (int i = 0; i < 6; i++)
 		{
 			curve.AddPoint(new Godot.Vector2(i + 2, 1f));

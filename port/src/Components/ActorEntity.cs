@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Gamesmiths.Forge.Abilities;
 using Gamesmiths.Forge.Effects;
@@ -19,6 +20,9 @@ namespace VampireSurvivor.Components;
 [GlobalClass]
 public partial class ActorEntity : ForgeEntity
 {
+	/// <summary>Live grants and the cooldown effects they may have started, per ability tag.</summary>
+	private readonly Dictionary<string, GrantBook> _books = [];
+
 	public override void _Ready()
 	{
 		base._Ready();
@@ -85,23 +89,36 @@ public partial class ActorEntity : ForgeEntity
 			effectComponents: [new GrantAbilityEffectComponent([config])]);
 		ActiveEffectHandle effect = EffectsManager.ApplyEffect(new Effect(effectData, new EffectOwnership(this, this)))!;
 		Abilities.TryGetAbility(data, out AbilityHandle? ability);
+		if (!_books.TryGetValue(def.Tag, out GrantBook? book))
+		{
+			_books[def.Tag] = book = new GrantBook();
+		}
+
+		book.Live++;
+		book.Cooldowns.AddRange(data.CooldownEffects ?? []);
 		return new AbilityGrant(effect, ability, data);
 	}
 
-	/// <summary>Ends the ability (running instances are cancelled) and clears its cooldown so a re-grant starts fresh.</summary>
+	/// <summary>
+	/// Ends one grant (running instances are cancelled). The cooldown belongs to the ability tag, not to a grant, so it is
+	/// cleared only when the last grant of that tag is revoked; a later re-grant then starts fresh.
+	/// </summary>
 	public void Revoke(AbilityGrant? grant)
 	{
-		if (grant is null)
+		if (grant is null || !grant.Effect.IsValid)
 		{
 			return;
 		}
 
-		if (grant.Effect.IsValid)
+		EffectsManager.RemoveEffect(grant.Effect, forceRemoval: true);
+		string tag = grant.Data.Name;
+		if (!_books.TryGetValue(tag, out GrantBook? book) || --book.Live > 0)
 		{
-			EffectsManager.RemoveEffect(grant.Effect, forceRemoval: true);
+			return;
 		}
 
-		foreach (EffectData cooldown in grant.Data.CooldownEffects ?? [])
+		_books.Remove(tag);
+		foreach (EffectData cooldown in book.Cooldowns)
 		{
 			EffectsManager.RemoveEffectData(cooldown, forceRemoval: true);
 		}
@@ -118,6 +135,8 @@ public partial class ActorEntity : ForgeEntity
 				EffectsManager.RemoveEffect(handle, forceRemoval: true);
 			}
 		}
+
+		_books.Clear();
 	}
 
 	/// <summary>Cleanup after the current physics callback finishes (death happens inside physics callbacks).</summary>
@@ -126,5 +145,12 @@ public partial class ActorEntity : ForgeEntity
 	private void SetFromDisplay(string key, float displayValue)
 	{
 		Apply(StatEffects.SetBase(key, Attributes[key].ToRawValue(displayValue)));
+	}
+
+	private sealed class GrantBook
+	{
+		public int Live { get; set; }
+
+		public List<EffectData> Cooldowns { get; } = [];
 	}
 }

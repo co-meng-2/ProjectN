@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using Gamesmiths.Forge.Abilities;
 using Gamesmiths.Forge.Effects;
 using Gamesmiths.Forge.Godot.Core;
@@ -11,16 +10,12 @@ namespace VampireSurvivor.Gas;
 
 public static class AbilityFactory
 {
-	private static readonly ConditionalWeakTable<ActiveAbilityDef, StrongBox<AbilityData>> Cache = [];
-
-	/// <summary>The def's AbilityData, built once per def instance (Forge compares ability data by value).</summary>
+	/// <summary>
+	/// A new AbilityData on every call, on purpose: Forge identifies an ability by its data, so granting equal data twice
+	/// would merge into one ability at the first grant's level. One data per grant gives each grant its own handle and level.
+	/// </summary>
 	public static AbilityData Build(ActiveAbilityDef def)
 	{
-		if (Cache.TryGetValue(def, out StrongBox<AbilityData>? cached))
-		{
-			return cached.Value;
-		}
-
 		EffectData[]? cooldowns = def.Cooldown is null
 			? null
 			: [CooldownEffects.Build(GameplayTags.CooldownFor(def.Tag), def.Cooldown)];
@@ -33,7 +28,6 @@ public static class AbilityFactory
 			abilityTags: GameplayTags.ContainerOf(def.Tag),
 			activationOwnedTags: owned,
 			behaviorFactory: def.CreateBehavior);
-		Cache.Add(def, new StrongBox<AbilityData>(data));
 		return data;
 	}
 
