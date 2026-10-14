@@ -11,15 +11,14 @@ config_version=5
 [application]
 
 config/name="vampire_survivor_ai"
-run/main_scene="res://src/app/logo.tscn"
+run/main_scene="res://src/App/logo.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
-GameplayCueManager="*uid://bh6ixabs0w700"
-SceneRouter="*res://src/app/scene_router.gd"
-SaveService="*res://src/meta/save_service.gd"
+SceneRouter="*res://src/App/SceneRouter.cs"
+SaveService="*res://src/Meta/SaveService.cs"
 "Forge Bootstrap"="*res://addons/forge/core/ForgeBootstrap.cs"
 _mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
@@ -36,7 +35,7 @@ project/assembly_name="VampireSurvivor"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/GodotGAS/plugin.cfg", "res://addons/godot_ai/plugin.cfg", "res://addons/forge/plugin.cfg")
+enabled=PackedStringArray("res://addons/godot_ai/plugin.cfg", "res://addons/forge/plugin.cfg")
 
 [input]
 

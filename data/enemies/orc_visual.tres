@@ -1,50 +1,54 @@
-[gd_resource type="Resource" script_class="VisualDef" format=3 uid="uid://y6rgouyb0s4i"]
+[gd_resource type="Resource" format=3]
 
-[ext_resource type="Script" uid="uid://bdxsb2hc5tgdb" path="res://src/defs/visual_def.gd" id="1_visual"]
-[ext_resource type="Script" uid="uid://krhpq5pi4a4f" path="res://src/defs/animation_strip.gd" id="2_strip"]
-[ext_resource type="Texture2D" uid="uid://rxff8lnwg2xt" path="res://assets/art/tinyrpg/orc/Orc_Idle.png" id="3_idle"]
-[ext_resource type="Texture2D" uid="uid://d10pr07wwj6fw" path="res://assets/art/tinyrpg/orc/Orc_Walk.png" id="4_walk"]
-[ext_resource type="Texture2D" uid="uid://wvlih7fcy4ru" path="res://assets/art/tinyrpg/orc/Orc_Attack01.png" id="5_attack"]
-[ext_resource type="Texture2D" uid="uid://ds8pseeo303q7" path="res://assets/art/tinyrpg/orc/Orc_Hurt.png" id="6_hurt"]
-[ext_resource type="Texture2D" uid="uid://dae06s54ykg4h" path="res://assets/art/tinyrpg/orc/Orc_Death.png" id="7_death"]
+[ext_resource type="Script" path="res://src/Defs/VisualDef.cs" id="1_visual"]
+[ext_resource type="Script" path="res://src/Defs/AnimationStrip.cs" id="2_strip"]
+[ext_resource type="Texture2D" path="res://assets/art/tinyrpg/orc/Orc_Idle.png" id="3_idle"]
+[ext_resource type="Texture2D" path="res://assets/art/tinyrpg/orc/Orc_Walk.png" id="4_walk"]
+[ext_resource type="Texture2D" path="res://assets/art/tinyrpg/orc/Orc_Attack01.png" id="5_attack"]
+[ext_resource type="Texture2D" path="res://assets/art/tinyrpg/orc/Orc_Hurt.png" id="6_hurt"]
+[ext_resource type="Texture2D" path="res://assets/art/tinyrpg/orc/Orc_Death.png" id="7_death"]
 
 [sub_resource type="Resource" id="Resource_idle"]
 script = ExtResource("2_strip")
-texture = ExtResource("3_idle")
-frame_count = 6
-fps = 8.0
+Animation = &"idle"
+Texture = ExtResource("3_idle")
+FrameCount = 6
+Fps = 8.0
+Loop = true
 
 [sub_resource type="Resource" id="Resource_walk"]
 script = ExtResource("2_strip")
-animation = &"walk"
-texture = ExtResource("4_walk")
-frame_count = 8
+Animation = &"walk"
+Texture = ExtResource("4_walk")
+FrameCount = 8
+Fps = 10.0
+Loop = true
 
 [sub_resource type="Resource" id="Resource_attack"]
 script = ExtResource("2_strip")
-animation = &"attack"
-texture = ExtResource("5_attack")
-frame_count = 6
-fps = 12.0
-loop = false
+Animation = &"attack"
+Texture = ExtResource("5_attack")
+FrameCount = 6
+Fps = 12.0
+Loop = false
 
 [sub_resource type="Resource" id="Resource_hurt"]
 script = ExtResource("2_strip")
-animation = &"hurt"
-texture = ExtResource("6_hurt")
-frame_count = 4
-fps = 12.0
-loop = false
+Animation = &"hurt"
+Texture = ExtResource("6_hurt")
+FrameCount = 4
+Fps = 12.0
+Loop = false
 
 [sub_resource type="Resource" id="Resource_death"]
 script = ExtResource("2_strip")
-animation = &"death"
-texture = ExtResource("7_death")
-frame_count = 4
-fps = 8.0
-loop = false
+Animation = &"death"
+Texture = ExtResource("7_death")
+FrameCount = 4
+Fps = 8.0
+Loop = false
 
 [resource]
 script = ExtResource("1_visual")
-strips = Array[ExtResource("2_strip")]([SubResource("Resource_idle"), SubResource("Resource_walk"), SubResource("Resource_attack"), SubResource("Resource_hurt"), SubResource("Resource_death")])
-offset = Vector2(0, -12)
+Strips = Array[ExtResource("2_strip")]([SubResource("Resource_idle"), SubResource("Resource_walk"), SubResource("Resource_attack"), SubResource("Resource_hurt"), SubResource("Resource_death")])
+Offset = Vector2(0, -12)

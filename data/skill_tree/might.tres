@@ -1,32 +1,27 @@
-[gd_resource type="Resource" script_class="SkillNodeDef" format=3]
+[gd_resource type="Resource" format=3]
 
-[ext_resource type="Script" path="res://src/defs/skill_node_def.gd" id="1_node"]
-[ext_resource type="Script" path="res://addons/GodotGAS/effects/gameplay_effect.gd" id="2_effect"]
-[ext_resource type="Script" path="res://addons/GodotGAS/effects/gameplay_effect_modifier.gd" id="3_modifier"]
+[ext_resource type="Script" path="res://src/Defs/SkillNodeDef.cs" id="1_node"]
+[ext_resource type="Script" path="res://src/Defs/PassiveDef.cs" id="2_passive"]
 
 [sub_resource type="Curve" id="Curve_levels"]
-_limits = [0.0, 0.4, 1.0, 3.0]
+min_domain = 1.0
+max_domain = 3.0
+max_value = 0.4
 _data = [Vector2(1, 0.1), 0.0, 0.0, 0, 0, Vector2(2, 0.2), 0.0, 0.0, 0, 0, Vector2(3, 0.3), 0.0, 0.0, 0, 0]
 point_count = 3
 
-[sub_resource type="Resource" id="Modifier_attack"]
-script = ExtResource("3_modifier")
-attribute_name = "attack"
-operation = 1
-magnitude = 1.0
-scaling_curve = SubResource("Curve_levels")
-
-[sub_resource type="Resource" id="Effect_might"]
-script = ExtResource("2_effect")
-policy = 2
-modifiers = Array[ExtResource("3_modifier")]([SubResource("Modifier_attack")])
+[sub_resource type="Resource" id="Passive"]
+script = ExtResource("2_passive")
+Stat = 2
+Operation = 1
+ByLevel = SubResource("Curve_levels")
 
 [resource]
 script = ExtResource("1_node")
-id = &"might"
-display_name = "Might"
-description = "All your hits deal more damage."
-requires = Array[StringName]([&"vitality"])
-max_level = 3
-costs = PackedInt32Array(20, 40, 80)
-effect = SubResource("Effect_might")
+Id = &"might"
+DisplayName = "Might"
+Description = "All your hits deal more damage."
+Requires = Array[StringName]([&"vitality"])
+MaxLevel = 3
+Costs = PackedInt32Array(20, 40, 80)
+Passive = SubResource("Passive")

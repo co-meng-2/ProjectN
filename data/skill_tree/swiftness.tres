@@ -1,31 +1,26 @@
-[gd_resource type="Resource" script_class="SkillNodeDef" format=3]
+[gd_resource type="Resource" format=3]
 
-[ext_resource type="Script" path="res://src/defs/skill_node_def.gd" id="1_node"]
-[ext_resource type="Script" path="res://addons/GodotGAS/effects/gameplay_effect.gd" id="2_effect"]
-[ext_resource type="Script" path="res://addons/GodotGAS/effects/gameplay_effect_modifier.gd" id="3_modifier"]
+[ext_resource type="Script" path="res://src/Defs/SkillNodeDef.cs" id="1_node"]
+[ext_resource type="Script" path="res://src/Defs/PassiveDef.cs" id="2_passive"]
 
 [sub_resource type="Curve" id="Curve_levels"]
-_limits = [0.0, 40.0, 1.0, 3.0]
+min_domain = 1.0
+max_domain = 3.0
+max_value = 40.0
 _data = [Vector2(1, 10), 0.0, 0.0, 0, 0, Vector2(2, 20), 0.0, 0.0, 0, 0, Vector2(3, 30), 0.0, 0.0, 0, 0]
 point_count = 3
 
-[sub_resource type="Resource" id="Modifier_move_speed"]
-script = ExtResource("3_modifier")
-attribute_name = "move_speed"
-operation = 0
-magnitude = 1.0
-scaling_curve = SubResource("Curve_levels")
-
-[sub_resource type="Resource" id="Effect_swiftness"]
-script = ExtResource("2_effect")
-policy = 2
-modifiers = Array[ExtResource("3_modifier")]([SubResource("Modifier_move_speed")])
+[sub_resource type="Resource" id="Passive"]
+script = ExtResource("2_passive")
+Stat = 1
+Operation = 0
+ByLevel = SubResource("Curve_levels")
 
 [resource]
 script = ExtResource("1_node")
-id = &"swiftness"
-display_name = "Swiftness"
-description = "Move faster from the start of every run."
-max_level = 3
-costs = PackedInt32Array(10, 20, 40)
-effect = SubResource("Effect_swiftness")
+Id = &"swiftness"
+DisplayName = "Swiftness"
+Description = "Move faster from the start of every run."
+MaxLevel = 3
+Costs = PackedInt32Array(10, 20, 40)
+Passive = SubResource("Passive")

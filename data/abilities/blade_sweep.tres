@@ -1,16 +1,48 @@
-[gd_resource type="Resource" script_class="AbilityDef" load_steps=5 format=3]
+[gd_resource type="Resource" format=3]
 
-[ext_resource type="Script" path="res://src/defs/ability_def.gd" id="1_def"]
-[ext_resource type="PackedScene" path="res://src/abilities/blade_sweep/blade_sweep_ability.tscn" id="2_scene"]
-[ext_resource type="Texture2D" path="res://assets/art/icons/whirlwind_orange.png" id="3_icon"]
-[ext_resource type="Texture2D" path="res://assets/art/icons/dual_swords.png" id="4_revealed"]
+[ext_resource type="Script" path="res://src/Defs/AbilityDef.cs" id="1_def"]
+[ext_resource type="Texture2D" path="res://assets/art/icons/whirlwind_orange.png" id="2_icon"]
+[ext_resource type="Texture2D" path="res://assets/art/icons/dual_swords.png" id="3_revealed"]
+[ext_resource type="Script" path="res://src/Abilities/Attacks/BladeSweepDef.cs" id="4_sweep"]
+[ext_resource type="PackedScene" path="res://src/Components/area_strike.tscn" id="5_strike"]
+
+[sub_resource type="Curve" id="Curve_cooldown"]
+min_domain = 1.0
+max_domain = 6.0
+max_value = 10.0
+_data = [Vector2(1, 1.6), 0.0, 0.0, 0, 0, Vector2(2, 1.4), 0.0, 0.0, 0, 0, Vector2(3, 1.2), 0.0, 0.0, 0, 0, Vector2(4, 1.0), 0.0, 0.0, 0, 0, Vector2(5, 0.85), 0.0, 0.0, 0, 0, Vector2(6, 0.7), 0.0, 0.0, 0, 0]
+point_count = 6
+
+[sub_resource type="Curve" id="Curve_radius"]
+min_domain = 1.0
+max_domain = 6.0
+max_value = 100.0
+_data = [Vector2(1, 40), 0.0, 0.0, 0, 0, Vector2(2, 48), 0.0, 0.0, 0, 0, Vector2(3, 56), 0.0, 0.0, 0, 0, Vector2(4, 66), 0.0, 0.0, 0, 0, Vector2(5, 78), 0.0, 0.0, 0, 0, Vector2(6, 95), 0.0, 0.0, 0, 0]
+point_count = 6
+
+[sub_resource type="Curve" id="Curve_damage"]
+min_domain = 1.0
+max_domain = 6.0
+max_value = 100.0
+_data = [Vector2(1, 10), 0.0, 0.0, 0, 0, Vector2(2, 14), 0.0, 0.0, 0, 0, Vector2(3, 19), 0.0, 0.0, 0, 0, Vector2(4, 25), 0.0, 0.0, 0, 0, Vector2(5, 33), 0.0, 0.0, 0, 0, Vector2(6, 45), 0.0, 0.0, 0, 0]
+point_count = 6
+
+[sub_resource type="Resource" id="Active"]
+script = ExtResource("4_sweep")
+Tag = "ability.sweep"
+Cooldown = SubResource("Curve_cooldown")
+AutoFire = true
+StrikeScene = ExtResource("5_strike")
+Radius = SubResource("Curve_radius")
+Damage = SubResource("Curve_damage")
+StrikeSeconds = 0.2
 
 [resource]
 script = ExtResource("1_def")
-id = &"blade_sweep"
-display_name = "Blade Sweep"
-description = "A spinning strike that hits every enemy around you."
-icon = ExtResource("3_icon")
-revealed_icon = ExtResource("4_revealed")
-min_grade = 1
-ability_scene = ExtResource("2_scene")
+Id = &"blade_sweep"
+DisplayName = "Blade Sweep"
+Description = "A spinning strike that hits every enemy around you."
+Icon = ExtResource("2_icon")
+RevealedIcon = ExtResource("3_revealed")
+MinGrade = 1
+Active = SubResource("Active")

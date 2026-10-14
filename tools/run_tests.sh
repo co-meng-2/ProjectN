@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 # Runs the headless test suites.
-# Env: GODOT_BIN, RUNNER (gd|cs|both, default both), FILTER (label/path substring), IMPORT=1 (run --import first),
+# Env: GODOT_BIN, FILTER (test label substring), IMPORT=1 (run --import first),
 #      NO_BUILD=1 (skip dotnet build), TEST_SUITE_TIMEOUT (seconds, default 120).
 set -u
 cd "$(dirname "$0")/.."
 GODOT_BIN="${GODOT_BIN:-/d/CM/Godot/Godot_v4.7.2-stable_mono_win64/Godot_v4.7.2-stable_mono_win64_console.exe}"
-RUNNER="${RUNNER:-both}"
 timeout_seconds="${TEST_SUITE_TIMEOUT:-120}"
 
 if ! "$GODOT_BIN" --version 2>/dev/null | grep -q "mono"; then
@@ -40,17 +39,4 @@ run_suite() {
 	return $status
 }
 
-overall=0
-case "$RUNNER" in
-	gd | both)
-		echo "== GDScript suite"
-		run_suite res://tests/run_tests.tscn gd || overall=1
-		;;
-esac
-case "$RUNNER" in
-	cs | both)
-		echo "== C# suite"
-		run_suite res://port/tests/run_tests.tscn cs || overall=1
-		;;
-esac
-exit $overall
+run_suite res://tests/run_tests.tscn cs

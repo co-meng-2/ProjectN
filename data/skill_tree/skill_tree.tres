@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="SkillTreeDef" format=3]
+[gd_resource type="Resource" format=3]
 
-[ext_resource type="Script" path="res://src/defs/skill_tree_def.gd" id="1_tree"]
-[ext_resource type="Script" path="res://src/defs/skill_node_def.gd" id="2_node_def"]
+[ext_resource type="Script" path="res://src/Defs/SkillTreeDef.cs" id="1_tree"]
+[ext_resource type="Script" path="res://src/Defs/SkillNodeDef.cs" id="2_node_def"]
 [ext_resource type="Resource" path="res://data/skill_tree/vitality.tres" id="3_vitality"]
 [ext_resource type="Resource" path="res://data/skill_tree/swiftness.tres" id="4_swiftness"]
 [ext_resource type="Resource" path="res://data/skill_tree/might.tres" id="5_might"]
@@ -9,4 +9,4 @@
 
 [resource]
 script = ExtResource("1_tree")
-nodes = Array[ExtResource("2_node_def")]([ExtResource("3_vitality"), ExtResource("4_swiftness"), ExtResource("5_might"), ExtResource("6_extra_slot")])
+Nodes = Array[ExtResource("2_node_def")]([ExtResource("3_vitality"), ExtResource("4_swiftness"), ExtResource("5_might"), ExtResource("6_extra_slot")])

@@ -1,16 +1,16 @@
-[gd_resource type="Resource" script_class="EventSchedule" format=3]
+[gd_resource type="Resource" format=3]
 
-[ext_resource type="Script" path="res://src/defs/event_schedule.gd" id="1_schedule"]
-[ext_resource type="Script" path="res://src/defs/event_def.gd" id="2_event"]
+[ext_resource type="Script" path="res://src/Defs/EventSchedule.cs" id="1_schedule"]
+[ext_resource type="Script" path="res://src/Defs/EventDef.cs" id="2_event"]
 [ext_resource type="Resource" path="res://data/events/statues.tres" id="3_statues"]
 [ext_resource type="Resource" path="res://data/events/meteors.tres" id="4_meteors"]
 [ext_resource type="Resource" path="res://data/events/elites.tres" id="5_elites"]
 
 [resource]
 script = ExtResource("1_schedule")
-count = 3
-window_start = 20.0
-window_end = 155.0
-min_gap = 30.0
-wave_clearance = 5.0
-pool = Array[ExtResource("2_event")]([ExtResource("3_statues"), ExtResource("4_meteors"), ExtResource("5_elites")])
+Count = 3
+WindowStart = 20.0
+WindowEnd = 155.0
+MinGap = 30.0
+WaveClearance = 5.0
+Pool = Array[ExtResource("2_event")]([ExtResource("3_statues"), ExtResource("4_meteors"), ExtResource("5_elites")])

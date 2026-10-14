@@ -1,19 +1,19 @@
-[gd_resource type="Resource" script_class="EventDef" format=3]
+[gd_resource type="Resource" format=3]
 
-[ext_resource type="Script" path="res://src/defs/event_def.gd" id="1_def"]
-[ext_resource type="Script" path="res://src/defs/reward_def.gd" id="2_reward"]
-[ext_resource type="PackedScene" path="res://src/events/meteor_event.tscn" id="3_scene"]
+[ext_resource type="Script" path="res://src/Defs/EventDef.cs" id="1_def"]
+[ext_resource type="Script" path="res://src/Defs/RewardDef.cs" id="2_reward"]
+[ext_resource type="PackedScene" path="res://src/Events/meteor_event.tscn" id="3_scene"]
 
 [sub_resource type="Resource" id="Resource_reward"]
 script = ExtResource("2_reward")
-gold = 100
-stone = 3
-tickets = 1
+Gold = 100
+Stone = 3
+Tickets = 1
 
 [resource]
 script = ExtResource("1_def")
-id = &"meteors"
-display_name = "Meteor Shower"
-controller_scene = ExtResource("3_scene")
-time_limit = 20.0
-reward = SubResource("Resource_reward")
+Id = &"meteors"
+DisplayName = "Meteor Shower"
+ControllerScene = ExtResource("3_scene")
+TimeLimit = 20.0
+Reward = SubResource("Resource_reward")
