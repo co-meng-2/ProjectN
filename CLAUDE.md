@@ -2,11 +2,16 @@
 
 Top-down 2D vampire-survivor-like prototype in Godot 4.7 (GDScript) on top of GodotGAS.
 Design: `docs/superpowers/specs/2026-10-13-vampire-survivor-base-design.md`. Plans: `docs/superpowers/plans/`.
+A C# + Forge port is in progress under `port/` (spec: `docs/superpowers/specs/2026-10-14-csharp-forge-port-design.md`); the GDScript tree stays the regression reference until cutover.
 
 ## Commands
-- Run all tests: `tools/run_tests.sh` (`FILTER=<path substring>` for one file; `IMPORT=1` if the editor is closed;
-  `TEST_SUITE_TIMEOUT=<seconds>`, default 120). Tests live in `tests/` mirroring `src/`, plus `support/` helpers;
-  a test file extends `TestCase` and is picked up by the runner `tests/run_tests.tscn`.
+- Run all tests: `tools/run_tests.sh` (`RUNNER=gd|cs|both`, default both; `FILTER=<substring>` for one file/label; `IMPORT=1` if the
+  editor is closed; `NO_BUILD=1` skips `dotnet build`; `TEST_SUITE_TIMEOUT=<seconds>`, default 120). It needs the **.NET** Godot build
+  (`/d/CM/Godot/Godot_v4.7.2-stable_mono_win64/...`); open the project with it, not the standard build. GDScript tests live in `tests/`
+  (mirroring `src/`, plus `support/` helpers; a test file extends `TestCase`, runner `tests/run_tests.tscn`); C# tests live in
+  `port/tests/` (mirroring `port/src/`, runner `port/tests/run_tests.tscn`).
+- Regenerate the Forge tags after editing `GameplayTags.All`: `Godot --headless --path . res://port/tools/sync_tags.tscn`
+  (writes `addons/forge/core/forge_data.tres`).
 - Rebuild gameplay tags after editing `TAGS` in `tools/sync_tags.gd`:
   `Godot --headless --path . -s res://tools/sync_tags.gd`, then rescan the editor filesystem
   (godot-ai `filesystem_manage` scan) before running tests.
