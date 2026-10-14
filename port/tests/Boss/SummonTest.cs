@@ -20,7 +20,7 @@ public class SummonTest : TestCase
 	{
 		Player player = ActorFixture.Player(this);
 		player.GlobalPosition = new Vector2(-500f, 0f);
-		var def = (SummonDef)GD.Load<SummonDef>(SummonPath).Duplicate();
+		var def = DefFactory.Fresh<SummonDef>(SummonPath);
 		BossActor boss = ActorFixture.Boss(this, player, DefFactory.Boss(GD.Load<PackedScene>(BossActorTest.BossScene), def), BossAt, summon);
 		return (boss, def);
 	}
@@ -65,7 +65,7 @@ public class SummonTest : TestCase
 
 	public void TestValidateReportsAMissingEnemyAndBadNumbers()
 	{
-		var summon = (SummonDef)GD.Load<SummonDef>(SummonPath).Duplicate();
+		var summon = DefFactory.Fresh<SummonDef>(SummonPath);
 		Assert.NoErrors(summon.Validate(), "as shipped");
 		Assert.Eq(summon.Enemy!.Id.ToString(), "orc_swarmer");
 		summon.Enemy = null;

@@ -170,4 +170,11 @@ public static class DefFactory
 		Operation = PassiveOperation.Flat,
 		ByLevel = CurveOf(20f, 40f, 70f, 110f, 160f, 240f),
 	};
+
+	/// <summary>
+	/// A private copy of a shipped resource, loaded past the cache so a test can change it. Used instead of
+	/// <c>Duplicate()</c>, which on resources with C# scripts could crash the .NET finalizer.
+	/// </summary>
+	public static T Fresh<T>(string path)
+		where T : Resource => ResourceLoader.Load<T>(path, null, ResourceLoader.CacheMode.Ignore);
 }

@@ -1,9 +1,13 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Godot;
 using VampireSurvivor.Abilities;
 using VampireSurvivor.Tests.Abilities;
+using VampireSurvivor.Tests.Actors;
+using VampireSurvivor.Tests.Boss;
 using VampireSurvivor.Actors;
+using VampireSurvivor.Boss;
 using VampireSurvivor.Components;
 using VampireSurvivor.Core;
 using VampireSurvivor.Defs;
@@ -310,5 +314,193 @@ public class StageRootTest : TestCase
 		StageRoot second = NewStage();
 		Assert.False(second.Start(MakeDef(30f), innate), "an innate ability with an unregistered trigger tag");
 		Assert.Null(second.RunState);
+	}
+	/// <summary>A stage without trickle or waves whose clock the test drives by hand.</summary>
+	private StageRoot ManualStage(StageDef def, List<RunResult> results)
+	{
+		StageRoot stage = NewStage();
+		stage.Finished += results.Add;
+		Assert.True(stage.Start(def, DefFactory.Profile(), 11));
+		stage.Clock.SetPhysicsProcess(false);
+		return stage;
+	}
+
+	private static StageDef QuietDef(float duration)
+	{
+		StageDef def = MakeDef(duration);
+		def.TrickleEnemies.Clear();
+		def.Waves!.Entries.Clear();
+		return def;
+	}
+
+	private static BossDef BossWith(PatternDef pattern) =>
+		DefFactory.Boss(GD.Load<PackedScene>(BossActorTest.BossScene), pattern);
+
+	/// <summary>
+	/// One endless probe event somewhere in [windowStart, windowEnd]. Its time limit is 1 s so the schedule passes the
+	/// window_end + time_limit rule even on a short stage; being endless it runs until the test (or the boss) ends it.
+	/// </summary>
+	private static EventSchedule ProbeEvents(float windowStart, float windowEnd) =>
+		DefFactory.Schedule([DefFactory.Event(DefFactory.Packed(new ProbeEvent { Endless = true }), 1f)], 1, windowStart, windowEnd, 10f);
+
+	public void TestTimeUpBringsTheBossAndItsDeathClearsTheStage()
+	{
+		StageDef def = QuietDef(5f);
+		def.Boss = BossWith(new ProbePatternDef());
+		var results = new List<RunResult>();
+		StageRoot stage = ManualStage(def, results);
+		var appeared = new List<(Health Health, string Name)>();
+		stage.BossAppeared += (health, name) => appeared.Add((health, name));
+		stage.Clock.Step(5f);
+		Assert.Eq(results.Count, 0, "time up starts the boss fight instead of clearing");
+		Assert.Eq(stage.FlowState, StageState.Boss);
+		BossActor? boss = stage.CurrentBoss;
+		Assert.NotNull(boss);
+		Assert.Eq(appeared.Count, 1);
+		Assert.True(appeared[0].Health == boss!.Health);
+		Assert.Eq(appeared[0].Name, "Test Boss");
+		Assert.AlmostEq(boss.GlobalPosition.DistanceTo(stage.Building.GlobalPosition), def.SpawnRadius, 1.0);
+		Assert.True(boss.GetNodeOrNull("Brain") is BossBrain, "the stage attached the brain");
+		stage.Clock.Step(30f);
+		Assert.Eq(results.Count, 0, "the boss fight has no time limit");
+		Assert.AlmostEq(stage.Clock.Elapsed, 35.0);
+		ActorFixture.Kill(this, boss.Entity);
+		Assert.Eq(results.Count, 1);
+		Assert.Eq(results[0].Outcome, RunOutcome.Cleared);
+		Assert.Eq(stage.RunState!.Kills, 0, "the boss is not a kill");
+	}
+
+	public void TestWithoutABossTimeUpClearsAtOnce()
+	{
+		var results = new List<RunResult>();
+		StageRoot stage = ManualStage(QuietDef(5f), results);
+		stage.Clock.Step(5f);
+		Assert.Eq(results.Count, 1);
+		Assert.Eq(results[0].Outcome, RunOutcome.Cleared);
+		Assert.Null(stage.CurrentBoss);
+		Assert.Eq(stage.FlowState, StageState.Cleared);
+	}
+
+	public void TestPlayerDeathDuringTheBossFightFailsTheRun()
+	{
+		StageDef def = QuietDef(5f);
+		def.Boss = BossWith(new ProbePatternDef());
+		var results = new List<RunResult>();
+		StageRoot stage = ManualStage(def, results);
+		stage.Clock.Step(5f);
+		ActorFixture.Kill(this, stage.Player.Entity);
+		Assert.Eq(results.Count, 1);
+		Assert.Eq(results[0].Outcome, RunOutcome.Failed);
+	}
+
+	public void TestTheBossAppearanceAbortsARunningEventWithoutReward()
+	{
+		StageDef def = QuietDef(5f);
+		def.Boss = BossWith(new ProbePatternDef());
+		def.Events = ProbeEvents(1f, 3f);
+		var results = new List<RunResult>();
+		StageRoot stage = ManualStage(def, results);
+		var ended = new List<bool>();
+		var aborted = new List<EventDef>();
+		stage.Events.EventEnded += (_, success) => ended.Add(success);
+		stage.Events.EventAborted += aborted.Add;
+		stage.Clock.Step(3.5f);
+		var probe = stage.Events.Running as ProbeEvent;
+		Assert.NotNull(probe, "the event is running");
+		Assert.True(probe!.GetParent() == stage.GetNode("World/Events"));
+		stage.Clock.Step(1.5f);
+		Assert.NotNull(stage.CurrentBoss);
+		Assert.Eq(aborted.Count, 1);
+		Assert.Eq(ended.Count, 0, "an abort is not a failure");
+		Assert.Eq(probe.Cleanups, 1, "its objects were removed");
+		Assert.Null(stage.Events.Running);
+		Assert.Eq(stage.RunState!.Wallet.Gold, 0);
+		Assert.Eq(stage.RunState.Wallet.Tickets, 0);
+	}
+
+	public void TestASuccessfulEventCreditsItsReward()
+	{
+		StageDef def = QuietDef(60f);
+		def.Events = ProbeEvents(5f, 10f);
+		var results = new List<RunResult>();
+		StageRoot stage = ManualStage(def, results);
+		stage.Clock.Step(11f);
+		((ProbeEvent)stage.Events.Running!).Finish(true);
+		Assert.Eq(stage.RunState!.Wallet.Gold, 150);
+		Assert.Eq(stage.RunState.Wallet.Stone, 2);
+		Assert.Eq(stage.RunState.Wallet.Tickets, 1);
+	}
+
+	public void TestAFailedEventPaysNothing()
+	{
+		StageDef def = QuietDef(60f);
+		def.Events = ProbeEvents(5f, 10f);
+		var results = new List<RunResult>();
+		StageRoot stage = ManualStage(def, results);
+		stage.Clock.Step(11f);
+		((ProbeEvent)stage.Events.Running!).Finish(false);
+		Assert.Eq(stage.RunState!.Wallet.Gold, 0);
+		Assert.Eq(stage.RunState.Wallet.Tickets, 0);
+	}
+
+	public void TestTheRunEndingAbortsARunningEvent()
+	{
+		StageDef def = QuietDef(60f);
+		def.Events = ProbeEvents(5f, 10f);
+		var results = new List<RunResult>();
+		StageRoot stage = ManualStage(def, results);
+		stage.Clock.Step(11f);
+		var probe = (ProbeEvent)stage.Events.Running!;
+		ActorFixture.Kill(this, stage.Building.Entity);
+		Assert.Eq(results[0].Outcome, RunOutcome.Failed);
+		Assert.Eq(probe.Cleanups, 1);
+		Assert.Null(stage.Events.Running);
+	}
+
+	public void TestBossSummonsSpawnThroughTheFactoryAndCountAsKills()
+	{
+		StageDef def = QuietDef(5f);
+		var summon = DefFactory.Fresh<SummonDef>(SummonTest.SummonPath);
+		def.Boss = BossWith(summon);
+		var results = new List<RunResult>();
+		StageRoot stage = ManualStage(def, results);
+		stage.Clock.Step(5f);
+		BossActor boss = stage.CurrentBoss!;
+		Assert.True(ActorFixture.Fire(boss.Patterns[0]));
+		List<Enemy> summoned = [.. Enemies().OfType<Enemy>()];
+		Assert.Eq(summoned.Count, 4);
+		Assert.True(summoned[0].GetParent() == stage.EnemyLayer);
+		ActorFixture.Kill(this, summoned[0].Entity);
+		Assert.Eq(stage.RunState!.Kills, 1, "summons are ordinary kills");
+	}
+
+	public void TestEventControllersMustBeStageEvents()
+	{
+		StageDef def = QuietDef(60f);
+		def.Events = DefFactory.Schedule([DefFactory.Event(DefFactory.Packed(new Node2D()), 10f, "plain")], 1, 5f, 10f, 10f);
+		Assert.NoErrors(def.Validate(), "the def alone cannot see the problem");
+		StageRoot stage = NewStage();
+		Assert.False(stage.Start(def, DefFactory.Profile(), 11));
+		Assert.Null(stage.RunState);
+	}
+
+	public void TestBossPatternsMustBeBossPatterns()
+	{
+		StageDef def = QuietDef(60f);
+		def.Boss = DefFactory.Boss(GD.Load<PackedScene>(BossActorTest.BossScene), new ProbeAbilityDef { Tag = GameplayTags.AbilityProbe });
+		Assert.NoErrors(def.Validate(), "the def alone cannot see the problem");
+		StageRoot stage = NewStage();
+		Assert.False(stage.Start(def, DefFactory.Profile(), 11));
+		Assert.Null(stage.RunState);
+	}
+
+	public void TestTheBossSceneMustBeABoss()
+	{
+		StageDef def = QuietDef(60f);
+		def.Boss = DefFactory.Boss(DefFactory.Packed(new Node2D()), new ProbePatternDef());
+		Assert.NoErrors(def.Validate(), "the def alone cannot see the problem");
+		StageRoot stage = NewStage();
+		Assert.False(stage.Start(def, DefFactory.Profile(), 11));
+		Assert.Null(stage.RunState);
 	}
 }

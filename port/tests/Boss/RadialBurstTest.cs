@@ -21,7 +21,7 @@ public class RadialBurstTest : TestCase
 	{
 		Player player = ActorFixture.Player(this);
 		player.GlobalPosition = playerAt;
-		var burst = (RadialBurstDef)GD.Load<RadialBurstDef>(BurstPath).Duplicate();
+		var burst = DefFactory.Fresh<RadialBurstDef>(BurstPath);
 		BossActor boss = ActorFixture.Boss(this, player, DefFactory.Boss(GD.Load<PackedScene>(BossActorTest.BossScene), burst), BossAt);
 		return new Rig(player, boss, player.Context!.ProjectileLayer);
 	}
@@ -59,7 +59,7 @@ public class RadialBurstTest : TestCase
 
 	public void TestValidateRequiresAnAllyHittingProjectile()
 	{
-		var burst = (RadialBurstDef)GD.Load<RadialBurstDef>(BurstPath).Duplicate();
+		var burst = DefFactory.Fresh<RadialBurstDef>(BurstPath);
 		Assert.NoErrors(burst.Validate(), "as shipped");
 		burst.Projectile = GD.Load<ProjectileDef>("res://port/data/projectiles/arrow.tres");
 		Assert.Eq(burst.Validate().Count, 1, "the player's arrow hits enemies");
@@ -69,7 +69,7 @@ public class RadialBurstTest : TestCase
 
 	public void TestValidateRejectsASceneWhoseRootIsNotAProjectile()
 	{
-		var burst = (RadialBurstDef)GD.Load<RadialBurstDef>(BurstPath).Duplicate();
+		var burst = DefFactory.Fresh<RadialBurstDef>(BurstPath);
 		burst.ProjectileScene = DefFactory.Packed(new Node2D());
 		Assert.Eq(burst.Validate().Count, 1);
 	}

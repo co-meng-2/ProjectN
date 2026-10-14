@@ -13,9 +13,8 @@ public class DevStageTest : TestCase
 {
 	private DevStage MakeDev()
 	{
-		StageDef def = GD.Load<StageDef>("res://port/data/stages/stage_01.tres");
 		var dev = GD.Load<PackedScene>("res://port/src/App/dev_stage.tscn").Instantiate<DevStage>();
-		dev.StageDef = (StageDef)def.Duplicate();
+		dev.StageDef = DefFactory.Fresh<StageDef>("res://port/data/stages/stage_01.tres");
 		dev.StageDef.Duration = 30f;
 		dev.StageDef.Waves = null;
 		return Adopt(dev);

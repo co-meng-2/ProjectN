@@ -22,7 +22,7 @@ public class ChargeTest : TestCase
 	{
 		Player player = ActorFixture.Player(this);
 		player.GlobalPosition = PlayerAt;
-		var charge = (ChargeDef)GD.Load<ChargeDef>(ChargePath).Duplicate();
+		var charge = DefFactory.Fresh<ChargeDef>(ChargePath);
 		BossActor boss = ActorFixture.Boss(this, player, DefFactory.Boss(GD.Load<PackedScene>(BossActorTest.BossScene), charge), BossAt);
 		return new Rig(player, boss, charge, player.Context!.ProjectileLayer);
 	}
@@ -109,7 +109,7 @@ public class ChargeTest : TestCase
 
 	public void TestValidateReportsMissingPartsAndBadNumbers()
 	{
-		var charge = (ChargeDef)GD.Load<ChargeDef>(ChargePath).Duplicate();
+		var charge = DefFactory.Fresh<ChargeDef>(ChargePath);
 		Assert.NoErrors(charge.Validate(), "as shipped");
 		Assert.AlmostEq(charge.ChargeSeconds(), 360.0 / 520.0);
 		charge.StrikeScene = null;

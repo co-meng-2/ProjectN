@@ -21,7 +21,7 @@ public class GroundSlamTest : TestCase
 	{
 		Player player = ActorFixture.Player(this);
 		player.GlobalPosition = PlayerAt;
-		var slam = (GroundSlamDef)GD.Load<GroundSlamDef>(SlamPath).Duplicate();
+		var slam = DefFactory.Fresh<GroundSlamDef>(SlamPath);
 		BossActor boss = ActorFixture.Boss(this, player, DefFactory.Boss(GD.Load<PackedScene>(BossActorTest.BossScene), slam), new Vector2(-400f, 0f));
 		return new Rig(player, boss, player.Context!.ProjectileLayer);
 	}
@@ -71,7 +71,7 @@ public class GroundSlamTest : TestCase
 
 	public void TestValidateReportsMissingPartsAndBadNumbers()
 	{
-		var slam = (GroundSlamDef)GD.Load<GroundSlamDef>(SlamPath).Duplicate();
+		var slam = DefFactory.Fresh<GroundSlamDef>(SlamPath);
 		Assert.NoErrors(slam.Validate(), "as shipped");
 		slam.Radius = 0f;
 		slam.Damage = -1f;

@@ -65,12 +65,12 @@ public partial class SwarmBench : Node
 			_stage.QueueFree();
 		}
 
-		var def = (StageDef)GD.Load<StageDef>("res://port/data/stages/stage_01.tres").Duplicate();
+		var def = ResourceLoader.Load<StageDef>("res://port/data/stages/stage_01.tres", null, ResourceLoader.CacheMode.Ignore);
 		def.TrickleEnemies = [];
 		def.Waves = null;
 		def.Duration = 3600f;
 		def.BuildingStats = new StatBlock { MaxHealth = 1_000_000f, MoveSpeed = 0f };
-		var profile = (PlayerProfile)GD.Load<PlayerProfile>("res://port/data/characters/default_profile.tres").Duplicate();
+		var profile = ResourceLoader.Load<PlayerProfile>("res://port/data/characters/default_profile.tres", null, ResourceLoader.CacheMode.Ignore);
 		profile.Stats = new StatBlock { MaxHealth = 1_000_000f, MoveSpeed = 140f };
 		_stage = GD.Load<PackedScene>("res://port/src/Stage/stage.tscn").Instantiate<StageRoot>();
 		AddChild(_stage);
