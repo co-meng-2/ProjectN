@@ -1,5 +1,6 @@
 extends TestCase
-## Walks the real scenes through the real router table: menu -> stage, with a temp save.
+## Walks the real scenes through the real router table and shipped catalog, with a temp save:
+## menu -> hub -> stage_01 cleared -> hub shows stage_02 open.
 
 const SERVICE_SCRIPT := preload("res://src/meta/save_service.gd")
 const Probe := preload("res://tests/support/scene_router_probe.gd")
@@ -15,17 +16,38 @@ func after_each() -> void:
 	SaveFiles.reset(DIR)
 
 
-func test_start_from_the_menu_runs_the_shipped_stage_and_pays_gem_that_survives_a_relaunch() -> void:
-	var router: Node = adopt(Probe.new())
+func _service() -> Node:
 	var service: Node = SERVICE_SCRIPT.new()
 	service.path = PATH
-	adopt(service)
+	return adopt(service)
+
+
+func _hub(service: Node, router: Node) -> Node:
+	var hub: Node = load(router.path_for(Probe.Route.HUB)).instantiate()
+	hub.save_service = service
+	hub.router = router
+	return adopt(hub)
+
+
+func _play_button(hub: Node, index: int) -> Button:
+	return hub.get_node("%StageList").get_child(index).get_node("%PlayButton") as Button
+
+
+func test_clearing_stage_01_from_the_hub_pays_gem_unlocks_stage_02_and_survives_a_relaunch() -> void:
+	var router: Node = adopt(Probe.new())
+	var service := _service()
 
 	var menu: Node = load(router.path_for(Probe.Route.MAIN_MENU)).instantiate()
 	menu.router = router
 	adopt(menu)
 	menu.get_node("%StartButton").pressed.emit()
-	assert_eq(router.changed_to, [router.path_for(Probe.Route.STAGE)])
+	assert_eq(router.changed_to, [router.path_for(Probe.Route.HUB)])
+
+	var hub := _hub(service, router)
+	assert_false(_play_button(hub, 0).disabled)
+	assert_true(_play_button(hub, 1).disabled, "stage_02 starts locked")
+	_play_button(hub, 0).pressed.emit()
+	assert_eq(router.changed_to.back(), router.path_for(Probe.Route.STAGE))
 
 	var main: Node = load(router.path_for(Probe.Route.STAGE)).instantiate()
 	main.save_service = service
@@ -36,11 +58,9 @@ func test_start_from_the_menu_runs_the_shipped_stage_and_pays_gem_that_survives_
 	var result := RunResult.new()
 	result.outcome = RunResult.Outcome.CLEARED
 	main._stage.finished.emit(result)
+	assert_eq(service.data.gem, main.stage_def.gem_reward)
 
-	var reward: int = main.stage_def.gem_reward
-	assert_true(reward > 0)
-	assert_eq(service.data.gem, reward)
-	var relaunched: Node = SERVICE_SCRIPT.new()
-	relaunched.path = PATH
-	adopt(relaunched)
-	assert_eq(relaunched.data.gem, reward, "a fresh session reads the saved gem")
+	var relaunched := _service()
+	assert_eq(relaunched.data.cleared_stages, [&"stage_01"], "a fresh session reads the saved clear")
+	var reopened_hub := _hub(relaunched, router)
+	assert_false(_play_button(reopened_hub, 1).disabled, "stage_02 is open after clearing stage_01")

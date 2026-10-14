@@ -73,12 +73,12 @@ func test_finishing_twice_credits_only_once() -> void:
 	assert_eq(service.data.gem, reward)
 
 
-func test_confirm_after_a_result_returns_to_the_main_menu() -> void:
+func test_confirm_after_a_result_returns_to_the_hub() -> void:
 	var router: Node = adopt(Probe.new())
 	var main := _main(_service(), router)
 	main._stage.finished.emit(_result(RunResult.Outcome.CLEARED))
 	main._unhandled_input(_confirm_press())
-	assert_eq(router.changed_to, [router.path_for(Probe.Route.MAIN_MENU)])
+	assert_eq(router.changed_to, [router.path_for(Probe.Route.HUB)])
 
 
 func _key_press(keycode: Key) -> InputEventKey:
@@ -101,7 +101,7 @@ func test_enter_continues_from_the_result_screen() -> void:
 	var main := _main(_service(), router)
 	main._stage.finished.emit(_result(RunResult.Outcome.FAILED))
 	main._unhandled_input(_key_press(KEY_ENTER))
-	assert_eq(router.changed_to, [router.path_for(Probe.Route.MAIN_MENU)])
+	assert_eq(router.changed_to, [router.path_for(Probe.Route.HUB)])
 
 
 func test_confirm_during_a_run_does_nothing() -> void:
@@ -109,3 +109,26 @@ func test_confirm_during_a_run_does_nothing() -> void:
 	var main := _main(_service(), router)
 	main._unhandled_input(_confirm_press())
 	assert_eq(router.changed_to.size(), 0)
+
+
+func test_a_cleared_run_records_the_clear_and_saves_it() -> void:
+	var service := _service()
+	var main := _main(service)
+	main._stage.finished.emit(_result(RunResult.Outcome.CLEARED))
+	assert_eq(service.data.cleared_stages, [&"stage_01"])
+	assert_eq(SaveStore.load_or_default(PATH).cleared_stages, [&"stage_01"], "persisted to disk")
+
+
+func test_a_failed_run_records_no_clear() -> void:
+	var service := _service()
+	var main := _main(service)
+	main._stage.finished.emit(_result(RunResult.Outcome.FAILED))
+	assert_eq(service.data.cleared_stages.size(), 0)
+
+
+func test_finishing_twice_records_the_clear_once() -> void:
+	var service := _service()
+	var main := _main(service)
+	main._stage.finished.emit(_result(RunResult.Outcome.CLEARED))
+	main._stage.finished.emit(_result(RunResult.Outcome.CLEARED))
+	assert_eq(service.data.cleared_stages.size(), 1)

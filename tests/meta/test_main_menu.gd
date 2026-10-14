@@ -10,15 +10,12 @@ func _menu(router: Node) -> Control:
 	return adopt(menu)
 
 
-func test_start_goes_to_the_stage_with_the_shipped_stage_def() -> void:
+func test_start_goes_to_the_hub_without_params() -> void:
 	var router: Node = adopt(Probe.new())
 	var menu := _menu(router)
 	menu.get_node("%StartButton").pressed.emit()
-	assert_eq(router.changed_to, [router.path_for(Probe.Route.STAGE)])
-	var params: Dictionary = router.take_params()
-	var stage := params.get(Probe.PARAM_STAGE_DEF) as StageDef
-	assert_not_null(stage)
-	assert_eq(stage.id, &"stage_01")
+	assert_eq(router.changed_to, [router.path_for(Probe.Route.HUB)])
+	assert_eq(router.take_params(), {})
 
 
 func test_settings_goes_to_the_settings_screen() -> void:

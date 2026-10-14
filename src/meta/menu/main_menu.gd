@@ -1,7 +1,5 @@
 extends Control
-## Start / Settings / Quit. Holds no state: it asks the router to move on. 4b replaces Start with the hub.
-
-const STAGE_DEF: StageDef = preload("res://data/stages/stage_01.tres")
+## Start / Settings / Quit. Holds no state: it asks the router to move on. Start opens the hub.
 
 ## Defaults to the SceneRouter autoload in _ready; tests set it first.
 var router: Node
@@ -21,7 +19,7 @@ func _ready() -> void:
 
 
 func _on_start_pressed() -> void:
-	router.go(SceneRouter.Route.STAGE, {SceneRouter.PARAM_STAGE_DEF: STAGE_DEF})
+	router.go(SceneRouter.Route.HUB)
 
 
 func _on_settings_pressed() -> void:

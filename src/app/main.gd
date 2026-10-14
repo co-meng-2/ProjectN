@@ -37,7 +37,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(InputActions.RESTART):
 		_start_run()
 	elif event.is_action_pressed(InputActions.CONFIRM):
-		router.go(SceneRouter.Route.MAIN_MENU)
+		router.go(SceneRouter.Route.HUB)
 
 
 func _start_run() -> void:
@@ -89,6 +89,8 @@ func _on_finished(result: RunResult) -> void:
 	result.gem = stage_def.gem_for(result.outcome)
 	_result = result
 	save_service.add_gem(result.gem)
+	if result.outcome == RunResult.Outcome.CLEARED:
+		save_service.record_clear(stage_def.id)
 	save_service.save()
 	_hud.show_result(result)
 	print("[Main] %s after %.1fs - kills %d, gold %d, stone %d, gem %d" % [
