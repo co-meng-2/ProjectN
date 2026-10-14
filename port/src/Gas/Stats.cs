@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Gamesmiths.Forge.Attributes;
 using Gamesmiths.Forge.Core;
 using Gamesmiths.Forge.Effects.Magnitudes;
+using VampireSurvivor.Defs;
 
 namespace VampireSurvivor.Gas;
 
@@ -31,6 +32,23 @@ public static class Stats
 	{
 		return new AttributeCaptureDefinition(key, AttributeCaptureSource.Target).TryGetAttribute(entity, out attribute);
 	}
+
+	public static string KeyOf(StatId stat) => stat switch
+	{
+		StatId.MaxHealth => MaxHealth,
+		StatId.MoveSpeed => MoveSpeed,
+		StatId.Attack => Attack,
+		StatId.GoldGain => GoldGain,
+		_ => StoneGain,
+	};
+
+	public static int DecimalsOf(StatId stat) => stat switch
+	{
+		StatId.MaxHealth => HealthDecimals,
+		StatId.MoveSpeed => SpeedDecimals,
+		StatId.Attack => AttackDecimals,
+		_ => GainDecimals,
+	};
 
 	/// <summary>10^decimals: the raw value that stands for 1.0.</summary>
 	public static int Scale(int decimals)

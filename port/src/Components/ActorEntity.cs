@@ -48,6 +48,20 @@ public partial class ActorEntity : ForgeEntity
 		EffectsManager.ApplyEffect(new Effect(data, new EffectOwnership(this, this)));
 	}
 
+	/// <summary>Applies a permanent passive at <paramref name="level"/>; keep the handle to remove it later.</summary>
+	public ActiveEffectHandle? ApplyPassive(PassiveDef def, int level)
+	{
+		return EffectsManager.ApplyEffect(new Effect(PassiveEffects.Build(def), new EffectOwnership(this, this), level));
+	}
+
+	public void RemovePassive(ActiveEffectHandle? handle)
+	{
+		if (handle is { IsValid: true })
+		{
+			EffectsManager.RemoveEffect(handle);
+		}
+	}
+
 	private void SetFromDisplay(string key, float displayValue)
 	{
 		Apply(StatEffects.SetBase(key, Attributes[key].ToRawValue(displayValue)));
