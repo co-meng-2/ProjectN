@@ -14,10 +14,10 @@ Spec: `docs/superpowers/specs/2026-10-14-csharp-forge-port-design.md` (binding).
 | 2b | Actors (Building, Projectile, Pickup, Enemy, Player) + Volley/Dash + AutoCaster | `plans/2026-10-14-csharp-port-slice-2b-actors.md` | done |
 | 2c | Stage (`StageRoot`) + HUD + dev stage scene + first `port/data` `.tres` + swarm benchmark | `plans/2026-10-14-csharp-port-slice-2c-stage-hud.md` | done |
 | 3 | shop: `AbilityDef`, `GradeTable`, `Loadout`, `GradeService`, `AbilityInstaller`, Blade Sweep + `AreaStrike`, Bounty, `AbilityBar`, shop data | `plans/2026-10-14-csharp-port-slice-3-shop.md` | done |
-| 4 | events + boss | not planned | **next** |
-| 5 | meta + cutover | not planned | later |
+| 4 | events (`StageEvent`, `EventDirector`, statue/meteor/elite) + boss (`BossActor`, `BossBrain`, `BossDirector`, four patterns) + HUD banner/arrows/boss bar | `plans/2026-10-14-csharp-port-slice-4-events-boss.md` | done |
+| 5 | meta (logo, menu, hub, save, gem, skill tree, settings) + cutover | not planned | **next** |
 
-Test totals at the end of 3: GDScript 648, C# 382 (`tools/run_tests.sh`).
+Test totals at the end of 4: GDScript 648, C# 544 (`tools/run_tests.sh`).
 
 Play the C# port: `"$GODOT_BIN" --path . res://port/src/App/dev_stage.tscn` (stage_01 with HUD and the ability shop: click a slot to buy/promote, Ctrl+click to reroll; R restarts after the result). The project's main scene is still the GDScript game.
 
