@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="StageDef" format=3]
+
+[ext_resource type="Script" uid="uid://edi68dpd4cif" path="res://src/defs/stage_def.gd" id="1_stage"]
+[ext_resource type="Script" uid="uid://bpy31rqnwoa0w" path="res://src/defs/stat_block.gd" id="2_stats"]
+[ext_resource type="Script" uid="uid://7lu42npm7k84" path="res://src/defs/enemy_def.gd" id="3_enemy_script"]
+[ext_resource type="Texture2D" uid="uid://5ym870q28bhr" path="res://assets/art/world/grass.png" id="4_grass"]
+[ext_resource type="Texture2D" uid="uid://cadl0aiogqx84" path="res://assets/art/farmrpg/house.png" id="5_house"]
+[ext_resource type="Resource" uid="uid://xtn3qim6evc7" path="res://data/enemies/orc.tres" id="6_orc"]
+[ext_resource type="Resource" uid="uid://cvw2bvotb2gvx" path="res://data/enemies/orc_swarmer.tres" id="7_swarmer"]
+[ext_resource type="Resource" uid="uid://c07j5gs0twowk" path="res://data/waves/stage_01_waves.tres" id="8_waves"]
+[ext_resource type="Resource" path="res://data/grade_table.tres" id="9_grades"]
+[ext_resource type="Resource" path="res://data/events/stage_01_events.tres" id="10_events"]
+[ext_resource type="Resource" path="res://data/bosses/orc_warlord.tres" id="11_boss"]
+
+[sub_resource type="Resource" id="Resource_building"]
+script = ExtResource("2_stats")
+max_health = 400.0
+move_speed = 0.0
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_house"]
+atlas = ExtResource("5_house")
+region = Rect2(2, 2, 76, 90)
+
+[resource]
+script = ExtResource("1_stage")
+id = &"stage_02"
+display_name = "Orc Frontier"
+ground_texture = ExtResource("4_grass")
+building_texture = SubResource("AtlasTexture_house")
+building_stats = SubResource("Resource_building")
+trickle_enemies = Array[ExtResource("3_enemy_script")]([ExtResource("6_orc"), ExtResource("7_swarmer")])
+waves = ExtResource("8_waves")
+start_gold = 200
+start_stone = 0
+drop_multiplier = 10000.0
+grade_table = ExtResource("9_grades")
+events = ExtResource("10_events")
+boss = ExtResource("11_boss")
+gem_reward = 20

@@ -10,6 +10,8 @@ const DATA_FILES: PackedStringArray = [
 	"res://data/enemies/elite_orc.tres",
 	"res://data/waves/stage_01_waves.tres",
 	"res://data/stages/stage_01.tres",
+	"res://data/stages/stage_02.tres",
+	"res://data/stages/stage_catalog.tres",
 	"res://data/grade_table.tres",
 	"res://data/projectiles/arrow.tres",
 	"res://data/projectiles/boss_bolt.tres",
@@ -202,3 +204,20 @@ func test_boss_patterns_carry_the_spec_numbers() -> void:
 func test_stage_01_pays_gem() -> void:
 	var stage := load("res://data/stages/stage_01.tres") as StageDef
 	assert_true(stage.gem_reward > 0, "a cleared stage_01 must pay gem")
+
+
+func test_stage_02_validates_and_pays_gem() -> void:
+	var stage := load("res://data/stages/stage_02.tres") as StageDef
+	assert_not_null(stage)
+	assert_no_errors(stage.validate(), "stage_02")
+	assert_eq(stage.id, &"stage_02")
+	assert_true(stage.gem_reward > 0)
+
+
+func test_the_shipped_catalog_is_valid_and_ordered() -> void:
+	var catalog := load("res://data/stages/stage_catalog.tres") as StageCatalog
+	assert_not_null(catalog)
+	assert_no_errors(catalog.validate(), "stage_catalog")
+	assert_eq(catalog.stages.size(), 2)
+	assert_eq(catalog.stages[0].id, &"stage_01")
+	assert_eq(catalog.stages[1].id, &"stage_02")
