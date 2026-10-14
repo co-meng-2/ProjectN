@@ -27,4 +27,26 @@ public class TimelineBarTest : TestCase
 		bar.SetElapsed(5f);
 		Assert.AlmostEq(bar.MarkX(10f), 0.0);
 	}
+
+	public void TestEventMarksAreKeptApartFromWaveMarks()
+	{
+		TimelineBar bar = Adopt(new TimelineBar());
+		bar.Size = new Vector2(400f, 20f);
+		bar.Configure(100f, [25f], [40f, 70f]);
+		Assert.SequenceEq(bar.EventMarks, new[] { 40f, 70f });
+		Assert.AlmostEq(bar.MarkX(70f), 280.0);
+		bar.Configure(100f, [25f]);
+		Assert.Eq(bar.EventMarks.Length, 0, "reconfiguring without events clears them");
+	}
+
+	public void TestTheBossLabelAppearsOnceTheBossDoes()
+	{
+		TimelineBar bar = MakeBar(100f, 25f, 50f);
+		Assert.False(bar.IsShowingBoss);
+		bar.ShowBoss();
+		Assert.True(bar.IsShowingBoss);
+		var label = bar.GetNode<Label>("BossLabel");
+		Assert.True(label.Visible);
+		Assert.Eq(label.Text, "BOSS");
+	}
 }

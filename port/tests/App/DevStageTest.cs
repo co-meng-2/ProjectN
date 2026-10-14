@@ -4,6 +4,7 @@ using VampireSurvivor.App;
 using VampireSurvivor.Core;
 using VampireSurvivor.Defs;
 using VampireSurvivor.Stage;
+using VampireSurvivor.Tests.Actors;
 using VampireSurvivor.Tests.Support;
 using VampireSurvivor.Ui;
 
@@ -76,5 +77,24 @@ public class DevStageTest : TestCase
 		dev.Hud.AbilityBar.EmitSignal(AbilityBar.SignalName.RerollRequested, 0);
 		Assert.True(dev.Stage.Loadout!.Slot(0)!.IsEmpty, "the shop closes with the run");
 		Assert.Eq(dev.Stage.RunState!.Wallet.Gold, 200);
+	}
+	public void TestTheHudFollowsTheStageEventsAndTheBoss()
+	{
+		var dev = GD.Load<PackedScene>("res://port/src/App/dev_stage.tscn").Instantiate<DevStage>();
+		dev.StageDef = DefFactory.Fresh<StageDef>("res://port/data/stages/stage_01.tres");
+		dev.StageDef.Duration = 30f;
+		dev.StageDef.Waves = null;
+		dev.StageDef.TrickleEnemies = [];
+		dev.StageDef.Events = DefFactory.Schedule([DefFactory.Event(DefFactory.Packed(new ProbeEvent { Endless = true }), 1f)], 1, 5f, 10f, 10f);
+		dev.StageDef.Boss = DefFactory.Boss(GD.Load<PackedScene>(BossActorTest.BossScene), new ProbePatternDef());
+		Adopt(dev);
+		dev.Stage!.Clock.SetPhysicsProcess(false);
+		Assert.Eq(dev.Hud!.Timeline.EventMarks.Length, 1, "the rolled event time is on the timeline");
+		dev.Stage.Clock.Step(11f);
+		Assert.True(dev.Hud.EventBanner.Visible, "the banner shows the running event");
+		dev.Stage.Clock.Step(20f);
+		Assert.True(dev.Hud.BossBar.Visible, "the boss bar shows the boss");
+		Assert.True(dev.Hud.Timeline.IsShowingBoss);
+		Assert.Eq(dev.Hud.EventBanner.TitleText, "Probe: Interrupted", "the boss interrupted the event");
 	}
 }

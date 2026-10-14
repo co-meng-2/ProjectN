@@ -1,10 +1,13 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://port/src/Ui/Hud/Hud.cs" id="1_hud"]
 [ext_resource type="Script" path="res://port/src/Ui/Hud/TimelineBar.cs" id="2_timeline"]
 [ext_resource type="PackedScene" path="res://port/src/Ui/Hud/ability_bar.tscn" id="3_bar"]
+[ext_resource type="Script" path="res://port/src/Ui/Hud/EventBanner.cs" id="4_banner"]
+[ext_resource type="Script" path="res://port/src/Ui/Hud/BossBar.cs" id="5_boss_bar"]
+[ext_resource type="Script" path="res://port/src/Ui/Hud/ObjectiveArrows.cs" id="6_arrows"]
 
-[node name="Hud" type="CanvasLayer" node_paths=PackedStringArray("PlayerBar", "BuildingBar", "WalletLabel", "Timeline", "ResultLabel", "AbilityBar")]
+[node name="Hud" type="CanvasLayer" node_paths=PackedStringArray("PlayerBar", "BuildingBar", "WalletLabel", "Timeline", "ResultLabel", "AbilityBar", "EventBanner", "ObjectiveArrows", "BossBar")]
 script = ExtResource("1_hud")
 PlayerBar = NodePath("Root/Bars/PlayerBar")
 BuildingBar = NodePath("Root/Bars/BuildingBar")
@@ -12,6 +15,9 @@ WalletLabel = NodePath("Root/Bars/WalletLabel")
 Timeline = NodePath("Root/Timeline")
 ResultLabel = NodePath("Root/ResultLabel")
 AbilityBar = NodePath("Root/AbilityBar")
+EventBanner = NodePath("Root/EventBanner")
+ObjectiveArrows = NodePath("Root/ObjectiveArrows")
+BossBar = NodePath("Root/BossBar")
 
 [node name="Root" type="Control" parent="."]
 layout_mode = 3
@@ -21,6 +27,16 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+
+[node name="ObjectiveArrows" type="Control" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("6_arrows")
 
 [node name="Bars" type="VBoxContainer" parent="Root"]
 layout_mode = 0
@@ -86,3 +102,31 @@ offset_right = 186.0
 offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 0
+
+[node name="BossBar" type="VBoxContainer" parent="Root"]
+visible = false
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 48.0
+offset_right = 200.0
+offset_bottom = 88.0
+grow_horizontal = 2
+mouse_filter = 2
+script = ExtResource("5_boss_bar")
+
+[node name="EventBanner" type="VBoxContainer" parent="Root"]
+visible = false
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -296.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = 96.0
+grow_horizontal = 0
+mouse_filter = 2
+script = ExtResource("4_banner")

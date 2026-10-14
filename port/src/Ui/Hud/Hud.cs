@@ -33,7 +33,16 @@ public partial class Hud : CanvasLayer
 	[Export]
 	public AbilityBar AbilityBar { get; set; } = null!;
 
-	public void Bind(Health playerHealth, Health buildingHealth, Wallet wallet, StageClock clock, Timeline timeline)
+	[Export]
+	public EventBanner EventBanner { get; set; } = null!;
+
+	[Export]
+	public ObjectiveArrows ObjectiveArrows { get; set; } = null!;
+
+	[Export]
+	public BossBar BossBar { get; set; } = null!;
+
+	public void Bind(Health playerHealth, Health buildingHealth, Wallet wallet, StageClock clock, Timeline timeline, float[]? eventTimes = null)
 	{
 		playerHealth.Changed += OnPlayerHealthChanged;
 		buildingHealth.Changed += OnBuildingHealthChanged;
@@ -42,8 +51,39 @@ public partial class Hud : CanvasLayer
 		_wallet = wallet;
 		wallet.Changed += OnWalletChanged;
 		OnWalletChanged(wallet.Gold, wallet.Stone, wallet.Tickets);
-		Timeline.Configure(timeline.Duration, timeline.Marks);
+		Timeline.Configure(timeline.Duration, timeline.Marks, eventTimes);
 		clock.Ticked += Timeline.SetElapsed;
+	}
+
+	/// <summary>EventDirector.EventStarted.</summary>
+	public void ShowEvent(EventDef def, StageEvent stageEvent)
+	{
+		EventBanner.ShowEvent(def, stageEvent);
+		ObjectiveArrows.Track(stageEvent);
+	}
+
+	/// <summary>EventDirector.EventProgressed.</summary>
+	public void ShowEventProgress(EventDef def, string text) => EventBanner.ShowProgress(text);
+
+	/// <summary>EventDirector.EventEnded.</summary>
+	public void ShowEventResult(EventDef def, bool success)
+	{
+		EventBanner.ShowResult(def, success);
+		ObjectiveArrows.Clear();
+	}
+
+	/// <summary>EventDirector.EventAborted.</summary>
+	public void ShowEventAborted(EventDef def)
+	{
+		EventBanner.ShowAborted(def);
+		ObjectiveArrows.Clear();
+	}
+
+	/// <summary>StageRoot.BossAppeared.</summary>
+	public void ShowBoss(Health bossHealth, string displayName)
+	{
+		BossBar.ShowBoss(bossHealth, displayName);
+		Timeline.ShowBoss();
 	}
 
 	public void ShowResult(RunResult result)
