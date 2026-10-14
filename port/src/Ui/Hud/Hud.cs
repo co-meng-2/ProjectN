@@ -29,6 +29,10 @@ public partial class Hud : CanvasLayer
 	[Export]
 	public Label ResultLabel { get; set; } = null!;
 
+	/// <summary>The shop's slots; bound by whoever owns the stage, which also routes its requests.</summary>
+	[Export]
+	public AbilityBar AbilityBar { get; set; } = null!;
+
 	public void Bind(Health playerHealth, Health buildingHealth, Wallet wallet, StageClock clock, Timeline timeline)
 	{
 		playerHealth.Changed += OnPlayerHealthChanged;

@@ -76,4 +76,11 @@ public class HudTest : TestCase
 		rig.Wallet.Add(CurrencyKind.Gold, 5);
 		Assert.Eq(rig.Wallet.Gold, 5, "the wallet keeps working; the freed HUD's label is never touched");
 	}
+
+	public void TestTheHudHostsAnUnboundAbilityBar()
+	{
+		Rig rig = MakeRig();
+		Assert.NotNull(rig.Hud.AbilityBar);
+		Assert.Eq(rig.Hud.AbilityBar.GetChildCount(), 0, "empty until its owner binds it");
+	}
 }

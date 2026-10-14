@@ -1,15 +1,17 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://port/src/Ui/Hud/Hud.cs" id="1_hud"]
 [ext_resource type="Script" path="res://port/src/Ui/Hud/TimelineBar.cs" id="2_timeline"]
+[ext_resource type="PackedScene" path="res://port/src/Ui/Hud/ability_bar.tscn" id="3_bar"]
 
-[node name="Hud" type="CanvasLayer" node_paths=PackedStringArray("PlayerBar", "BuildingBar", "WalletLabel", "Timeline", "ResultLabel")]
+[node name="Hud" type="CanvasLayer" node_paths=PackedStringArray("PlayerBar", "BuildingBar", "WalletLabel", "Timeline", "ResultLabel", "AbilityBar")]
 script = ExtResource("1_hud")
 PlayerBar = NodePath("Root/Bars/PlayerBar")
 BuildingBar = NodePath("Root/Bars/BuildingBar")
 WalletLabel = NodePath("Root/Bars/WalletLabel")
 Timeline = NodePath("Root/Timeline")
 ResultLabel = NodePath("Root/ResultLabel")
+AbilityBar = NodePath("Root/AbilityBar")
 
 [node name="Root" type="Control" parent="."]
 layout_mode = 3
@@ -70,3 +72,17 @@ grow_horizontal = 2
 grow_vertical = 2
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="AbilityBar" parent="Root" instance=ExtResource("3_bar")]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -186.0
+offset_top = -76.0
+offset_right = 186.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
