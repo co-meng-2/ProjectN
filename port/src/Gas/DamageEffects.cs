@@ -12,11 +12,11 @@ public static class DamageEffects
 
 	/// <summary>
 	/// Damages <paramref name="target"/> by <paramref name="amount"/> display units times the source's Attack.
-	/// Zero or negative amounts, and targets without vitals, are ignored: a hit can never heal.
+	/// Zero or negative amounts, targets without vitals and invulnerable targets are ignored: a hit can never heal.
 	/// </summary>
 	public static void Hit(IForgeEntity source, IForgeEntity target, float amount)
 	{
-		if (amount <= 0f || !Stats.TryGet(target, Stats.Health, out _))
+		if (amount <= 0f || !Stats.TryGet(target, Stats.Health, out _) || IsInvulnerable(target))
 		{
 			return;
 		}
@@ -28,5 +28,10 @@ public static class DamageEffects
 		var effect = new Effect(_data.Value, new EffectOwnership(source, source));
 		effect.SetSetByCallerMagnitude(GameplayTags.Request(GameplayTags.DamageAmount), amount);
 		target.EffectsManager.ApplyEffect(effect);
+	}
+
+	private static bool IsInvulnerable(IForgeEntity target)
+	{
+		return target.Tags.AllTags.HasTag(GameplayTags.Request(GameplayTags.StateInvulnerable));
 	}
 }

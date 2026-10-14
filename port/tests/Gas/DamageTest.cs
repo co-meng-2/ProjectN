@@ -70,4 +70,25 @@ public class DamageTest : TestCase
 		DamageEffects.Hit(attacker, victim, 15f);
 		Assert.AlmostEq(HealthOf(victim), 75.0);
 	}
+
+	public void TestInvulnerableTargetTakesNoDamageUntilTheTagIsRemoved()
+	{
+		ActorEntity attacker = ActorFixture.BareActor(this, MakeStats(100f));
+		ActorEntity victim = ActorFixture.BareActor(this, MakeStats(100f));
+		Gamesmiths.Forge.Effects.ActiveEffectHandle? tag = TestEffects.GrantTag(victim, GameplayTags.StateInvulnerable);
+		DamageEffects.Hit(attacker, victim, 10f);
+		Assert.AlmostEq(HealthOf(victim), 100.0, 0.001, "refused while the tag is present");
+		victim.EffectsManager.RemoveEffect(tag!);
+		DamageEffects.Hit(attacker, victim, 10f);
+		Assert.AlmostEq(HealthOf(victim), 90.0);
+	}
+
+	public void TestAnInvulnerableSourceStillDealsDamage()
+	{
+		ActorEntity attacker = ActorFixture.BareActor(this, MakeStats(100f));
+		ActorEntity victim = ActorFixture.BareActor(this, MakeStats(100f));
+		TestEffects.GrantTag(attacker, GameplayTags.StateInvulnerable);
+		DamageEffects.Hit(attacker, victim, 10f);
+		Assert.AlmostEq(HealthOf(victim), 90.0);
+	}
 }
