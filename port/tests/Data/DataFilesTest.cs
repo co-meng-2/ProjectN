@@ -2,8 +2,10 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using VampireSurvivor.Abilities;
+using VampireSurvivor.Components;
 using VampireSurvivor.Core;
 using VampireSurvivor.Defs;
+using VampireSurvivor.Gas;
 using VampireSurvivor.Stage;
 using VampireSurvivor.Tests.Support;
 
@@ -77,5 +79,63 @@ public class DataFilesTest : TestCase
 	{
 		StageRoot stage = Adopt(GD.Load<PackedScene>("res://port/src/Stage/stage.tscn").Instantiate<StageRoot>());
 		Assert.True(stage.Start(GD.Load<StageDef>(Stage01), GD.Load<PlayerProfile>(Profile)), "the exact call DevStage makes");
+	}
+
+	private static readonly (string File, string Stat, float Level1, float Level6)[] Passives =
+	[
+		("prospector", Stats.GoldGain, 1.25f, 3.5f),
+		("swift_boots", Stats.MoveSpeed, 110f, 185f),
+		("vitality", Stats.MaxHealth, 120f, 340f),
+		("might", Stats.Attack, 1.1f, 2f),
+	];
+
+	private static AbilityDef Catalog(string file) => GD.Load<AbilityDef>($"res://port/data/abilities/{file}.tres");
+
+	public void TestTheCatalogPassivesScaleWithTheGradeLevel()
+	{
+		foreach (var (file, stat, level1, level6) in Passives)
+		{
+			AbilityDef def = Catalog(file);
+			Assert.Null(def.Active, $"{file} is a pure passive");
+			ActorEntity actor = ActorFixture.BareActor(this, new StatBlock());
+			double baseValue = actor.Attributes[stat].DisplayValue;
+			var handle = actor.ApplyPassive(def.Passive!, 1);
+			Assert.AlmostEq(actor.Attributes[stat].DisplayValue, level1, 0.001, $"{file} at level 1");
+			actor.RemovePassive(handle);
+			Assert.AlmostEq(actor.Attributes[stat].DisplayValue, baseValue, 0.001, $"{file} removed");
+			actor.ApplyPassive(def.Passive!, 6);
+			Assert.AlmostEq(actor.Attributes[stat].DisplayValue, level6, 0.001, $"{file} at level 6");
+		}
+	}
+
+	public void TestThePassiveCurvesRiseStrictlyOverTheSixLevels()
+	{
+		foreach (var (file, _, _, _) in Passives)
+		{
+			Curve curve = Catalog(file).Passive!.ByLevel!;
+			for (int level = 2; level <= 6; level++)
+			{
+				Assert.True(curve.Sample(level) > curve.Sample(level - 1), $"{file} level {level}");
+			}
+		}
+	}
+
+	public void TestTheProfileOffersTheSevenCatalogAbilitiesAndEachValidates()
+	{
+		PlayerProfile profile = GD.Load<PlayerProfile>(Profile);
+		var ids = profile.Abilities.Select(a => a.Id.ToString()).ToList();
+		Assert.SequenceEq(ids, new[] { "prospector", "swift_boots", "vitality", "might", "volley", "blade_sweep", "bounty" });
+		foreach (AbilityDef def in profile.Abilities)
+		{
+			Assert.NoErrors(def.Validate(), def.Id);
+			if (def.Active is not null)
+			{
+				Assert.NoErrors(AbilityFactory.Validate(def.Active), def.Id);
+			}
+		}
+
+		Assert.True(Catalog("volley").Active is VolleyDef { AutoFire: true });
+		Assert.True(Catalog("blade_sweep").Active is BladeSweepDef { AutoFire: true });
+		Assert.Eq(Catalog("bounty").Active!.TriggerEventTag, GameplayTags.EventKill);
 	}
 }

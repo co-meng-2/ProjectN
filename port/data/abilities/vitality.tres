@@ -1,0 +1,29 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://port/src/Defs/AbilityDef.cs" id="1_def"]
+[ext_resource type="Texture2D" path="res://assets/art/icons/apple_red.png" id="2_icon"]
+[ext_resource type="Texture2D" path="res://assets/art/icons/apple_yellow.png" id="3_revealed"]
+[ext_resource type="Script" path="res://port/src/Defs/PassiveDef.cs" id="4_passive"]
+
+[sub_resource type="Curve" id="Curve_levels"]
+min_domain = 1.0
+max_domain = 6.0
+max_value = 250.0
+_data = [Vector2(1, 20), 0.0, 0.0, 0, 0, Vector2(2, 40), 0.0, 0.0, 0, 0, Vector2(3, 70), 0.0, 0.0, 0, 0, Vector2(4, 110), 0.0, 0.0, 0, 0, Vector2(5, 160), 0.0, 0.0, 0, 0, Vector2(6, 240), 0.0, 0.0, 0, 0]
+point_count = 6
+
+[sub_resource type="Resource" id="Passive"]
+script = ExtResource("4_passive")
+Stat = 0
+Operation = 0
+ByLevel = SubResource("Curve_levels")
+
+[resource]
+script = ExtResource("1_def")
+Id = &"vitality"
+DisplayName = "Vitality"
+Description = "More maximum health. Does not heal."
+Icon = ExtResource("2_icon")
+RevealedIcon = ExtResource("3_revealed")
+MinGrade = 1
+Passive = SubResource("Passive")

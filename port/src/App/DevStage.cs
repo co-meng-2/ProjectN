@@ -7,8 +7,8 @@ using VampireSurvivor.Ui;
 namespace VampireSurvivor.App;
 
 /// <summary>
-/// Temporary stage screen for the port (slice 2c): runs one stage with its HUD and the building's health bar, shows the
-/// result and restarts on R. The real Main (hub, save, gem) replaces it in slice 5.
+/// Temporary stage screen for the port: runs one stage with its HUD (ability shop included) and the building's health bar,
+/// shows the result and restarts on R. The real Main (hub, save, gem) replaces it in slice 5.
 /// </summary>
 public partial class DevStage : Node
 {
@@ -58,6 +58,9 @@ public partial class DevStage : Node
 		}
 
 		Hud.Bind(Stage.Player.Health, Stage.Building.Health, Stage.RunState!.Wallet, Stage.Clock, Stage.Waves.Timeline);
+		Hud.AbilityBar.Bind(Stage.Loadout!, Stage.RunState.Wallet, Stage.GradeService!);
+		Hud.AbilityBar.PromoteRequested += OnPromoteRequested;
+		Hud.AbilityBar.RerollRequested += OnRerollRequested;
 		_buildingBar.Bind(Stage.Building.Health, Stage.Building, BuildingBarOffset);
 		Stage.Finished += OnFinished;
 	}
@@ -72,6 +75,23 @@ public partial class DevStage : Node
 				RemoveChild(node);
 				node.QueueFree();
 			}
+		}
+	}
+
+	/// <summary>The HUD only asks; the app decides. The shop closes with the run.</summary>
+	private void OnPromoteRequested(int index)
+	{
+		if (Result is null)
+		{
+			Stage?.GradeService?.Promote(index);
+		}
+	}
+
+	private void OnRerollRequested(int index)
+	{
+		if (Result is null)
+		{
+			Stage?.GradeService?.Reroll(index);
 		}
 	}
 

@@ -5,6 +5,7 @@ using VampireSurvivor.Core;
 using VampireSurvivor.Defs;
 using VampireSurvivor.Stage;
 using VampireSurvivor.Tests.Support;
+using VampireSurvivor.Ui;
 
 namespace VampireSurvivor.Tests.App;
 
@@ -58,5 +59,23 @@ public class DevStageTest : TestCase
 		Assert.False(dev.Hud!.ResultLabel.Visible);
 		await NextFrame();
 		Assert.False(GodotObject.IsInstanceValid(first), "the old stage was freed");
+	}
+
+	public void TestAPromoteRequestFromTheBarBuysASlot()
+	{
+		DevStage dev = MakeDev();
+		dev.Hud!.AbilityBar.EmitSignal(AbilityBar.SignalName.PromoteRequested, 0);
+		Assert.False(dev.Stage!.Loadout!.Slot(0)!.IsEmpty, "bought");
+		Assert.Eq(dev.Stage.RunState!.Wallet.Gold, 100, "200 - 100");
+	}
+
+	public void TestShopRequestsAfterTheResultAreIgnored()
+	{
+		DevStage dev = MakeDev();
+		ActorFixture.Kill(this, dev.Stage!.Building.Entity);
+		dev.Hud!.AbilityBar.EmitSignal(AbilityBar.SignalName.PromoteRequested, 0);
+		dev.Hud.AbilityBar.EmitSignal(AbilityBar.SignalName.RerollRequested, 0);
+		Assert.True(dev.Stage.Loadout!.Slot(0)!.IsEmpty, "the shop closes with the run");
+		Assert.Eq(dev.Stage.RunState!.Wallet.Gold, 200);
 	}
 }
