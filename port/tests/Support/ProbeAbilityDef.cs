@@ -12,6 +12,9 @@ public sealed partial class ProbeAbilityDef : ActiveAbilityDef
 
 	public bool StayActive { get; set; }
 
+	/// <summary>The ability level of the latest start.</summary>
+	public int LastLevel { get; set; }
+
 	public override IAbilityBehavior CreateBehavior() => new ProbeBehavior(this);
 
 	private sealed class ProbeBehavior(ProbeAbilityDef owner) : IAbilityBehavior
@@ -19,6 +22,7 @@ public sealed partial class ProbeAbilityDef : ActiveAbilityDef
 		public void OnStarted(AbilityBehaviorContext context)
 		{
 			owner.Starts++;
+			owner.LastLevel = context.Level;
 			context.AbilityHandle.CommitCooldown();
 			if (!owner.StayActive)
 			{
