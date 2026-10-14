@@ -13,12 +13,13 @@ Spec: `docs/superpowers/specs/2026-10-14-csharp-forge-port-design.md` (binding).
 | 2a | Defs + Components | `plans/2026-10-14-csharp-port-slice-2a-defs-components.md` | done |
 | 2b | Actors (Building, Projectile, Pickup, Enemy, Player) + Volley/Dash + AutoCaster | `plans/2026-10-14-csharp-port-slice-2b-actors.md` | done |
 | 2c | Stage (`StageRoot`) + HUD + dev stage scene + first `port/data` `.tres` + swarm benchmark | `plans/2026-10-14-csharp-port-slice-2c-stage-hud.md` | done |
-| 3 | shop/abilities (`Loadout`, `GradeService`, `AbilityInstaller`, `AbilityBar`) | not planned | **next** |
-| 4-5 | events + boss, meta + cutover | not planned | later |
+| 3 | shop: `AbilityDef`, `GradeTable`, `Loadout`, `GradeService`, `AbilityInstaller`, Blade Sweep + `AreaStrike`, Bounty, `AbilityBar`, shop data | `plans/2026-10-14-csharp-port-slice-3-shop.md` | done |
+| 4 | events + boss | not planned | **next** |
+| 5 | meta + cutover | not planned | later |
 
-Test totals at the end of 2c: GDScript 648, C# 289 (`tools/run_tests.sh`).
+Test totals at the end of 3: GDScript 648, C# 382 (`tools/run_tests.sh`).
 
-Play the C# port: `"$GODOT_BIN" --path . res://port/src/App/dev_stage.tscn` (stage_01 with HUD; R restarts after the result). The project's main scene is still the GDScript game.
+Play the C# port: `"$GODOT_BIN" --path . res://port/src/App/dev_stage.tscn` (stage_01 with HUD and the ability shop: click a slot to buy/promote, Ctrl+click to reroll; R restarts after the result). The project's main scene is still the GDScript game.
 
 Swarm benchmark (`"$GODOT_BIN" --path . res://port/tools/swarm_bench.tscn`, add `--headless` for the physics cost only), 2026-10-14 on the owner's machine:
 
