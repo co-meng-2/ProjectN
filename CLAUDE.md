@@ -64,6 +64,12 @@ Design: `docs/superpowers/specs/2026-10-13-vampire-survivor-base-design.md`. Pla
 - Save: JSON at `user://save.json` (`SaveData` -> `SaveStore`). To change the schema bump `SaveMigrations.CURRENT_VERSION`
   and append one step to `SaveMigrations.steps()`; add a migration test. Unreadable files are moved to `save.json.bak`.
   `Main` sets `RunResult.gem` from `StageDef.gem_for(outcome)` and credits it once per run; gem is the only persistent currency.
+- Phase 4b hub: `Start` goes to `HUB`; `Hub` (`src/meta/hub/`) lists `data/stages/stage_catalog.tres` (an ordered `StageCatalog`;
+  order is unlock order) and sends `go(STAGE, {PARAM_STAGE_DEF: stage})`. Unlock is derived (`StageProgress`: first stage
+  open, otherwise the previous stage must be in `SaveData.cleared_stages`; a cleared stage stays playable) - never store an
+  unlocked list. `Main` calls `SaveService.record_clear(stage_def.id)` for a CLEARED run next to the gem credit and saves
+  once; Enter on the result screen returns to the hub. Save schema is v2; ids in `cleared_stages` that are not in the
+  catalog are kept, not dropped.
 
 ## Adding an enemy (data only)
 1. Duplicate `data/enemies/orc.tres`; change `id`, stats, tint/scale, contact values, `target_policy`.
@@ -100,7 +106,13 @@ Design: `docs/superpowers/specs/2026-10-13-vampire-survivor-base-design.md`. Pla
    `StageDef` (`stage_01.tres` uses 10000 for prototyping - set it to 1 for balanced play).
 4. Icons in `assets/art/icons/` are currently generated placeholders (see `assets/SOURCES.md`).
 
+## Adding a stage (data only)
+1. Duplicate `data/stages/stage_02.tres` (drop the header `uid` so it does not clash); change `id`, `display_name`, stats,
+   `gem_reward`, and point `waves`/`events`/`boss` at new or shared `.tres` files. `StageDef.validate()` must pass.
+2. Append it to `data/stages/stage_catalog.tres` (`stages` order = unlock order) and add the file to `DATA_FILES` in
+   `tests/data/test_game_data.gd`; update the catalog order assertion in the same file.
+
 ## Running the game
 - Main scene: `src/app/logo.tscn` (logo -> main menu -> `src/app/main.tscn` as the stage screen). `application/run/main_scene`
   in `project.godot` was hand-edited (the godot-ai tool refuses to set it); re-set it in Project Settings if it goes missing.
-  After a run ends Enter returns to the main menu; R still restarts (dev shortcut - a restarted clear pays gem again).
+  After a run ends Enter returns to the hub; R still restarts (dev shortcut - a restarted clear pays gem again).
