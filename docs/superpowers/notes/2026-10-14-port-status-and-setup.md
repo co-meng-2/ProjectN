@@ -32,6 +32,8 @@ Swarm benchmark (`"$GODOT_BIN" --path . res://port/tools/swarm_bench.tscn`, add 
 
 ## How we work (so a new session continues the same way)
 
+- **This project is the owner's textbook for learning Godot (spec section 1).** Prefer a few well-named concepts over clever abstraction, explain the *why* in doc comments, and after every slice update the spec's section 9 table ("what this teaches") with the lessons the slice added.
+
 - Per slice: brainstorm is done (spec); write a plan (`superpowers:writing-plans`), execute it task by task in the main session (`superpowers:executing-plans`, TDD: watch every test fail first), then a fresh-context final review on the most capable model, fix Critical/Important with a test that fails first, merge to `main` and push. Minor review findings are listed as "deferred" in the final message, not fixed.
 - Work on a branch `port/<slice>`; never stage the owner's own uncommitted edits (`src/app/logo.gd`, `src/app/main.gd`); `git add` explicit paths only.
 - Decisions still open for later slices (from reviews): `AutoCaster` activate/end churn when nothing is in range (slice 3), `AbilityContext.Wallet` nullability for the boss (slice 4), per-slot cooldowns for two slots holding the same attack (slice 3). See the spec's slice notes.

@@ -201,16 +201,16 @@ Every slice ports its layer's tests with it.
 | `Core/` | plain C# (`sealed class`, `record struct`, C# `event`) - "it does not have to be a Node" |
 | `Defs/` | `[GlobalClass] partial class : Resource` + `[Export]`; data that selects code (`ActiveAbilityDef` polymorphism); `Validate()` catches bad data at start |
 | `Gas/` | a third-party adapter layer: fixed-point stats, `CustomExecution`, building data objects with builders, a constants file that generates a config file |
-| `Components/` | node composition; `Bind` injection; a seam that subclasses a plugin node; `_Process` vs `_PhysicsProcess` and test-driven `Tick` |
+| `Components/` | node composition; `Bind` injection; a seam that subclasses a plugin node; `_Process` vs `_PhysicsProcess` and test-driven `Tick`; `AreaStrike` as the one area-hit path (`resource_local_to_scene` shapes, a `Lifetime` that frees its owner) |
 | `Actors/` | scenes as component assemblies; `[Export] Node` references; `CallDeferred` inside physics callbacks |
-| `Stage/` | composition root and explicit wiring; `[Signal]` delegates and `+=` |
-| `Abilities/` | model (`Loadout`), rules (`GradeService`), mirror (`AbilityInstaller`), behaviour (`IAbilityBehavior`); lifetime by handles |
+| `Stage/` | composition root and explicit wiring; `[Signal]` delegates and `+=`; why the root is `StageRoot` (a class named like its namespace cannot be referenced from other namespaces, CS0118); `RemoveChild` before `QueueFree` so a discarded run leaves its groups at once; `Callable.From(...).CallDeferred()` for work that must not run inside a physics callback |
+| `Abilities/` | model (`Loadout`), rules (`GradeService`), mirror (`AbilityInstaller`), behaviour (`IAbilityBehavior`); lifetime by handles; Forge blocks by tag, so per-slot cooldown tags make duplicate slots stack; order matters when swapping (passive: add new then remove old, attack: revoke old then grant new); event-triggered abilities (`IAbilityBehavior<Node>`, `AbilityTriggerData.ForEvent`) |
 | `Boss/`, `Events/` | control logic is plain code, behaviour is an ability, placed things are actors |
-| `Ui/` | views read models through `Bind` and only emit request signals |
-| `App/`, `Meta/` | sparing autoloads, `System.Text.Json`, `user://`, migrations |
+| `Ui/` | views read models through `Bind` and only emit request signals; Godot signals disconnect themselves when the receiver is freed, plain C# events (`Wallet.Changed`) do not, so views unsubscribe in `_ExitTree` (tests prove it by freeing the view and touching the model) |
+| `App/`, `Meta/` | sparing autoloads, `System.Text.Json`, `user://`, migrations; the app (not the HUD) decides what a request does (`DevStage` routes the ability bar to the shop only while no result is shown) |
 | `tests/` | reflection runner, `async Task` tests with `ToSignal`, architecture tests |
 
-Suggested reading order: `Core/Wallet` -> `Defs/StatBlock`, `AbilityDef` -> `Gas/Attributes/VitalsAttributes`, `DamageEffects` -> `Components/ActorEntity`, `Health` -> `Actors/Enemy` -> `Stage/Stage.Wire` -> `Abilities/AbilityInstaller`, `Attacks/VolleyBehavior` -> `Boss/BossBrain` -> `Ui/Hud` -> `App/Main` -> `tests/TestRunner`.
+Suggested reading order: `Core/Wallet` -> `Defs/StatBlock`, `AbilityDef` -> `Gas/Attributes/VitalsAttributes`, `DamageEffects` -> `Components/ActorEntity`, `Health` -> `Actors/Enemy` -> `Stage/StageRoot.Start` and `Wire` -> `Abilities/GradeService`, `AbilityInstaller`, `Attacks/VolleyBehavior`, `BountyBehavior` -> `Boss/BossBrain` -> `Ui/Hud`, `AbilityBar` -> `App/DevStage` (later `App/Main`) -> `tests/TestRunner`.
 
 ## 10. Risks
 
