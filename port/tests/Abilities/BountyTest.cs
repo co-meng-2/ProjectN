@@ -28,27 +28,27 @@ public class BountyTest : TestCase
 	{
 		var (entity, context, _) = Rig(4);
 		Kill(entity);
-		Assert.Eq(context.Wallet.Gold, 5);
+		Assert.Eq(context.Wallet!.Gold, 5);
 		entity.Raise<Node>(GameplayTags.EventKill, Adopt(new Node()));
-		Assert.Eq(context.Wallet.Gold, 10, "the payload type does not matter");
-		Assert.Eq(context.Wallet.Stone, 0);
+		Assert.Eq(context.Wallet!.Gold, 10, "the payload type does not matter");
+		Assert.Eq(context.Wallet!.Stone, 0);
 	}
 
 	public void TestLevelOneAndSixPayTheCurveEnds()
 	{
 		var (low, lowContext, _) = Rig(1);
 		Kill(low);
-		Assert.Eq(lowContext.Wallet.Gold, 1);
+		Assert.Eq(lowContext.Wallet!.Gold, 1);
 		var (high, highContext, _) = Rig(6);
 		Kill(high);
-		Assert.Eq(highContext.Wallet.Gold, 12);
+		Assert.Eq(highContext.Wallet!.Gold, 12);
 	}
 
 	public void TestIgnoresOtherEvents()
 	{
 		var (entity, context, _) = Rig(2);
 		entity.Raise<Node>(GameplayTags.StateCasting, Adopt(new Node()));
-		Assert.Eq(context.Wallet.Gold, 0);
+		Assert.Eq(context.Wallet!.Gold, 0);
 	}
 
 	public void TestARevokedBountyStopsPaying()
@@ -56,7 +56,7 @@ public class BountyTest : TestCase
 		var (entity, context, grant) = Rig(2);
 		entity.Revoke(grant);
 		Kill(entity);
-		Assert.Eq(context.Wallet.Gold, 0);
+		Assert.Eq(context.Wallet!.Gold, 0);
 	}
 
 	public void TestWithoutAContextItFailsQuietly()
@@ -64,7 +64,7 @@ public class BountyTest : TestCase
 		var (entity, context, _) = Rig(2);
 		entity.Context = null;
 		Kill(entity);
-		Assert.Eq(context.Wallet.Gold, 0);
+		Assert.Eq(context.Wallet!.Gold, 0);
 	}
 
 	public void TestBountyIsStartedByKillsAndNeedsItsCurve()
@@ -75,5 +75,12 @@ public class BountyTest : TestCase
 		Assert.NoErrors(AbilityFactory.Validate(bounty));
 		bounty.GoldPerKill = null;
 		Assert.Eq(bounty.Validate().Count, 1);
+	}
+
+	public void TestWithoutAWalletItFailsQuietly()
+	{
+		var (entity, _, _) = Rig(2);
+		entity.Context = new AbilityContext(Adopt(new Node2D()), Adopt(new Mover()), Adopt(new TargetProvider()), Adopt(new Node2D()), null);
+		Kill(entity);
 	}
 }

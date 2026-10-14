@@ -180,4 +180,27 @@ public class AbilityGrantTest : TestCase
 		actor.Revoke(grant);
 		Assert.False(actor.Tags.AllTags.HasTag(GameplayTags.Request("cooldown.slot.c")), "revoking the slot clears its cooldown");
 	}
+
+	public void TestAbilityEndedReportsTheHandleAndWhetherItWasCancelled()
+	{
+		ActorEntity actor = ActorFixture.BareActor(this, new StatBlock());
+		var ended = new System.Collections.Generic.List<(AbilityHandle Handle, bool Cancelled)>();
+		actor.AbilityEnded += (handle, cancelled) => ended.Add((handle, cancelled));
+		ProbeAbilityDef finishing = MakeProbe(1f, 1f, 1f, 1f, 1f, 1f);
+		AbilityGrant first = actor.Grant(finishing, 1);
+		Assert.True(Fire(first));
+		Assert.Eq(ended.Count, 1);
+		Assert.True(ended[0].Handle == first.Ability, "the ended handle");
+		Assert.False(ended[0].Cancelled);
+		var staying = new ProbeAbilityDef { Tag = GameplayTags.AbilityProbe, StayActive = true };
+		AbilityGrant second = actor.Grant(staying, 1);
+		Assert.True(Fire(second));
+		second.Ability!.Cancel();
+		Assert.Eq(ended.Count, 2);
+		Assert.True(ended[1].Cancelled, "a cancelled instance reports it");
+		AbilityGrant third = actor.Grant(new ProbeAbilityDef { Tag = GameplayTags.AbilityProbe, StayActive = true }, 1);
+		Assert.True(Fire(third));
+		actor.Revoke(third);
+		Assert.Eq(ended.Count, 3, "revoking ends the running instance too (Forge reports it as not cancelled)");
+	}
 }

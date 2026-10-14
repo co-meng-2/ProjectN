@@ -91,4 +91,14 @@ public class DamageTest : TestCase
 		DamageEffects.Hit(attacker, victim, 10f);
 		Assert.AlmostEq(HealthOf(victim), 90.0);
 	}
+
+	public void TestHitReportsWhetherItWasApplied()
+	{
+		ActorEntity attacker = ActorFixture.BareActor(this, MakeStats(100f));
+		ActorEntity victim = ActorFixture.BareActor(this, MakeStats(100f));
+		Assert.True(DamageEffects.Hit(attacker, victim, 10f), "applied");
+		Assert.False(DamageEffects.Hit(attacker, victim, 0f), "zero damage is refused");
+		TestEffects.GrantTag(victim, GameplayTags.StateInvulnerable);
+		Assert.False(DamageEffects.Hit(attacker, victim, 10f), "invulnerable target refused");
+	}
 }

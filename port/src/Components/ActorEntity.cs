@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Gamesmiths.Forge.Core;
@@ -25,10 +26,17 @@ public partial class ActorEntity : ForgeEntity
 	/// <summary>Live grants and the cooldown effects they may have started, per cooldown tag.</summary>
 	private readonly Dictionary<string, GrantBook> _books = [];
 
+	/// <summary>
+	/// An ability instance ended: its handle and whether it was cancelled (revoked, cleaned up) rather than finished.
+	/// The boss brain waits on this to start the next gap.
+	/// </summary>
+	public event Action<AbilityHandle, bool>? AbilityEnded;
+
 	public override void _Ready()
 	{
 		base._Ready();
 		SetProcess(false); // ForgeEntity ticks in _Process; the game ticks in _PhysicsProcess.
+		Abilities.OnAbilityEnded += data => AbilityEnded?.Invoke(data.Ability, data.WasCanceled);
 	}
 
 	/// <summary>What this actor offers its abilities; set by the actor's Setup.</summary>

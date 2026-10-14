@@ -81,7 +81,9 @@ public partial class AreaStrike : Node2D
 			return;
 		}
 
-		DamageEffects.Hit(_attacker!, hurtbox.Entity, _damage);
-		EmitSignal(SignalName.Struck, hurtbox);
+		if (DamageEffects.Hit(_attacker!, hurtbox.Entity, _damage))
+		{
+			EmitSignal(SignalName.Struck, hurtbox);
+		}
 	}
 }
