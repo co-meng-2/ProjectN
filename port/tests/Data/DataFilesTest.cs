@@ -2,11 +2,14 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using VampireSurvivor.Abilities;
+using VampireSurvivor.Boss;
 using VampireSurvivor.Components;
 using VampireSurvivor.Core;
 using VampireSurvivor.Defs;
+using VampireSurvivor.Events;
 using VampireSurvivor.Gas;
 using VampireSurvivor.Stage;
+using VampireSurvivor.Tests.Boss;
 using VampireSurvivor.Tests.Support;
 
 namespace VampireSurvivor.Tests.Data;
@@ -137,5 +140,108 @@ public class DataFilesTest : TestCase
 		Assert.True(Catalog("volley").Active is VolleyDef { AutoFire: true });
 		Assert.True(Catalog("blade_sweep").Active is BladeSweepDef { AutoFire: true });
 		Assert.Eq(Catalog("bounty").Active!.TriggerEventTag, GameplayTags.EventKill);
+	}
+	public void TestTheEliteOrcMatchesTheSpec()
+	{
+		EnemyDef elite = GD.Load<EnemyDef>("res://port/data/enemies/elite_orc.tres");
+		Assert.NoErrors(elite.Validate(), "elite_orc");
+		Assert.Eq(elite.Id.ToString(), "elite_orc");
+		Assert.AlmostEq(elite.Stats!.MaxHealth, 300.0);
+		Assert.AlmostEq(elite.Stats.MoveSpeed, 70.0);
+		Assert.AlmostEq(elite.VisualScale, 1.8);
+		Assert.Eq(elite.TargetPolicy, TargetPolicy.Player);
+		Assert.AlmostEq(elite.ContactDamage, 15.0);
+		Assert.True(elite.Tint.R > 0.9f && elite.Tint.G < 0.5f && elite.Tint.B < 0.5f, "red tint");
+	}
+
+	public void TestStage01SchedulesThreeEventsAndTheOrcWarlord()
+	{
+		StageDef stage = GD.Load<StageDef>(Stage01);
+		EventSchedule events = stage.Events!;
+		Assert.Eq(events.Count, 3);
+		Assert.AlmostEq(events.WindowStart, 20.0);
+		Assert.AlmostEq(events.WindowEnd, 155.0);
+		Assert.AlmostEq(events.MinGap, 30.0);
+		Assert.AlmostEq(events.WaveClearance, 5.0);
+		Assert.SequenceEq(events.Pool.Select(d => d.Id.ToString()).Order(), new[] { "elites", "meteors", "statues" });
+		Assert.NoErrors(EventDirector.ValidateDefs(events), "event controllers");
+		Assert.NoErrors(BossBrain.ValidateDef(stage.Boss), "boss patterns");
+		Assert.NoErrors(BossDirector.ValidateDef(stage.Boss), "boss director");
+		for (int seed = 1; seed <= 10; seed++)
+		{
+			Assert.Eq(events.RollTimes(stage.Duration, stage.Waves!.Times(), new RunRng(seed)).Length, 3, $"seed {seed}");
+		}
+
+		Assert.Eq(stage.Boss!.DisplayName, "Orc Warlord");
+	}
+
+	public void TestEventLimitsAndRewardsMatchTheSpec()
+	{
+		foreach (var (id, limit, gold, stone, tickets) in new[] { ("statues", 25f, 150, 2, 1), ("meteors", 20f, 100, 3, 1), ("elites", 25f, 200, 2, 1) })
+		{
+			EventDef def = GD.Load<EventDef>($"res://port/data/events/{id}.tres");
+			Assert.NoErrors(def.Validate(), id);
+			Assert.Eq(def.Id.ToString(), id);
+			Assert.AlmostEq(def.TimeLimit, limit, 0.001, id);
+			Assert.SequenceEq(new[] { def.Reward!.Gold, def.Reward.Stone, def.Reward.Tickets }, new[] { gold, stone, tickets }, id);
+		}
+	}
+
+	public void TestEventControllersCarryTheSpecNumbers()
+	{
+		var statues = GD.Load<PackedScene>("res://port/src/Events/statue_event.tscn").Instantiate<StatueEvent>();
+		Assert.Eq(statues.StatueCount, 4);
+		Assert.AlmostEq(statues.StatueStats!.MaxHealth, 60.0);
+		Assert.AlmostEq(statues.MinDistance, 250.0);
+		statues.Free();
+		var meteors = GD.Load<PackedScene>("res://port/src/Events/meteor_event.tscn").Instantiate<MeteorEvent>();
+		Assert.SequenceEq(new[] { meteors.Interval, meteors.Warning, meteors.Radius, meteors.Damage, meteors.LandingSpread }, new[] { 1.2f, 0.9f, 60f, 15f, 120f });
+		Assert.Eq(meteors.MaxHits, 3);
+		meteors.Free();
+		var elites = GD.Load<PackedScene>("res://port/src/Events/elite_event.tscn").Instantiate<EliteEvent>();
+		Assert.Eq(elites.Count, 3);
+		Assert.Eq(elites.EliteEnemy!.Id.ToString(), "elite_orc");
+		elites.Free();
+	}
+
+	public void TestTheOrcWarlordMatchesTheSpec()
+	{
+		BossDef boss = GD.Load<BossDef>("res://port/data/bosses/orc_warlord.tres");
+		Assert.NoErrors(boss.Validate(), "orc_warlord");
+		Assert.AlmostEq(boss.Stats!.MaxHealth, 2500.0);
+		Assert.AlmostEq(boss.Stats.MoveSpeed, 60.0);
+		Assert.AlmostEq(boss.VisualScale, 3.0);
+		Assert.AlmostEq(boss.ContactDamage, 20.0);
+		Assert.AlmostEq(boss.PatternGap, 2.0);
+		Assert.Eq(boss.Order, BossOrder.Random);
+		Assert.Eq(boss.Scene!.ResourcePath, "res://port/src/Actors/Boss/boss.tscn");
+		Assert.True(boss.Tint.V < 0.7f, "dark tint");
+		foreach (BossPatternEntry entry in boss.Patterns)
+		{
+			Assert.AlmostEq(entry.Weight, 1.0);
+			Assert.True(entry.Pattern!.OwnedTags.Contains(GameplayTags.StateCasting), entry.Pattern.Tag);
+		}
+
+		Assert.SequenceEq(
+			boss.Patterns.Select(e => e.Pattern!.Tag).Order(),
+			new[] { "ability.boss.burst", "ability.boss.charge", "ability.boss.slam", "ability.boss.summon" });
+	}
+
+	public void TestTheBossPatternsCarryTheSpecNumbers()
+	{
+		var charge = GD.Load<ChargeDef>(ChargeTest.ChargePath);
+		Assert.SequenceEq(new[] { charge.Warning, charge.Speed, charge.Distance, charge.Damage }, new[] { 0.7f, 520f, 360f, 25f });
+		var burst = GD.Load<RadialBurstDef>(RadialBurstTest.BurstPath);
+		Assert.Eq(burst.Count, 12);
+		Assert.AlmostEq(burst.Damage, 10.0);
+		Assert.AlmostEq(burst.Projectile!.Speed, 220.0);
+		Assert.AlmostEq(burst.Projectile.Lifetime, 2.0);
+		Assert.Eq(burst.Projectile.Hits, ProjectileTeam.Allies);
+		var summon = GD.Load<SummonDef>(SummonTest.SummonPath);
+		Assert.Eq(summon.Count, 4);
+		Assert.AlmostEq(summon.Radius, 80.0);
+		Assert.Eq(summon.Enemy!.Id.ToString(), "orc_swarmer");
+		var slam = GD.Load<GroundSlamDef>(GroundSlamTest.SlamPath);
+		Assert.SequenceEq(new[] { slam.Warning, slam.Radius, slam.Damage }, new[] { 1f, 90f, 30f });
 	}
 }

@@ -9,6 +9,8 @@
 [ext_resource type="Resource" path="res://port/data/enemies/orc_swarmer.tres" id="7_swarmer"]
 [ext_resource type="Resource" path="res://port/data/waves/stage_01_waves.tres" id="8_waves"]
 [ext_resource type="Resource" path="res://port/data/grade_table.tres" id="9_grades"]
+[ext_resource type="Resource" path="res://port/data/events/stage_01_events.tres" id="10_events"]
+[ext_resource type="Resource" path="res://port/data/bosses/orc_warlord.tres" id="11_boss"]
 
 [sub_resource type="Resource" id="Resource_building"]
 script = ExtResource("2_stats")
@@ -39,3 +41,5 @@ StartGold = 200
 StartStone = 0
 DropMultiplier = 10000.0
 GradeTable = ExtResource("9_grades")
+Events = ExtResource("10_events")
+Boss = ExtResource("11_boss")

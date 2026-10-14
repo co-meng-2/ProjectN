@@ -18,6 +18,7 @@ public class DevStageTest : TestCase
 		dev.StageDef = DefFactory.Fresh<StageDef>("res://port/data/stages/stage_01.tres");
 		dev.StageDef.Duration = 30f;
 		dev.StageDef.Waves = null;
+		dev.StageDef.Events = null; // the shipped schedule needs the full 180 s stage
 		return Adopt(dev);
 	}
 
