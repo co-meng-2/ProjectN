@@ -56,6 +56,14 @@ Design: `docs/superpowers/specs/2026-10-13-vampire-survivor-base-design.md`. Pla
 - Bad scene roots fail at `Stage.start`: `EventDirector.validate_defs` (StageEvent), `BossDirector.validate_def`
   (Boss), and each controller/pattern `validate()` checks the root type of scenes it instantiates.
 - `ActorBody` (components) holds the shape sizing / contact wiring / death sequence shared by `Enemy` and `Boss`.
+- Phase 4a meta flow: autoloads `SceneRouter` (`src/app/`) and `SaveService` (`src/meta/`), neither with a `class_name`.
+  Screens (`Main`, `MainMenu`, `SettingsScreen`, `Logo`) take `router`/`save_service` as optional properties that
+  default to the autoloads in `_ready`; tests inject `tests/support/scene_router_probe.gd` and a `SaveService` with a
+  temp `path`. `Stage` never sees the autoloads. Routes live only in `SceneRouter.ROUTES`; one-shot data goes through
+  `go(route, params)` / `take_params()` with keys defined on the router (`PARAM_STAGE_DEF`).
+- Save: JSON at `user://save.json` (`SaveData` -> `SaveStore`). To change the schema bump `SaveMigrations.CURRENT_VERSION`
+  and append one step to `SaveMigrations.steps()`; add a migration test. Unreadable files are moved to `save.json.bak`.
+  `Main` sets `RunResult.gem` from `StageDef.gem_for(outcome)` and credits it once per run; gem is the only persistent currency.
 
 ## Adding an enemy (data only)
 1. Duplicate `data/enemies/orc.tres`; change `id`, stats, tint/scale, contact values, `target_policy`.
@@ -93,5 +101,6 @@ Design: `docs/superpowers/specs/2026-10-13-vampire-survivor-base-design.md`. Pla
 4. Icons in `assets/art/icons/` are currently generated placeholders (see `assets/SOURCES.md`).
 
 ## Running the game
-- Main scene: `src/app/main.tscn`. `application/run/main_scene` in `project.godot` was hand-edited (the godot-ai tool
-  refuses to set it); re-set it in Project Settings if it goes missing. Press R to restart after a run ends.
+- Main scene: `src/app/logo.tscn` (logo -> main menu -> `src/app/main.tscn` as the stage screen). `application/run/main_scene`
+  in `project.godot` was hand-edited (the godot-ai tool refuses to set it); re-set it in Project Settings if it goes missing.
+  After a run ends Enter returns to the main menu; R still restarts (dev shortcut - a restarted clear pays gem again).
