@@ -50,3 +50,10 @@ func test_path_for_an_unknown_route_is_empty() -> void:
 
 func test_the_stage_param_key_is_a_stable_name() -> void:
 	assert_eq(Router.PARAM_STAGE_DEF, &"stage_def")
+
+
+func test_every_route_has_a_scene_that_loads() -> void:
+	assert_eq(Router.ROUTES.size(), Router.Route.size(), "every Route enum value has a path")
+	for route in Router.ROUTES:
+		var path: String = Router.ROUTES[route]
+		assert_true(load(path) is PackedScene, path)
