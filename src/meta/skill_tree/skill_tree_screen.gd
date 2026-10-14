@@ -37,7 +37,9 @@ func _ready() -> void:
 	_rebuild()
 
 
-func _rebuild() -> void:
+## `preferred` is the row to keep focused (the one just bought) while it can still be bought, so repeated Enter
+## levels the same node instead of jumping to another one.
+func _rebuild(preferred: int = -1) -> void:
 	for child in _node_list.get_children():
 		_node_list.remove_child(child)
 		child.queue_free()
@@ -50,7 +52,7 @@ func _rebuild() -> void:
 		var can_buy := _progress.can_buy(index)
 		row.setup(index, node.display_name, node.description, _detail_text(index), _buy_text(index), can_buy)
 		row.buy_pressed.connect(_on_buy_pressed)
-		if focus_row == null and can_buy:
+		if can_buy and (focus_row == null or index == preferred):
 			focus_row = row
 	if focus_row != null:
 		focus_row.focus_buy()
@@ -81,7 +83,7 @@ func _on_buy_pressed(index: int) -> void:
 	if _progress == null or not _progress.buy(index):
 		return
 	save_service.save()
-	_rebuild()
+	_rebuild(index)
 
 
 func _on_back_pressed() -> void:

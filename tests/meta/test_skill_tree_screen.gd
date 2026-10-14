@@ -122,3 +122,21 @@ func test_the_shipped_tree_is_the_default() -> void:
 	screen.router = adopt(Probe.new())
 	adopt(screen)
 	assert_eq(screen.get_node("%NodeList").get_child_count(), 4)
+
+
+func test_focus_stays_on_the_row_just_bought_so_enter_levels_it_again() -> void:
+	var tree := SkillTreeDef.new()
+	tree.nodes = [DefFactory.skill_node(&"first"), DefFactory.skill_node(&"second")]
+	var screen := _screen(tree, _service(100), adopt(Probe.new()))
+	assert_true(screen.get_viewport().gui_get_focus_owner() == _buy_button(screen, 0), "starts on the first buyable row")
+	_buy_button(screen, 1).pressed.emit()
+	assert_true(screen.get_viewport().gui_get_focus_owner() == _buy_button(screen, 1), "stays on the bought row, not row 0")
+
+
+func test_focus_falls_back_when_the_bought_row_can_no_longer_be_bought() -> void:
+	var tree := SkillTreeDef.new()
+	tree.nodes = [DefFactory.skill_node(&"first"), DefFactory.skill_node(&"second", [], 1, PackedInt32Array([10]))]
+	var screen := _screen(tree, _service(100), adopt(Probe.new()))
+	_buy_button(screen, 1).pressed.emit()
+	assert_true(_buy_button(screen, 1).disabled, "second is maxed at one level")
+	assert_true(screen.get_viewport().gui_get_focus_owner() == _buy_button(screen, 0), "falls back to the first buyable row")
