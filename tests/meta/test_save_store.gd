@@ -112,3 +112,27 @@ func test_malformed_cleared_stages_are_treated_as_corrupt() -> void:
 		SaveFiles.write_text(PATH, text)
 		assert_eq(SaveStore.load_or_default(PATH).cleared_stages.size(), 0, text)
 		assert_true(FileAccess.file_exists(PATH + ".bak"), "backup for %s" % text)
+
+
+func test_a_v2_file_loads_migrated_without_a_backup() -> void:
+	SaveFiles.write_text(PATH, '{"version": 2, "gem": 5, "cleared_stages": ["stage_01"]}')
+	var data := SaveStore.load_or_default(PATH)
+	assert_eq(data.gem, 5)
+	assert_eq(data.cleared_stages, [&"stage_01"])
+	assert_eq(data.skill_levels.size(), 0)
+	assert_false(FileAccess.file_exists(PATH + ".bak"))
+
+
+func test_skill_levels_survive_write_and_load() -> void:
+	var data := SaveData.new()
+	data.set_level(&"vitality", 2)
+	assert_true(SaveStore.write(PATH, data))
+	assert_eq(SaveStore.load_or_default(PATH).level_of(&"vitality"), 2)
+
+
+func test_malformed_skill_levels_are_treated_as_corrupt() -> void:
+	for text in ['{"version": 3, "skill_levels": [1]}', '{"version": 3, "skill_levels": {"vitality": -1}}', '{"version": 3, "skill_levels": {"vitality": "x"}}']:
+		SaveFiles.reset(DIR)
+		SaveFiles.write_text(PATH, text)
+		assert_eq(SaveStore.load_or_default(PATH).skill_levels.size(), 0, text)
+		assert_true(FileAccess.file_exists(PATH + ".bak"), "backup for %s" % text)

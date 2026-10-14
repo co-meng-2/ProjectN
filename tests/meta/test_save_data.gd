@@ -84,3 +84,58 @@ func test_invalid_cleared_stages_are_rejected() -> void:
 	assert_null(SaveData.from_dict({"cleared_stages": "stage_01"}), "not an array")
 	assert_null(SaveData.from_dict({"cleared_stages": [1]}), "number entry")
 	assert_null(SaveData.from_dict({"cleared_stages": ["stage_01", null]}), "null entry")
+
+
+func test_skill_levels_default_to_empty_and_level_of_is_zero() -> void:
+	var data := SaveData.new()
+	assert_eq(data.skill_levels.size(), 0)
+	assert_eq(data.level_of(&"vitality"), 0)
+
+
+func test_set_level_stores_and_zero_removes() -> void:
+	var data := SaveData.new()
+	data.set_level(&"vitality", 2)
+	assert_eq(data.level_of(&"vitality"), 2)
+	data.set_level(&"vitality", 0)
+	assert_false(data.skill_levels.has(&"vitality"))
+
+
+func test_spend_gem_deducts_or_changes_nothing() -> void:
+	var data := SaveData.new()
+	data.gem = 10
+	assert_true(data.spend_gem(4))
+	assert_eq(data.gem, 6)
+	assert_false(data.spend_gem(7), "short")
+	assert_eq(data.gem, 6)
+	assert_false(data.spend_gem(-1), "negative")
+	assert_eq(data.gem, 6)
+
+
+func test_skill_levels_round_trip() -> void:
+	var data := SaveData.new()
+	data.set_level(&"vitality", 2)
+	data.set_level(&"might", 1)
+	var restored := SaveData.from_dict(data.to_dict())
+	assert_not_null(restored)
+	assert_eq(restored.level_of(&"vitality"), 2)
+	assert_eq(restored.level_of(&"might"), 1)
+
+
+func test_skill_level_written_as_a_json_float_loads_as_an_int() -> void:
+	var restored := SaveData.from_dict({"skill_levels": {"vitality": 2.0}})
+	assert_not_null(restored)
+	assert_eq(restored.level_of(&"vitality"), 2)
+
+
+func test_an_unknown_skill_id_survives_load_and_save() -> void:
+	var restored := SaveData.from_dict({"skill_levels": {"ghost_skill": 3}})
+	assert_not_null(restored)
+	assert_eq(restored.to_dict()["skill_levels"], {"ghost_skill": 3})
+
+
+func test_invalid_skill_levels_are_rejected() -> void:
+	assert_null(SaveData.from_dict({"skill_levels": [1]}), "not an object")
+	assert_null(SaveData.from_dict({"skill_levels": {"vitality": "2"}}), "string level")
+	assert_null(SaveData.from_dict({"skill_levels": {"vitality": 1.5}}), "fractional level")
+	assert_null(SaveData.from_dict({"skill_levels": {"vitality": -1}}), "negative level")
+	assert_null(SaveData.from_dict({"skill_levels": {"vitality": null}}), "null level")

@@ -59,18 +59,33 @@ func test_read_int_accepts_whole_numbers_only() -> void:
 	assert_null(SaveMigrations.read_int(1.0e30))
 
 
-func test_current_version_is_two() -> void:
-	assert_eq(SaveMigrations.CURRENT_VERSION, 2)
+func test_current_version_is_three() -> void:
+	assert_eq(SaveMigrations.CURRENT_VERSION, 3)
 
 
 func test_a_v1_save_upgrades_to_v2_and_keeps_every_field() -> void:
 	var migrated := SaveMigrations.migrate({"version": 1, "gem": 4, "settings": {"master_volume": 0.5}})
-	assert_eq(migrated.get("version"), 2)
+	assert_eq(migrated.get("version"), 3)
 	assert_eq(migrated.get("gem"), 4)
 	assert_eq(migrated.get("settings"), {"master_volume": 0.5})
 	assert_eq(migrated.get("cleared_stages"), [])
+	assert_eq(migrated.get("skill_levels"), {})
 
 
 func test_a_v2_save_keeps_its_cleared_stages() -> void:
 	var migrated := SaveMigrations.migrate({"version": 2, "cleared_stages": ["stage_01"]})
 	assert_eq(migrated.get("cleared_stages"), ["stage_01"])
+
+
+func test_a_v2_save_upgrades_to_v3_and_keeps_every_field() -> void:
+	var migrated := SaveMigrations.migrate({"version": 2, "gem": 7, "cleared_stages": ["stage_01"], "settings": {"master_volume": 0.5}})
+	assert_eq(migrated.get("version"), 3)
+	assert_eq(migrated.get("gem"), 7)
+	assert_eq(migrated.get("cleared_stages"), ["stage_01"])
+	assert_eq(migrated.get("settings"), {"master_volume": 0.5})
+	assert_eq(migrated.get("skill_levels"), {})
+
+
+func test_a_v3_save_keeps_its_skill_levels() -> void:
+	var migrated := SaveMigrations.migrate({"version": 3, "skill_levels": {"vitality": 2}})
+	assert_eq(migrated.get("skill_levels"), {"vitality": 2})

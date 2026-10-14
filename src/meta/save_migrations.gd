@@ -3,7 +3,7 @@ extends RefCounted
 ## Brings a loaded save dictionary up to the current schema one version at a time.
 ## To change the schema: bump CURRENT_VERSION and append one step to `steps()`.
 
-const CURRENT_VERSION: int = 2
+const CURRENT_VERSION: int = 3
 ## JSON numbers are floats; anything beyond this is not a plausible whole count.
 const MAX_SAFE_INT: float = 9.0e15
 
@@ -12,6 +12,7 @@ const MAX_SAFE_INT: float = 9.0e15
 static func steps() -> Array[Callable]:
 	var result: Array[Callable] = []
 	result.append(_v1_to_v2)
+	result.append(_v2_to_v3)
 	return result
 
 
@@ -47,4 +48,10 @@ static func read_int(raw: Variant) -> Variant:
 ## v2 adds the list of cleared stage ids.
 static func _v1_to_v2(source: Dictionary) -> Dictionary:
 	source["cleared_stages"] = []
+	return source
+
+
+## v3 adds the purchased skill levels.
+static func _v2_to_v3(source: Dictionary) -> Dictionary:
+	source["skill_levels"] = {}
 	return source
