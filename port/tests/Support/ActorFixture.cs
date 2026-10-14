@@ -4,6 +4,7 @@ using VampireSurvivor.Components;
 using VampireSurvivor.Core;
 using VampireSurvivor.Defs;
 using VampireSurvivor.Gas;
+using VampireSurvivor.Stage;
 
 namespace VampireSurvivor.Tests.Support;
 
@@ -80,4 +81,76 @@ public static class ActorFixture
 	{
 		DamageEffects.Hit(BareActor(test, new StatBlock()), victim, 1_000_000f);
 	}
+
+	/// <summary>Children of <paramref name="parent"/> of type <typeparamref name="T"/> that are not queued for deletion.</summary>
+	public static System.Collections.Generic.List<T> LiveChildren<T>(Node parent)
+		where T : Node
+	{
+		var found = new System.Collections.Generic.List<T>();
+		foreach (Node child in parent.GetChildren())
+		{
+			if (child is T typed && !child.IsQueuedForDeletion())
+			{
+				found.Add(typed);
+			}
+		}
+
+		return found;
+	}
+
+	/// <summary>
+	/// An event context with a fresh layer, factory and target provider: the building at <paramref name="buildingAt"/>,
+	/// the player (or a stand-in 150 px below the building), arena (-1200, -800, 2400, 1600), spawn radius 300, rng seed 7.
+	/// </summary>
+	public static EventContext ContextFor(TestCase test, EventDef def, Node2D? player = null, Vector2 buildingAt = default)
+	{
+		Node2D layer = test.Adopt(new Node2D());
+		Node2D enemies = test.Adopt(new Node2D());
+		TargetProvider targets = test.Adopt(new TargetProvider());
+		Node2D building = test.Adopt(new Node2D { Position = buildingAt });
+		player ??= test.Adopt(new Node2D { Position = buildingAt + new Vector2(0f, 150f) });
+		targets.Building = building;
+		targets.Player = player;
+		var rng = new RunRng(7);
+		EnemyFactory factory = test.Adopt(new EnemyFactory());
+		factory.Bind(enemies, targets, rng);
+		return new EventContext(layer, factory, targets, player, building, rng, new Rect2(-1200f, -800f, 2400f, 1600f), 300f, def);
+	}
+
+	/// <summary>Records an event's signals in emission order. Call before <c>Begin</c>: it may report progress immediately.</summary>
+	public static EventRecord WatchEvent(StageEvent stageEvent)
+	{
+		var record = new EventRecord();
+		stageEvent.Succeeded += () => record.Succeeded++;
+		stageEvent.Failed += () => record.Failed++;
+		stageEvent.ProgressChanged += record.Progress.Add;
+		return record;
+	}
+
+	public sealed class EventRecord
+	{
+		public int Succeeded { get; set; }
+
+		public int Failed { get; set; }
+
+		public System.Collections.Generic.List<string> Progress { get; } = [];
+	}
+
+	/// <summary>
+	/// A set-up boss from <paramref name="def"/> (its scene must be boss.tscn) at <paramref name="position"/>, chasing
+	/// <paramref name="player"/> and sharing the player's target provider and projectile layer. Its entity does not tick on
+	/// its own: tests advance patterns with <c>boss.Entity.Tick(dt)</c>. No brain is attached.
+	/// </summary>
+	public static BossActor Boss(
+		TestCase test, Player player, BossDef def, Vector2 position, System.Action<EnemyDef, Vector2>? summon = null)
+	{
+		BossActor boss = test.Adopt(def.Scene!.Instantiate<BossActor>());
+		boss.GlobalPosition = position;
+		boss.Setup(def, player, player.Context!.Targets, player.Context.ProjectileLayer, summon);
+		boss.Entity.SetPhysicsProcess(false);
+		return boss;
+	}
+
+	/// <summary>Activates a granted ability; true when it started.</summary>
+	public static bool Fire(AbilityGrant grant) => grant.Ability!.Activate(out Gamesmiths.Forge.Abilities.AbilityActivationFailures _);
 }

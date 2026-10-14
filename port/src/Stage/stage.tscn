@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://port/src/Stage/StageRoot.cs" id="1_stage"]
 [ext_resource type="PackedScene" path="res://port/src/Stage/arena.tscn" id="2_arena"]
@@ -10,8 +10,10 @@
 [ext_resource type="Script" path="res://port/src/Stage/SpawnDirector.cs" id="8_spawner"]
 [ext_resource type="Script" path="res://port/src/Stage/WaveDirector.cs" id="9_waves"]
 [ext_resource type="Script" path="res://port/src/Stage/LootDirector.cs" id="10_loot"]
+[ext_resource type="Script" path="res://port/src/Stage/EventDirector.cs" id="11_events"]
+[ext_resource type="Script" path="res://port/src/Stage/BossDirector.cs" id="12_boss"]
 
-[node name="Stage" type="Node2D" node_paths=PackedStringArray("Arena", "World", "Player", "Building", "EnemyLayer", "ProjectileLayer", "PickupLayer", "Clock", "Targets", "Factory", "Spawner", "Waves", "Loot")]
+[node name="Stage" type="Node2D" node_paths=PackedStringArray("Arena", "World", "Player", "Building", "EnemyLayer", "ProjectileLayer", "PickupLayer", "Clock", "Targets", "Factory", "Spawner", "Waves", "Loot", "EventLayer", "Events", "Bosses")]
 script = ExtResource("1_stage")
 Arena = NodePath("Arena")
 World = NodePath("World")
@@ -26,6 +28,9 @@ Factory = NodePath("Systems/EnemyFactory")
 Spawner = NodePath("Systems/SpawnDirector")
 Waves = NodePath("Systems/WaveDirector")
 Loot = NodePath("Systems/LootDirector")
+EventLayer = NodePath("World/Events")
+Events = NodePath("Systems/EventDirector")
+Bosses = NodePath("Systems/BossDirector")
 
 [node name="Arena" parent="." instance=ExtResource("2_arena")]
 
@@ -41,6 +46,9 @@ z_index = -1
 y_sort_enabled = true
 
 [node name="Player" parent="World" instance=ExtResource("4_player")]
+
+[node name="Events" type="Node2D" parent="World"]
+y_sort_enabled = true
 
 [node name="Projectiles" type="Node2D" parent="World"]
 y_sort_enabled = true
@@ -64,3 +72,9 @@ script = ExtResource("9_waves")
 
 [node name="LootDirector" type="Node" parent="Systems"]
 script = ExtResource("10_loot")
+
+[node name="EventDirector" type="Node" parent="Systems"]
+script = ExtResource("11_events")
+
+[node name="BossDirector" type="Node" parent="Systems"]
+script = ExtResource("12_boss")

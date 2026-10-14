@@ -21,10 +21,10 @@ public sealed class BountyBehavior(BountyDef def) : IAbilityBehavior<Node>
 	{
 		try
 		{
-			if (context.Owner is ActorEntity { Context: { } ctx } && def.GoldPerKill is not null)
+			if (context.Owner is ActorEntity { Context.Wallet: { } wallet } && def.GoldPerKill is not null)
 			{
 				int gold = (int)Math.Round(def.GoldPerKill.Sample(context.Level), MidpointRounding.AwayFromZero);
-				ctx.Wallet.Add(CurrencyKind.Gold, gold);
+				wallet.Add(CurrencyKind.Gold, gold);
 			}
 		}
 		finally

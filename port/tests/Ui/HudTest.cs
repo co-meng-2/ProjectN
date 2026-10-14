@@ -23,7 +23,7 @@ public class HudTest : TestCase
 		return health;
 	}
 
-	private Rig MakeRig()
+	private Rig MakeRig(float[]? eventTimes = null)
 	{
 		var stats = new StatBlock { MaxHealth = 50f };
 		ActorEntity player = ActorFixture.BareActor(this, stats);
@@ -32,7 +32,7 @@ public class HudTest : TestCase
 		StageClock clock = Adopt(new StageClock());
 		clock.SetPhysicsProcess(false);
 		Hud hud = Adopt(GD.Load<PackedScene>(HudScene).Instantiate<Hud>());
-		hud.Bind(HealthFor(player), HealthFor(building), wallet, clock, new Timeline(100f, [30f]));
+		hud.Bind(HealthFor(player), HealthFor(building), wallet, clock, new Timeline(100f, [30f]), eventTimes);
 		return new Rig(hud, player, wallet);
 	}
 
@@ -82,5 +82,55 @@ public class HudTest : TestCase
 		Rig rig = MakeRig();
 		Assert.NotNull(rig.Hud.AbilityBar);
 		Assert.Eq(rig.Hud.AbilityBar.GetChildCount(), 0, "empty until its owner binds it");
+	}
+	public void TestBindPassesTheEventTimesToTheTimeline()
+	{
+		Rig rig = MakeRig([45f, 80f]);
+		Assert.SequenceEq(rig.Hud.Timeline.EventMarks, new[] { 45f, 80f });
+	}
+
+	public void TestEventSignalsDriveTheBannerAndTheArrows()
+	{
+		Rig rig = MakeRig();
+		rig.Hud.ObjectiveArrows.SetProcess(false);
+		EventDef def = DefFactory.Event(DefFactory.Packed(new ProbeEvent()), 20f, "meteors");
+		ProbeEvent probe = Adopt(new ProbeEvent());
+		probe.SetPhysicsProcess(false);
+		probe.ObjectiveNodes.Add(Adopt(new Node2D { Position = new Vector2(5000f, 0f) }));
+		probe.Begin(ActorFixture.ContextFor(this, def));
+		rig.Hud.ShowEvent(def, probe);
+		Assert.True(rig.Hud.EventBanner.Visible);
+		Assert.Eq(rig.Hud.EventBanner.TitleText, "Meteors");
+		rig.Hud.ShowEventProgress(def, "Hits 1/3");
+		Assert.Eq(rig.Hud.EventBanner.ProgressText, "Hits 1/3");
+		rig.Hud.ObjectiveArrows.Refresh(Transform2D.Identity, new Vector2(800f, 600f));
+		Assert.Eq(rig.Hud.ObjectiveArrows.ArrowPositions.Count, 1, "the HUD tracks the running event's objectives");
+		rig.Hud.ShowEventResult(def, true);
+		Assert.True(rig.Hud.EventBanner.TitleText.Contains("Success"));
+		rig.Hud.ObjectiveArrows.Refresh(Transform2D.Identity, new Vector2(800f, 600f));
+		Assert.Eq(rig.Hud.ObjectiveArrows.ArrowPositions.Count, 0, "no arrows once the event ended");
+	}
+
+	public void TestAnAbortedEventShowsInterruptedAndClearsTheArrows()
+	{
+		Rig rig = MakeRig();
+		EventDef def = DefFactory.Event(DefFactory.Packed(new ProbeEvent()), 25f, "meteors");
+		ProbeEvent probe = Adopt(new ProbeEvent());
+		probe.SetPhysicsProcess(false);
+		probe.Begin(ActorFixture.ContextFor(this, def));
+		rig.Hud.ShowEvent(def, probe);
+		rig.Hud.ShowEventAborted(def);
+		Assert.Eq(rig.Hud.EventBanner.TitleText, "Meteors: Interrupted");
+	}
+
+	public void TestTheBossAppearanceShowsTheBarAndTheTimelineLabel()
+	{
+		Rig rig = MakeRig();
+		Assert.False(rig.Hud.BossBar.Visible);
+		ActorEntity boss = ActorFixture.BareActor(this, new StatBlock { MaxHealth = 2500f });
+		rig.Hud.ShowBoss(HealthFor(boss), "Orc Warlord");
+		Assert.True(rig.Hud.BossBar.Visible);
+		Assert.Eq(rig.Hud.BossBar.BossName, "Orc Warlord");
+		Assert.True(rig.Hud.Timeline.IsShowingBoss);
 	}
 }

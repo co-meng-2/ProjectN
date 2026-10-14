@@ -1,0 +1,15 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://port/src/Boss/Patterns/ChargeDef.cs" id="1_def"]
+[ext_resource type="PackedScene" path="res://port/src/Components/area_strike.tscn" id="2_strike"]
+
+[resource]
+script = ExtResource("1_def")
+Tag = "ability.boss.charge"
+StrikeScene = ExtResource("2_strike")
+Warning = 0.7
+Speed = 520.0
+Distance = 360.0
+Damage = 25.0
+HitRadius = 40.0
+LineWidth = 24.0

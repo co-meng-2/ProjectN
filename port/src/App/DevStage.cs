@@ -57,7 +57,12 @@ public partial class DevStage : Node
 			return;
 		}
 
-		Hud.Bind(Stage.Player.Health, Stage.Building.Health, Stage.RunState!.Wallet, Stage.Clock, Stage.Waves.Timeline);
+		Hud.Bind(Stage.Player.Health, Stage.Building.Health, Stage.RunState!.Wallet, Stage.Clock, Stage.Waves.Timeline, Stage.Events.EventTimes());
+		Stage.Events.EventStarted += Hud.ShowEvent;
+		Stage.Events.EventProgressed += Hud.ShowEventProgress;
+		Stage.Events.EventEnded += Hud.ShowEventResult;
+		Stage.Events.EventAborted += Hud.ShowEventAborted;
+		Stage.BossAppeared += Hud.ShowBoss;
 		Hud.AbilityBar.Bind(Stage.Loadout!, Stage.RunState.Wallet, Stage.GradeService!);
 		Hud.AbilityBar.PromoteRequested += OnPromoteRequested;
 		Hud.AbilityBar.RerollRequested += OnRerollRequested;

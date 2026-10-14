@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://port/src/Events/MeteorEvent.cs" id="1_event"]
+[ext_resource type="PackedScene" path="res://port/src/Components/area_strike.tscn" id="2_strike"]
+
+[node name="MeteorEvent" type="Node2D"]
+script = ExtResource("1_event")
+StrikeScene = ExtResource("2_strike")
+Interval = 1.2
+Warning = 0.9
+Radius = 60.0
+Damage = 15.0
+LandingSpread = 120.0
+MaxHits = 3
+StrikeSeconds = 0.15

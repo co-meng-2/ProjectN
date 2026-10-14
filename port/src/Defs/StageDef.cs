@@ -1,10 +1,11 @@
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 
 namespace VampireSurvivor.Defs;
 
 /// <summary>
-/// Static description of one stage. Events and boss (slice 4) and the gem reward (slice 5) are added by later slices.
+/// Static description of one stage. The gem reward comes with slice 5.
 /// </summary>
 public partial class StageDef : Resource
 {
@@ -60,6 +61,14 @@ public partial class StageDef : Resource
 	/// <summary>Shop prices of this stage.</summary>
 	[Export]
 	public GradeTable? GradeTable { get; set; }
+
+	/// <summary>Optional announced events; null = none.</summary>
+	[Export]
+	public EventSchedule? Events { get; set; }
+
+	/// <summary>Optional end-of-stage boss; null = time up clears the stage.</summary>
+	[Export]
+	public BossDef? Boss { get; set; }
 
 	public List<string> Validate()
 	{
@@ -128,6 +137,17 @@ public partial class StageDef : Resource
 		else
 		{
 			errors.AddRange(GradeTable.Validate());
+		}
+
+		if (Events is not null)
+		{
+			float[] waveTimes = Waves is null ? [] : [.. Waves.Entries.Where(e => e is not null).Select(e => e.Time)];
+			errors.AddRange(Events.ValidateAgainst(Duration, waveTimes));
+		}
+
+		if (Boss is not null)
+		{
+			errors.AddRange(Boss.Validate());
 		}
 
 		return errors;

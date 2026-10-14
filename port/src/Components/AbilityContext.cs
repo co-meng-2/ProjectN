@@ -9,7 +9,7 @@ namespace VampireSurvivor.Components;
 /// What an actor offers its abilities. The actor builds it once, stores it on <see cref="ActorEntity.Context"/> and every
 /// ability behavior reads it from there.
 /// </summary>
-public sealed class AbilityContext(Node2D actor, Mover mover, TargetProvider targets, Node projectileLayer, Wallet wallet)
+public sealed class AbilityContext(Node2D actor, Mover mover, TargetProvider targets, Node projectileLayer, Wallet? wallet)
 {
 	public Node2D Actor { get; } = actor;
 
@@ -19,8 +19,8 @@ public sealed class AbilityContext(Node2D actor, Mover mover, TargetProvider tar
 
 	public Node ProjectileLayer { get; } = projectileLayer;
 
-	/// <summary>The run's currency; on-kill/economy abilities credit it directly.</summary>
-	public Wallet Wallet { get; } = wallet;
+	/// <summary>The run's currency; on-kill/economy abilities credit it directly. Null for actors without one (the boss).</summary>
+	public Wallet? Wallet { get; } = wallet;
 
 	/// <summary>Boss summons, injected by the Stage so summoned enemies count as kills and drop loot. Null for the player.</summary>
 	public Action<EnemyDef, Vector2>? Summon { get; set; }
