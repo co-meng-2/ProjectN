@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Gamesmiths.Forge.Core;
 using Gamesmiths.Forge.Abilities;
 using Gamesmiths.Forge.Effects;
 using Gamesmiths.Forge.Effects.Components;
@@ -29,12 +30,21 @@ public partial class ActorEntity : ForgeEntity
 		SetProcess(false); // ForgeEntity ticks in _Process; the game ticks in _PhysicsProcess.
 	}
 
+	/// <summary>What this actor offers its abilities; set by the actor's Setup.</summary>
+	public AbilityContext? Context { get; set; }
+
 	public override void _PhysicsProcess(double delta) => Tick(delta);
 
 	public void Tick(double delta)
 	{
 		EffectsManager.UpdateEffects(delta);
 		Abilities.UpdateAbilities(delta);
+	}
+
+	/// <summary>Activates the granted abilities carrying <paramref name="abilityTag"/>. True when at least one started.</summary>
+	public bool TryActivate(string abilityTag, IForgeEntity? target = null)
+	{
+		return Abilities.TryActivateAbilitiesByTag(GameplayTags.ContainerOf(abilityTag), target, out _);
 	}
 
 	/// <summary>Applies base stats. Call after the node is in the tree. MaxHealth first: Health clamps to it.</summary>

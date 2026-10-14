@@ -24,6 +24,10 @@ public abstract partial class ActiveAbilityDef : ForgeAbilityBehavior
 	[Export]
 	public string[] OwnedTags { get; set; } = [];
 
+	/// <summary>When true the owner's <c>AutoCaster</c> keeps trying to activate it (attacks); false for on-demand abilities (dash).</summary>
+	[Export]
+	public bool AutoFire { get; set; }
+
 	public abstract IAbilityBehavior CreateBehavior();
 
 	public override IAbilityBehavior GetBehavior() => CreateBehavior();
