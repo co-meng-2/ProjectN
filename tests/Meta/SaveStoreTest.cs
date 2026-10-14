@@ -167,4 +167,20 @@ public class SaveStoreTest : TestCase
 			Assert.True(HasBackup(), $"backup for {text}");
 		}
 	}
+
+	public void TestADuplicateKeyInsideANestedObjectIsTreatedAsCorrupt()
+	{
+		foreach (string text in new[]
+		{
+			"""{"version": 3, "gem": 7, "settings": {"master_volume": 0.5, "master_volume": 0.6}}""",
+			"""{"version": 3, "gem": 7, "skill_levels": {"a": 1, "a": 2}}""",
+			"""{"version": 3, "gem": 7, "cleared_stages": [{"x": 1, "x": 2}]}""",
+		})
+		{
+			SaveFiles.Reset(Dir);
+			SaveFiles.WriteText(Path, text);
+			Assert.Eq(SaveStore.LoadOrDefault(Path).Gem, 0L, text);
+			Assert.True(HasBackup(), $"backup for {text}");
+		}
+	}
 }

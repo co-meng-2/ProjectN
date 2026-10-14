@@ -21,9 +21,7 @@ public static class SaveStore
 			return new SaveData();
 		}
 
-		if (Parse(FileAccess.GetFileAsString(path)) is JsonObject source
-			&& SaveMigrations.Migrate(source) is JsonObject migrated
-			&& SaveData.FromJson(migrated) is SaveData data)
+		if (Read(FileAccess.GetFileAsString(path)) is SaveData data)
 		{
 			return data;
 		}
@@ -57,20 +55,20 @@ public static class SaveStore
 		return true;
 	}
 
-	/// <summary>The top-level object, or null for anything else (bad JSON, another JSON type, duplicate keys).</summary>
-	private static JsonObject? Parse(string text)
+	/// <summary>
+	/// The save in <paramref name="text"/>, or null for anything unusable (bad JSON, another JSON type, invalid fields,
+	/// duplicate keys). JsonObject reads its properties lazily, so a duplicate key inside a nested object only throws
+	/// when that object is first opened: the whole chain, not just the parse, sits inside the catch.
+	/// </summary>
+	private static SaveData? Read(string text)
 	{
 		try
 		{
-			if (JsonNode.Parse(text) is not JsonObject source)
-			{
-				return null;
-			}
-
-			_ = source.Count; // JsonObject reads its properties lazily; duplicate keys throw here, not later
-			return source;
+			return JsonNode.Parse(text) is JsonObject source && SaveMigrations.Migrate(source) is JsonObject migrated
+				? SaveData.FromJson(migrated)
+				: null;
 		}
-		catch (Exception exception) when (exception is JsonException or ArgumentException)
+		catch (Exception exception) when (exception is JsonException or ArgumentException or InvalidOperationException)
 		{
 			return null;
 		}
