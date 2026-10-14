@@ -156,4 +156,28 @@ public class AbilityGrantTest : TestCase
 		Assert.Eq(AbilityFactory.Validate(probe).Count, 1);
 		Assert.NoErrors(AbilityFactory.Validate(new EventProbeAbilityDef()));
 	}
+
+	public void TestGrantsWithTheirOwnSlotCooldownTagsCoolDownIndependently()
+	{
+		ActorEntity actor = ActorFixture.BareActor(this, new StatBlock());
+		ProbeAbilityDef probe = MakeProbe(1f, 1f, 1f, 1f, 1f, 1f);
+		AbilityGrant first = actor.Grant(probe, 1, GameplayTags.SlotCooldowns[0]);
+		AbilityGrant second = actor.Grant(probe, 1, GameplayTags.SlotCooldowns[1]);
+		Assert.True(Fire(first));
+		Assert.False(Fire(first), "its own slot is cooling down");
+		Assert.True(Fire(second), "the other slot is not: two slots holding the same attack both fire");
+		Assert.Eq(probe.Starts, 2);
+	}
+
+	public void TestASlotGrantCarriesItsSlotTagInsteadOfTheAbilityCooldownTag()
+	{
+		ActorEntity actor = ActorFixture.BareActor(this, new StatBlock());
+		AbilityGrant grant = actor.Grant(MakeProbe(1f, 1f, 1f, 1f, 1f, 1f), 1, GameplayTags.SlotCooldowns[2]);
+		Assert.Eq(grant.CooldownTag, "cooldown.slot.c");
+		Assert.True(Fire(grant));
+		Assert.True(actor.Tags.AllTags.HasTag(GameplayTags.Request("cooldown.slot.c")));
+		Assert.False(actor.Tags.AllTags.HasTag(GameplayTags.Request(GameplayTags.CooldownProbe)));
+		actor.Revoke(grant);
+		Assert.False(actor.Tags.AllTags.HasTag(GameplayTags.Request("cooldown.slot.c")), "revoking the slot clears its cooldown");
+	}
 }

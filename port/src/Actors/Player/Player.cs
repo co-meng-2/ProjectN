@@ -73,9 +73,9 @@ public partial class Player : CharacterBody2D
 	}
 
 	/// <summary>Grants an ability; attacks (<see cref="ActiveAbilityDef.AutoFire"/>) are also handed to the auto-caster.</summary>
-	public AbilityGrant Grant(ActiveAbilityDef def, int level)
+	public AbilityGrant Grant(ActiveAbilityDef def, int level, string? cooldownTag = null)
 	{
-		AbilityGrant grant = Entity.Grant(def, level);
+		AbilityGrant grant = Entity.Grant(def, level, cooldownTag);
 		if (def.AutoFire)
 		{
 			AutoCaster.Add(grant);

@@ -15,11 +15,12 @@ public static class AbilityFactory
 	/// A new AbilityData on every call, on purpose: Forge identifies an ability by its data, so granting equal data twice
 	/// would merge into one ability at the first grant's level. One data per grant gives each grant its own handle and level.
 	/// </summary>
-	public static AbilityData Build(ActiveAbilityDef def)
+	/// <param name="cooldownTag">The tag the cooldown grants; null means "cooldown." + the ability tag's tail.</param>
+	public static AbilityData Build(ActiveAbilityDef def, string? cooldownTag = null)
 	{
 		EffectData[]? cooldowns = def.Cooldown is null
 			? null
-			: [CooldownEffects.Build(GameplayTags.CooldownFor(def.Tag), def.Cooldown)];
+			: [CooldownEffects.Build(cooldownTag ?? GameplayTags.CooldownFor(def.Tag), def.Cooldown)];
 		TagContainer? owned = def.OwnedTags.Length == 0
 			? null
 			: new TagContainer(ForgeManagers.Instance.TagsManager, def.OwnedTags.Select(GameplayTags.Request).ToHashSet());
