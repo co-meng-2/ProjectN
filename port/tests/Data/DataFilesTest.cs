@@ -244,4 +244,14 @@ public class DataFilesTest : TestCase
 		var slam = GD.Load<GroundSlamDef>(GroundSlamTest.SlamPath);
 		Assert.SequenceEq(new[] { slam.Warning, slam.Radius, slam.Damage }, new[] { 1f, 90f, 30f });
 	}
+
+	public void TestTheStageCatalogListsBothStagesInUnlockOrderAndValidates()
+	{
+		var catalog = GD.Load<StageCatalog>("res://port/data/stages/stage_catalog.tres");
+		Assert.NoErrors(catalog.Validate(), "stage catalog");
+		Assert.SequenceEq(catalog.Stages.Select(s => s.Id.ToString()), new[] { "stage_01", "stage_02" });
+		Assert.SequenceEq(catalog.Stages.Select(s => s.GemReward), new[] { 10, 20 });
+		Assert.Eq(catalog.Stages[1].DisplayName, "Orc Frontier");
+		Assert.AlmostEq(catalog.Stages[1].BuildingStats!.MaxHealth, 400.0);
+	}
 }

@@ -43,3 +43,4 @@ DropMultiplier = 10000.0
 GradeTable = ExtResource("9_grades")
 Events = ExtResource("10_events")
 Boss = ExtResource("11_boss")
+GemReward = 10
