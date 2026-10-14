@@ -8,7 +8,8 @@ const MOVE_UP: StringName = &"move_up"
 const MOVE_DOWN: StringName = &"move_down"
 const DASH: StringName = &"dash"
 const RESTART: StringName = &"restart"
-const CONFIRM: StringName = &"ui_accept"
+## Enter / KP Enter only. Not ui_accept: that also fires on Space, which is the dash key.
+const CONFIRM: StringName = &"continue_run"
 
 
 static func move_vector() -> Vector2:

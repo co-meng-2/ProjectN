@@ -81,6 +81,29 @@ func test_confirm_after_a_result_returns_to_the_main_menu() -> void:
 	assert_eq(router.changed_to, [router.path_for(Probe.Route.MAIN_MENU)])
 
 
+func _key_press(keycode: Key) -> InputEventKey:
+	var press := InputEventKey.new()
+	press.keycode = keycode
+	press.pressed = true
+	return press
+
+
+func test_space_is_the_dash_key_and_does_not_leave_the_result_screen() -> void:
+	var router: Node = adopt(Probe.new())
+	var main := _main(_service(), router)
+	main._stage.finished.emit(_result(RunResult.Outcome.FAILED))
+	main._unhandled_input(_key_press(KEY_SPACE))
+	assert_eq(router.changed_to.size(), 0, "mashing dash must not skip the result")
+
+
+func test_enter_continues_from_the_result_screen() -> void:
+	var router: Node = adopt(Probe.new())
+	var main := _main(_service(), router)
+	main._stage.finished.emit(_result(RunResult.Outcome.FAILED))
+	main._unhandled_input(_key_press(KEY_ENTER))
+	assert_eq(router.changed_to, [router.path_for(Probe.Route.MAIN_MENU)])
+
+
 func test_confirm_during_a_run_does_nothing() -> void:
 	var router: Node = adopt(Probe.new())
 	var main := _main(_service(), router)
