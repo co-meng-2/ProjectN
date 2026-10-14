@@ -1,9 +1,0 @@
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://tests/support/probe_pattern.gd" id="1_probe"]
-
-[node name="ProbePattern" type="Node"]
-script = ExtResource("1_probe")
-ability_name = "Probe Pattern"
-ability_tag = &"Ability.Probe.Pattern"
-activation_owned_tags = Array[StringName]([&"State.Casting"])

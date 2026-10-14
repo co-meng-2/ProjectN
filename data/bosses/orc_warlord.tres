@@ -1,54 +1,53 @@
-[gd_resource type="Resource" script_class="BossDef" format=3]
+[gd_resource type="Resource" format=3]
 
-[ext_resource type="Script" path="res://src/defs/boss_def.gd" id="1_def"]
-[ext_resource type="Script" path="res://src/defs/boss_pattern_def.gd" id="2_pattern"]
-[ext_resource type="Script" uid="uid://bpy31rqnwoa0w" path="res://src/defs/stat_block.gd" id="3_stats"]
-[ext_resource type="PackedScene" path="res://src/actors/boss/boss.tscn" id="4_scene"]
-[ext_resource type="Resource" uid="uid://y6rgouyb0s4i" path="res://data/enemies/orc_visual.tres" id="5_visual"]
-[ext_resource type="Resource" path="res://data/effects/damage_basic.tres" id="6_damage"]
-[ext_resource type="PackedScene" path="res://src/boss/patterns/charge_pattern.tscn" id="7_charge"]
-[ext_resource type="PackedScene" path="res://src/boss/patterns/radial_burst_pattern.tscn" id="8_burst"]
-[ext_resource type="PackedScene" path="res://src/boss/patterns/summon_pattern.tscn" id="9_summon"]
-[ext_resource type="PackedScene" path="res://src/boss/patterns/ground_slam_pattern.tscn" id="10_slam"]
+[ext_resource type="Script" path="res://src/Defs/BossDef.cs" id="1_def"]
+[ext_resource type="Script" path="res://src/Defs/BossPatternEntry.cs" id="2_entry"]
+[ext_resource type="Script" path="res://src/Defs/StatBlock.cs" id="3_stats"]
+[ext_resource type="PackedScene" path="res://src/Actors/Boss/boss.tscn" id="4_scene"]
+[ext_resource type="Resource" path="res://data/enemies/orc_visual.tres" id="5_visual"]
+[ext_resource type="Resource" path="res://data/bosses/patterns/charge.tres" id="6_charge"]
+[ext_resource type="Resource" path="res://data/bosses/patterns/radial_burst.tres" id="7_burst"]
+[ext_resource type="Resource" path="res://data/bosses/patterns/summon.tres" id="8_summon"]
+[ext_resource type="Resource" path="res://data/bosses/patterns/ground_slam.tres" id="9_slam"]
 
 [sub_resource type="Resource" id="Resource_stats"]
 script = ExtResource("3_stats")
-max_health = 2500.0
-move_speed = 60.0
+MaxHealth = 2500.0
+MoveSpeed = 60.0
+Attack = 1.0
 
-[sub_resource type="Resource" id="Resource_charge"]
-script = ExtResource("2_pattern")
-ability_scene = ExtResource("7_charge")
-weight = 1.0
+[sub_resource type="Resource" id="Entry_charge"]
+script = ExtResource("2_entry")
+Pattern = ExtResource("6_charge")
+Weight = 1.0
 
-[sub_resource type="Resource" id="Resource_burst"]
-script = ExtResource("2_pattern")
-ability_scene = ExtResource("8_burst")
-weight = 1.0
+[sub_resource type="Resource" id="Entry_burst"]
+script = ExtResource("2_entry")
+Pattern = ExtResource("7_burst")
+Weight = 1.0
 
-[sub_resource type="Resource" id="Resource_summon"]
-script = ExtResource("2_pattern")
-ability_scene = ExtResource("9_summon")
-weight = 1.0
+[sub_resource type="Resource" id="Entry_summon"]
+script = ExtResource("2_entry")
+Pattern = ExtResource("8_summon")
+Weight = 1.0
 
-[sub_resource type="Resource" id="Resource_slam"]
-script = ExtResource("2_pattern")
-ability_scene = ExtResource("10_slam")
-weight = 1.0
+[sub_resource type="Resource" id="Entry_slam"]
+script = ExtResource("2_entry")
+Pattern = ExtResource("9_slam")
+Weight = 1.0
 
 [resource]
 script = ExtResource("1_def")
-id = &"orc_warlord"
-display_name = "Orc Warlord"
-scene = ExtResource("4_scene")
-visual = ExtResource("5_visual")
-visual_scale = 3.0
-tint = Color(0.45, 0.4, 0.55, 1)
-stats = SubResource("Resource_stats")
-contact_effect = ExtResource("6_damage")
-contact_damage = 20.0
-contact_interval = 1.0
-body_radius = 30.0
-patterns = Array[ExtResource("2_pattern")]([SubResource("Resource_charge"), SubResource("Resource_burst"), SubResource("Resource_summon"), SubResource("Resource_slam")])
-order = 1
-pattern_gap = 2.0
+Id = &"orc_warlord"
+DisplayName = "Orc Warlord"
+Scene = ExtResource("4_scene")
+Visual = ExtResource("5_visual")
+VisualScale = 3.0
+Tint = Color(0.45, 0.4, 0.55, 1)
+Stats = SubResource("Resource_stats")
+ContactDamage = 20.0
+ContactInterval = 1.0
+BodyRadius = 30.0
+Patterns = Array[ExtResource("2_entry")]([SubResource("Entry_charge"), SubResource("Entry_burst"), SubResource("Entry_summon"), SubResource("Entry_slam")])
+Order = 1
+PatternGap = 2.0

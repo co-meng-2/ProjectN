@@ -1,0 +1,13 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://src/Boss/Patterns/RadialBurstDef.cs" id="1_def"]
+[ext_resource type="PackedScene" path="res://src/Actors/Projectile/projectile.tscn" id="2_scene"]
+[ext_resource type="Resource" path="res://data/projectiles/boss_bolt.tres" id="3_bolt"]
+
+[resource]
+script = ExtResource("1_def")
+Tag = "ability.boss.burst"
+ProjectileScene = ExtResource("2_scene")
+Projectile = ExtResource("3_bolt")
+Count = 12
+Damage = 10.0

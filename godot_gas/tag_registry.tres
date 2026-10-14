@@ -1,7 +1,0 @@
-[gd_resource type="Resource" script_class="GameplayTagRegistry" format=3]
-
-[ext_resource type="Script" path="res://addons/GodotGAS/gameplay_tag/gameplay_tag_registry.gd" id="1_8i6cp"]
-
-[resource]
-script = ExtResource("1_8i6cp")
-tags = Array[StringName]([&"Ability.Arrow", &"Ability.Boss.Burst", &"Ability.Boss.Charge", &"Ability.Boss.Slam", &"Ability.Boss.Summon", &"Ability.Bounty", &"Ability.Dash", &"Ability.Sweep", &"Ability.Volley", &"Cooldown.Arrow", &"Cooldown.Dash", &"Damage.Amount", &"Event.Kill", &"State.Casting", &"State.Invulnerable"])
