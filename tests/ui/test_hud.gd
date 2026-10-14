@@ -52,11 +52,14 @@ func test_show_result_displays_outcome_and_totals() -> void:
 	var result := RunResult.new()
 	result.outcome = RunResult.Outcome.CLEARED
 	result.kills = 3
+	result.gem = 4
 	hud.show_result(result)
 	var label := hud.get_node("%ResultLabel") as Label
 	assert_true(label.visible)
 	assert_true(label.text.contains("STAGE CLEARED"))
 	assert_true(label.text.contains("Kills 3"))
+	assert_true(label.text.contains("Gem 4"))
+	assert_true(label.text.contains("Enter: continue"))
 
 
 func test_hud_hosts_an_unbound_ability_bar() -> void:

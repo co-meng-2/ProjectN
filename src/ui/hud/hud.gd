@@ -57,7 +57,7 @@ func show_boss(boss_health: Health, display_name: String) -> void:
 
 func show_result(result: RunResult) -> void:
 	var title := "STAGE CLEARED" if result.outcome == RunResult.Outcome.CLEARED else "GAME OVER"
-	_result_label.text = "%s\nKills %d   Gold %d   Stone %d\nPress R to restart" % [title, result.kills, result.gold, result.stone]
+	_result_label.text = "%s\nKills %d   Gold %d   Stone %d   Gem %d\nEnter: continue   R: restart" % [title, result.kills, result.gold, result.stone, result.gem]
 	_result_label.visible = true
 
 
