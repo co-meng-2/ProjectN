@@ -3,8 +3,11 @@ using Godot;
 
 namespace VampireSurvivor.Defs;
 
-/// <summary>Base stats of an actor, authored in display units (floats) and converted to Forge integers once.</summary>
-[GlobalClass]
+/// <summary>
+/// Base stats of an actor, authored in display units (floats) and converted to Forge integers once.
+/// Deliberately not [GlobalClass] while the GDScript tree exists: Godot has one global class namespace and the GDScript
+/// <c>class_name StatBlock</c> must keep it (see GlobalClassCollisionTest). Re-add [GlobalClass] at cutover.
+/// </summary>
 public partial class StatBlock : Resource
 {
 	[Export]

@@ -150,11 +150,13 @@ Hand-written content is compact `.tres` Defs only; **Forge `EffectData`/`Ability
 ### 7.1 Strategy
 Branch `port/csharp`. The C# tree is built under `port/{src,data,tests}/` while the GDScript `src/ data/ tests/` stay untouched as the regression reference (GDScript and C# coexist in one Godot project but cannot inherit from each other, and Windows is case-insensitive so `src/core` and `src/Core` cannot overlap). GDScript tests keep running until cutover.
 
+**One global class namespace.** Godot registers every GDScript `class_name` and every C# `[GlobalClass]` in a single cache, so a port class that is `[GlobalClass]` and shares a name with a GDScript `class_name` replaces it and breaks the GDScript suite (seen with `StatBlock`). While both trees exist, a port `Resource`/`Node` must not be `[GlobalClass]` if a GDScript class of that name exists; `tests/Architecture/GlobalClassCollisionTest` enforces it. Port Defs referenced from `.tres` load by script path and do not need the attribute. Cutover step 7.2.4 re-adds `[GlobalClass]` where the editor needs it.
+
 ### 7.2 Cutover (promote over legacy)
 1. All 109 tests ported and green in `RUNNER=cs`; manual play-through of one cleared and one failed run.
 2. Delete legacy: GDScript `src/ tests/ data/`, `godot_gas/`, `addons/GodotGAS`, the `GameplayCueManager` autoload.
 3. Promote: `git mv port/src src`, `port/data data`, `port/tests tests` (folder names that differ only by case, e.g. `core` -> `Core`, are renamed in two steps through a temporary name because of Windows), then replace `res://port/` with `res://` in every `.tscn`/`.tres`/`project.godot` with one scripted pass; re-import and re-run the suite.
-4. Point `application/run/main_scene` at the C# `logo.tscn`; update `CLAUDE.md` (layers, rules, how-to sections) and `docs`.
+4. Re-add `[GlobalClass]` to port Defs that were left off for name collisions (`StatBlock` and any later ones) and delete `GlobalClassCollisionTest`; point `application/run/main_scene` at the C# `logo.tscn`; update `CLAUDE.md` (layers, rules, how-to sections) and `docs`.
 Namespaces are unaffected by the move.
 
 ### 7.3 Slices

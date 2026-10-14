@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Godot;
+using VampireSurvivor.Tests.Support;
 
 namespace VampireSurvivor.Tests.Architecture;
 
@@ -55,37 +56,12 @@ public class LayerRulesTest : TestCase
 	public void TestSourceTreeHasNoViolations()
 	{
 		var all = new List<string>();
-		foreach (string path in SourceFiles(SourceRoot))
+		foreach (string path in SourceTree.Files(SourceRoot, ".cs"))
 		{
 			string relative = path[(SourceRoot.Length + 1)..];
 			all.AddRange(LayerRules.FindViolations(relative, FileAccess.GetFileAsString(path)));
 		}
 
 		Assert.NoErrors(all);
-	}
-
-	private static IEnumerable<string> SourceFiles(string directory)
-	{
-		DirAccess? access = DirAccess.Open(directory);
-		if (access is null)
-		{
-			yield break;
-		}
-
-		foreach (string sub in access.GetDirectories())
-		{
-			foreach (string file in SourceFiles($"{directory}/{sub}"))
-			{
-				yield return file;
-			}
-		}
-
-		foreach (string file in access.GetFiles())
-		{
-			if (file.EndsWith(".cs", System.StringComparison.Ordinal))
-			{
-				yield return $"{directory}/{file}";
-			}
-		}
 	}
 }
