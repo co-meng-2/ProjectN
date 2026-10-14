@@ -94,9 +94,12 @@ func test_back_goes_to_the_main_menu() -> void:
 	assert_eq(router.changed_to, [router.path_for(Probe.Route.MAIN_MENU)])
 
 
-func test_the_skill_tree_button_is_reserved_but_disabled() -> void:
-	var hub := _hub(_catalog(1), _service(), adopt(Probe.new()))
-	assert_true(hub.get_node("%SkillTreeButton").disabled)
+func test_the_skill_tree_button_opens_the_skill_tree() -> void:
+	var router: Node = adopt(Probe.new())
+	var hub := _hub(_catalog(1), _service(), router)
+	assert_false(hub.get_node("%SkillTreeButton").disabled)
+	hub.get_node("%SkillTreeButton").pressed.emit()
+	assert_eq(router.changed_to, [router.path_for(Probe.Route.SKILL_TREE)])
 
 
 func test_an_empty_catalog_shows_an_empty_state_and_back_still_works() -> void:

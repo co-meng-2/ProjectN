@@ -1,5 +1,5 @@
 extends Control
-## The hub: one card per catalog stage, Back, and a reserved Skill Tree button (4c). It owns no state: it asks the
+## The hub: one card per catalog stage, a Skill Tree button and Back. It owns no state: it asks the
 ## router to move on. A stage opens once the previous one is cleared (see StageProgress).
 
 const STAGE_CARD_SCENE: PackedScene = preload("res://src/meta/hub/stage_card.tscn")
@@ -14,6 +14,7 @@ var _progress: StageProgress
 
 @onready var _stage_list: VBoxContainer = %StageList
 @onready var _empty_label: Label = %EmptyLabel
+@onready var _skill_tree_button: Button = %SkillTreeButton
 @onready var _back_button: Button = %BackButton
 
 
@@ -25,6 +26,7 @@ func _ready() -> void:
 	if router == null:
 		router = SceneRouter
 	_back_button.pressed.connect(_on_back_pressed)
+	_skill_tree_button.pressed.connect(_on_skill_tree_pressed)
 	var errors := catalog.validate()
 	if not errors.is_empty():
 		push_error("Hub: unusable stage catalog: %s" % ", ".join(errors))
@@ -55,3 +57,7 @@ func _on_play_pressed(index: int) -> void:
 
 func _on_back_pressed() -> void:
 	router.go(SceneRouter.Route.MAIN_MENU)
+
+
+func _on_skill_tree_pressed() -> void:
+	router.go(SceneRouter.Route.SKILL_TREE)

@@ -44,8 +44,7 @@ horizontal_alignment = 1
 [node name="SkillTreeButton" type="Button" parent="Center/Column"]
 unique_name_in_owner = true
 layout_mode = 2
-disabled = true
-text = "Skill Tree (coming soon)"
+text = "Skill Tree"
 
 [node name="BackButton" type="Button" parent="Center/Column"]
 unique_name_in_owner = true

@@ -2,7 +2,7 @@ extends Node
 ## Autoload "SceneRouter". The only place that knows scene paths. Screens ask for a route and hand the next
 ## screen one-shot params. No class_name: a global class must not share an autoload's name.
 
-enum Route { LOGO, MAIN_MENU, SETTINGS, STAGE, HUB }
+enum Route { LOGO, MAIN_MENU, SETTINGS, STAGE, HUB, SKILL_TREE }
 
 const ROUTES: Dictionary[Route, String] = {
 	Route.LOGO: "res://src/app/logo.tscn",
@@ -10,6 +10,7 @@ const ROUTES: Dictionary[Route, String] = {
 	Route.SETTINGS: "res://src/meta/menu/settings_screen.tscn",
 	Route.STAGE: "res://src/app/main.tscn",
 	Route.HUB: "res://src/meta/hub/hub.tscn",
+	Route.SKILL_TREE: "res://src/meta/skill_tree/skill_tree_screen.tscn",
 }
 
 ## Param keys screens agree on, so no screen hard-codes another's strings.
