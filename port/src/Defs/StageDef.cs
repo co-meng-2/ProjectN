@@ -4,8 +4,7 @@ using Godot;
 namespace VampireSurvivor.Defs;
 
 /// <summary>
-/// Static description of one stage. The grade table (slice 3), events and boss (slice 4) and the gem reward (slice 5) are
-/// added by later slices.
+/// Static description of one stage. Events and boss (slice 4) and the gem reward (slice 5) are added by later slices.
 /// </summary>
 public partial class StageDef : Resource
 {
@@ -57,6 +56,10 @@ public partial class StageDef : Resource
 	/// <summary>Scales every enemy drop; 1.0 for balanced play, very large for prototype tuning.</summary>
 	[Export]
 	public float DropMultiplier { get; set; } = 1f;
+
+	/// <summary>Shop prices of this stage.</summary>
+	[Export]
+	public GradeTable? GradeTable { get; set; }
 
 	public List<string> Validate()
 	{
@@ -116,6 +119,15 @@ public partial class StageDef : Resource
 		if (DropMultiplier <= 0f)
 		{
 			errors.Add($"StageDef '{id}': drop_multiplier must be > 0");
+		}
+
+		if (GradeTable is null)
+		{
+			errors.Add($"StageDef '{id}': grade_table is null");
+		}
+		else
+		{
+			errors.AddRange(GradeTable.Validate());
 		}
 
 		return errors;

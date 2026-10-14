@@ -1,0 +1,9 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://port/src/Defs/GradeTable.cs" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+PromoteGold = PackedInt32Array(100, 150, 250, 400, 600)
+RevealStone = 10
+RerollStone = 2
