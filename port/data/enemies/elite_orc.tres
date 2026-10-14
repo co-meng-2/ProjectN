@@ -1,0 +1,27 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://port/src/Defs/EnemyDef.cs" id="1_def"]
+[ext_resource type="Script" path="res://port/src/Defs/StatBlock.cs" id="2_stats"]
+[ext_resource type="PackedScene" path="res://port/src/Actors/Enemy/enemy.tscn" id="3_scene"]
+[ext_resource type="Resource" path="res://port/data/enemies/orc_visual.tres" id="4_visual"]
+[ext_resource type="Resource" path="res://port/data/drops/orc_drops.tres" id="5_drops"]
+
+[sub_resource type="Resource" id="Resource_stats"]
+script = ExtResource("2_stats")
+MaxHealth = 300.0
+MoveSpeed = 70.0
+Attack = 1.0
+
+[resource]
+script = ExtResource("1_def")
+Id = &"elite_orc"
+Scene = ExtResource("3_scene")
+Visual = ExtResource("4_visual")
+VisualScale = 1.8
+Tint = Color(1, 0.3, 0.3, 1)
+Stats = SubResource("Resource_stats")
+ContactDamage = 15.0
+ContactInterval = 0.9
+TargetPolicy = 1
+BodyRadius = 18.0
+Drops = ExtResource("5_drops")
