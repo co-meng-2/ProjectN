@@ -25,6 +25,14 @@ public static class DefFactory
 		return def;
 	}
 
+	public static EnemyDef Enemy(PackedScene? scene = null) => new()
+	{
+		Id = "test_enemy",
+		Scene = scene ?? new PackedScene(),
+		Visual = Visual(),
+		Stats = new StatBlock(),
+	};
+
 	/// <summary>A curve with points at x = 1..n.</summary>
 	public static Curve CurveOf(params float[] ys)
 	{
