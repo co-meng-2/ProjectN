@@ -1,0 +1,29 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://port/src/Meta/SkillTree/SkillNodeRow.cs" id="1_row"]
+
+[node name="SkillNodeRow" type="HBoxContainer" node_paths=PackedStringArray("NameLabel", "DetailLabel", "BuyButton")]
+custom_minimum_size = Vector2(520, 0)
+theme_override_constants/separation = 16
+script = ExtResource("1_row")
+NameLabel = NodePath("NameLabel")
+DetailLabel = NodePath("DetailLabel")
+BuyButton = NodePath("BuyButton")
+
+[node name="NameLabel" type="Label" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+mouse_filter = 0
+text = "Skill"
+
+[node name="DetailLabel" type="Label" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BuyButton" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Buy"

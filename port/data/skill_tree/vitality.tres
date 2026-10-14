@@ -1,0 +1,26 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://port/src/Defs/SkillNodeDef.cs" id="1_node"]
+[ext_resource type="Script" path="res://port/src/Defs/PassiveDef.cs" id="2_passive"]
+
+[sub_resource type="Curve" id="Curve_levels"]
+min_domain = 1.0
+max_domain = 3.0
+max_value = 40.0
+_data = [Vector2(1, 10), 0.0, 0.0, 0, 0, Vector2(2, 20), 0.0, 0.0, 0, 0, Vector2(3, 35), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="Resource" id="Passive"]
+script = ExtResource("2_passive")
+Stat = 0
+Operation = 0
+ByLevel = SubResource("Curve_levels")
+
+[resource]
+script = ExtResource("1_node")
+Id = &"vitality"
+DisplayName = "Vitality"
+Description = "More maximum health from the start of every run."
+MaxLevel = 3
+Costs = PackedInt32Array(10, 20, 40)
+Passive = SubResource("Passive")
