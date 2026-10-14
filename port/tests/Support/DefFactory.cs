@@ -33,6 +33,16 @@ public static class DefFactory
 		Stats = new StatBlock(),
 	};
 
+	public static StageDef Stage(float duration = 10f) => new()
+	{
+		Id = "test_stage",
+		Duration = duration,
+		GroundTexture = Texture(32, 32),
+		BuildingTexture = Texture(64, 64),
+		BuildingStats = new StatBlock(),
+		Waves = new WaveSchedule(),
+	};
+
 	public static PlayerProfile Profile() => new()
 	{
 		Stats = new StatBlock(),
