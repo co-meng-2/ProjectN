@@ -92,6 +92,18 @@ static func vitality(per_level: PackedFloat32Array = PackedFloat32Array([20.0, 4
 	return ability(&"vitality", passive_effect("max_health", GameplayEffectModifier.Operation.ADD, per_level))
 
 
+## A valid skill node: max_health ADD +10/+20 over its levels, costs [10, 20] by default.
+static func skill_node(id: StringName, requires: Array[StringName] = [], max_level: int = 2, costs: PackedInt32Array = PackedInt32Array([10, 20])) -> SkillNodeDef:
+	var node := SkillNodeDef.new()
+	node.id = id
+	node.display_name = String(id).capitalize()
+	node.requires = requires
+	node.max_level = max_level
+	node.costs = costs
+	node.effect = passive_effect("max_health", GameplayEffectModifier.Operation.ADD, PackedFloat32Array([10.0, 20.0]))
+	return node
+
+
 static func grade_table() -> GradeTable:
 	var table := GradeTable.new()
 	table.promote_gold = PackedInt32Array([100, 150, 250, 400, 600])
