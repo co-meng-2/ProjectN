@@ -44,10 +44,13 @@ public class DevStageTest : TestCase
 		DevStage dev = MakeDev();
 		StageRoot first = dev.Stage!;
 		first.RunState!.Wallet.Add(CurrencyKind.Gold, 50);
+		first.Factory.Spawn(GD.Load<EnemyDef>("res://port/data/enemies/orc.tres"), new Vector2(300f, 0f));
+		Assert.Eq(Host.GetTree().GetNodesInGroup(Groups.Enemies).Count, 1);
 		ActorFixture.Kill(this, first.Building.Entity);
 		Assert.Eq(dev.Result!.Outcome, RunOutcome.Failed);
 		Assert.True(dev.Hud!.ResultLabel.Visible);
 		dev._UnhandledInput(RestartPress());
+		Assert.Eq(Host.GetTree().GetNodesInGroup(Groups.Enemies).Count, 0, "the old run's enemies left the group at once");
 		Assert.True(dev.Stage != first, "a new stage");
 		Assert.False(first.IsInsideTree(), "the old stage left the tree at once");
 		Assert.Null(dev.Result);

@@ -179,6 +179,8 @@ public class StageRootTest : TestCase
 		var firstResults = new List<RunResult>();
 		StageRoot first = RunningStage(30f, firstResults);
 		first.RunState!.Wallet.Add(CurrencyKind.Gold, 50);
+		first.Factory.Spawn(Grunt(), new Vector2(300f, 0f));
+		Assert.Eq(Enemies().Count, 1);
 		ActorFixture.Kill(this, first.Building.Entity);
 		first.Free();
 		await NextFrame();

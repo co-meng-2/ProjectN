@@ -43,7 +43,7 @@ public static partial class LayerRules
 			}
 
 			bool allowed = targetRank < ownRank
-				|| (relativePath == "Stage/Stage.cs" && (target == "Abilities" || target == "Boss"))
+				|| (relativePath == "Stage/StageRoot.cs" && (target == "Abilities" || target == "Boss"))
 				|| (ownLayer == "App" && target == "Meta")
 				|| (ownLayer == "Meta" && target == "App");
 			if (!allowed)
